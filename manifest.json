@@ -1,32 +1,32 @@
 {
-  "name": "Nepravidelná slovesa",
-  "short_name": "Slovesa",
+  "name": "Uč se! Nepravidelná slovesa",
+  "short_name": "Uč se!",
   "description": "Efektivní učení anglických nepravidelných sloves podle výslovnostních skupin",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#fdfbf7",
-  "theme_color": "#ff6b35",
+  "background_color": "#5dc9bd",
+  "theme_color": "#5dc9bd",
   "lang": "cs",
   "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
     {
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
