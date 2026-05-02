@@ -669,23 +669,18 @@ function askStage2Verb(verb, step) {
     }
 
     const fb = q.querySelector('.q-feedback');
-    if (allRight) {
-      fb.innerHTML = msg;
-      fb.className = 'q-feedback correct';
-    } else {
-      fb.innerHTML = `${msg}<br>Správné tvary: <strong>${verb.inf} – ${past} – ${pp}</strong>`;
-      fb.className = 'q-feedback wrong';
-    }
+    fb.innerHTML = msg;
+    fb.className = `q-feedback ${allRight ? 'correct' : 'wrong'}`;
     persistProgress();
     L.currentInf = null;
     renderVerbChips();
     const checkBtn = q.querySelector('#s2-check');
     if (checkBtn) checkBtn.classList.add('hidden');
     const next = document.createElement('button');
-    next.className = 'btn btn-primary next-btn';
+    next.className = 'next-btn-corner';
     next.textContent = 'Další →';
     next.addEventListener('click', stage2Next, { once: true });
-    q.querySelector('.q-actions').appendChild(next);
+    q.querySelector('.q-card').appendChild(next);
     next.focus();
     updateLessonBar();
   };
