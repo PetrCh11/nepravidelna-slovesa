@@ -934,6 +934,41 @@ main { flex: 1; padding: 28px 0 48px; }
 .stage-dot.done { background: var(--success); color: white; }
 
 .lesson-progress { margin-bottom: 16px; }
+.step-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 0 4px;
+}
+.step-pills:empty { padding: 0; }
+.step-pill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.step-pill.done {
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: rgb(22, 130, 70);
+}
+.step-pill.active {
+  background: hsl(var(--sub-hue, 20) 70% 55%);
+  border-color: hsl(var(--sub-hue, 20) 70% 50%);
+  color: white;
+  box-shadow: 0 0 0 3px hsl(var(--sub-hue, 20) 70% 55% / 0.18);
+}
+.step-arrow {
+  color: var(--text-muted);
+  opacity: 0.6;
+  font-size: 0.85rem;
+}
 .verb-chips {
   display: flex;
   flex-wrap: wrap;

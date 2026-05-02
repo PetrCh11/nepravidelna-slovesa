@@ -215,9 +215,9 @@ function hueOf(subId) {
 
 function showStageIntro(stage) {
   const intros = {
-    1:   { emoji: '👀', title: 'Fáze 1 — Seznámení', desc: 'Nejprve si v klidu projdi všechna slovesa v této skupině. Přečti si český význam i všechny tři anglické tvary, poslechni si výslovnost. Až si budeš jistý(á), pokračuj dál.' },
-    1.5: { emoji: '✋', title: 'Mezifáze — Zadrž, ne tak rychle!', desc: 'Označ slovesa, u kterých si myslíš, že ti budou dělat největší problém. Můžeš označit kolik chceš, klidně i žádné. Tahle slovesa pak budeme hlídat zvlášť.' },
-    2:   { emoji: '✍️', title: 'Fáze 2 — Psaní tvarů', desc: 'Uvidíš český překlad a napíšeš všechny tři anglické tvary. Tři kroky: nejdřív v pořadí, pak jen slovesa s chybou (políčka mají modrou auru), nakonec všechna zamíchaně — každé sloveso musíš v krocích 2 a 3 napsat 2× za sebou bez chyby.' },
+    1:   { emoji: '👀', title: 'Fáze 1 — Seznámení', desc: 'V klidu si projdi všechna slovesa v této skupině.' },
+    1.5: { emoji: '✋', title: 'Hold your horses! / Zadrž!', desc: 'Označ slovesa, u kterých si myslíš, že ti budou dělat největší problém.' },
+    2:   { emoji: '✍️', title: 'Fáze 2 — Psaní tvarů', desc: 'Uvidíš český překlad a napíšeš všechny 3 tvary + Enter. 3, 2, 1 ...aaaaand... GO!' },
   };
   const i = intros[stage];
   $('#stage-intro-emoji').textContent = i.emoji;
@@ -358,8 +358,8 @@ function stage1Mark() {
       <div class="mark-hero">
         <div class="mark-hero-emoji">✋</div>
         <div class="mark-hero-text">
-          <div class="mark-hero-title">Zadrž, ne tak rychle!</div>
-          <div class="mark-hero-sub">Označ slovesa, u kterých si myslíš, že ti budou dělat <strong>největší problém</strong>. Klepni na řádek pro označení/odznačení. Můžeš označit kolik chceš — klidně i žádné.</div>
+          <div class="mark-hero-title">Hold your horses! / Zadrž!</div>
+          <div class="mark-hero-sub">Označ slovesa, u kterých si myslíš, že ti budou dělat největší problém.</div>
         </div>
         <div class="mark-counter" id="mark-counter">${L.markedHard.size}</div>
       </div>
@@ -392,6 +392,7 @@ function stage1Mark() {
     if (L.stage2Q.length === 0) { finishLesson(); return; }
     showStageIntro(2);
     renderVerbChips();
+    renderStepPills(1);
   });
   updateStageDots();
   updateLessonBar();
@@ -420,6 +421,20 @@ function stage2InitStep1() {
     p.step3Attempts = 0;
     p.step3Cleared = false;
   });
+}
+
+function renderStepPills(activeStep) {
+  const c = $('#step-pills');
+  if (!c) return;
+  const L = state.lesson;
+  if (!L || L.stage !== 2) { c.innerHTML = ''; return; }
+  const labels = { 1: '1) doplň', 2: '2) oprav chyby', 3: '3) zamíchat' };
+  c.innerHTML = [1, 2, 3].map((s) => {
+    let cls = 'step-pill';
+    if (s === activeStep) cls += ' active';
+    else if (s < activeStep) cls += ' done';
+    return `<span class="${cls}">${labels[s]}</span>${s < 3 ? '<span class="step-arrow">→</span>' : ''}`;
+  }).join('');
 }
 
 function renderVerbChips() {
@@ -476,6 +491,8 @@ function stage2AdvanceToStep2() {
   $('#lesson-question').innerHTML = '';
   updateStageDots();
   updateLessonBar();
+  renderVerbChips();
+  renderStepPills(2);
 }
 
 function stage2AdvanceToStep3() {
@@ -495,6 +512,7 @@ function stage2AdvanceToStep3() {
   updateStageDots();
   updateLessonBar();
   renderVerbChips();
+  renderStepPills(3);
 }
 
 function stage2Finish() {
@@ -514,6 +532,7 @@ function askStage2Verb(verb, step) {
   const p = L.perVerb.get(verb.inf);
   L.currentInf = verb.inf;
   renderVerbChips();
+  renderStepPills(step);
   const past = pickForm(verb, 'past', state.dialect);
   const pp = pickForm(verb, 'pp', state.dialect);
   const hue = hueOf(verb.subId);
@@ -550,15 +569,7 @@ function askStage2Verb(verb, step) {
     <div class="q-card" style="--sub-hue:${hue}">
       <div class="q-emoji">${verb.emoji || '❓'}</div>
       <div class="q-prompt">${verb.cs}</div>
-      <div class="q-sub">napiš všechny 3 anglické tvary</div>
-      <div class="round-indicator">
-        <span class="round-pill ${step === 1 ? 'active' : 'done'}">1. v pořadí</span>
-        <span class="round-arrow">→</span>
-        <span class="round-pill ${step === 2 ? 'active' : (step > 2 ? 'done' : '')}">2. chyby</span>
-        <span class="round-arrow">→</span>
-        <span class="round-pill ${step === 3 ? 'active' : ''}">3. zamícháno</span>
-        <span class="round-progress">· ${progressText}</span>
-      </div>
+      <div class="q-sub">napiš všechny 3 anglické tvary · ${progressText}</div>
       <div class="enter-tip">${tipText}</div>
       <div class="quiz-fill-inputs">
         ${fieldHtml('inf', 'infinitiv')}
@@ -832,6 +843,8 @@ function exitLesson() {
   $('.lesson-active').classList.add('hidden');
   $('.lesson-results').classList.add('hidden');
   $('.lesson-picker').classList.remove('hidden');
+  $('#step-pills').innerHTML = '';
+  $('#verb-chips').innerHTML = '';
   renderLessonPicker();
   renderStatsStrip();
 }
