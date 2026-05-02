@@ -2281,6 +2281,39 @@ body {
   backdrop-filter: none;
 }
 .sentence-blank { border-radius: 8px; border-bottom-width: 2px; }
+.q-card { position: relative; padding-bottom: 56px; }
+.give-up-btn {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  font-size: 0.82rem;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  padding: 5px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+.give-up-btn:hover {
+  background: rgba(0,0,0,0.04);
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+.give-up-btn:active { transform: scale(0.97); }
+.give-up-btn.hidden { display: none; }
+[data-theme="dark"] .give-up-btn:hover { background: rgba(255,255,255,0.06); }
+.quiz-fill-inputs input.gave-up {
+  border-color: rgba(245, 158, 11, 0.7);
+  background: linear-gradient(180deg, rgba(255,255,255,0.3), rgba(245,158,11,0.10));
+  color: rgba(160, 100, 8, 0.92);
+  text-align: center;
+  text-decoration: none;
+  padding-left: 14px;
+  padding-right: 14px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 0 0 3px rgba(245,158,11,0.18);
+}
 
 /* ----- Chips / pills / small glass elements ----- */
 .chip,

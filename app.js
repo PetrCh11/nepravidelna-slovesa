@@ -578,12 +578,14 @@ function askStage2Verb(verb, step) {
       </div>
       <div class="q-feedback"></div>
       <div class="q-actions">${isAtomicCheck ? '<button class="btn btn-primary" id="s2-check">Zkontrolovat</button>' : ''}</div>
+      <button type="button" class="give-up-btn" id="give-up-btn">Nevím 😭</button>
     </div>
   `;
 
   const inputs = Array.from(q.querySelectorAll('.quiz-fill-inputs input'));
   const fieldResults = {};
   let finalized = false;
+  const giveUpBtn = q.querySelector('#give-up-btn');
 
   const markField = (inp) => {
     const key = inp.dataset.form;
@@ -607,6 +609,7 @@ function askStage2Verb(verb, step) {
   const finalize = () => {
     if (finalized) return;
     finalized = true;
+    if (giveUpBtn) giveUpBtn.classList.add('hidden');
     inputs.forEach((inp) => markField(inp));
     const allRight = inputs.every((inp) => fieldResults[inp.dataset.form]);
 
@@ -706,6 +709,24 @@ function askStage2Verb(verb, step) {
   if (isAtomicCheck) {
     q.querySelector('#s2-check').addEventListener('click', finalize);
   }
+
+  // Give-up: fill any empty input with the correct form, count all unfilled fields as wrong, then finalize
+  giveUpBtn?.addEventListener('click', () => {
+    if (finalized) return;
+    inputs.forEach((inp) => {
+      const k = inp.dataset.form;
+      if (k in fieldResults) return;
+      const correctForm = pickForm(verb, k, state.dialect);
+      inp.value = correctForm;
+      inp.disabled = true;
+      inp.classList.add('gave-up');
+      fieldResults[k] = false;
+      const ind = inp.closest('.fill-row').querySelector('.field-indicator');
+      if (ind) { ind.innerHTML = ''; ind.className = 'field-indicator'; }
+    });
+    finalize();
+  });
+
   setTimeout(() => q.querySelector('input')?.focus(), 50);
   updateStageDots();
   updateLessonBar();
