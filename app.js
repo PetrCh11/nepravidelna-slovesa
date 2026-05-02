@@ -552,8 +552,8 @@ function askStage2Verb(verb, step) {
   }
 
   const tipText = isAtomicCheck
-    ? 'Stiskni <kbd>Enter</kbd> pro přechod na další tvar. Vše se zkontroluje až na konci.'
-    : 'Stiskni <kbd>Enter</kbd> po každém tvaru — zkontroluje se rovnou.';
+    ? '<kbd>Enter</kbd> = další pole, vyhodnotí se na konci'
+    : 'Po každém tvaru zmáčkni <kbd>Enter</kbd>';
 
   const fieldHtml = (key, placeholder) => {
     const auraCls = auraSet.has(key) ? ' has-aura' : '';
@@ -569,7 +569,7 @@ function askStage2Verb(verb, step) {
     <div class="q-card" style="--sub-hue:${hue}">
       <div class="q-emoji">${verb.emoji || '❓'}</div>
       <div class="q-prompt">${verb.cs}</div>
-      <div class="q-sub">napiš všechny 3 anglické tvary · ${progressText}</div>
+      <div class="q-sub">${progressText}</div>
       <div class="enter-tip">${tipText}</div>
       <div class="quiz-fill-inputs">
         ${fieldHtml('inf', 'infinitiv')}

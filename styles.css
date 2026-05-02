@@ -1108,13 +1108,13 @@ main { flex: 1; padding: 28px 0 48px; }
 }
 .q-card .q-emoji { font-size: 2.8rem; text-align: center; margin-bottom: 4px; }
 .q-card .q-prompt {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 800;
   text-align: center;
-  margin: 0 auto 10px;
+  margin: 0 auto 8px;
   max-width: 460px;
-  padding: 10px 22px;
-  border-radius: 14px;
+  padding: 5px 22px;
+  border-radius: 12px;
   background: hsl(var(--sub-hue, 20) 75% 95%);
   border: 1.5px solid hsl(var(--sub-hue, 20) 65% 55%);
   color: hsl(var(--sub-hue, 20) 70% 28%);
@@ -1180,9 +1180,12 @@ main { flex: 1; padding: 28px 0 48px; }
 
 .enter-tip {
   text-align: center;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+}
+@media (max-width: 600px) {
+  .enter-tip { margin-bottom: 4px; font-size: 0.72rem; }
 }
 .enter-tip kbd {
   display: inline-block;
@@ -2298,7 +2301,7 @@ body {
   backdrop-filter: none;
 }
 .sentence-blank { border-radius: 8px; border-bottom-width: 2px; }
-.q-card { position: relative; padding-bottom: 56px; }
+.q-card { position: relative; padding-bottom: 42px; }
 .give-up-btn {
   position: absolute;
   right: 14px;
