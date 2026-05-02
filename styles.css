@@ -2205,6 +2205,46 @@ body {
   background: linear-gradient(180deg, rgba(255,255,255,0.3), rgba(215,38,61,0.10));
   box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 0 0 3px rgba(215,38,61,0.18);
 }
+/* Wrong state: show user's text struck through on the left, ✗ + correct word inline at right */
+.quiz-fill-inputs input.wrong {
+  text-align: left;
+  padding-left: 14px;
+  padding-right: 130px;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(215, 38, 61, 0.55);
+  color: rgba(215, 38, 61, 0.78);
+}
+.fill-row { position: relative; }
+.fill-row .field-indicator.wrong {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  width: auto;
+  font-size: 0.88rem;
+  gap: 5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.fill-row .field-indicator.wrong .fi-icon {
+  width: 18px; height: 18px;
+  font-size: 0.72rem;
+}
+.fill-row .field-indicator.wrong .fi-correct {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 0.92rem;
+  color: var(--success);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 .sentence-blank { border-radius: 8px; border-bottom-width: 2px; }
 
 /* ----- Chips / pills / small glass elements ----- */
