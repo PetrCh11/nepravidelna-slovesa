@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <title>Nepravidelná slovesa – efektivní učení</title>
+  <meta name="description" content="Aplikace pro učení anglických nepravidelných sloves podle výslovnostních skupin. Průvodce lekcí: flashcards → psaní → věty." />
+  <meta name="theme-color" content="#ff6b35" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Slovesa" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-inner">
+      <h1 class="logo">🎯 Slovesa</h1>
+      <div class="header-controls">
+        <label class="dialect-switch" title="Britská vs. americká angličtina">
+          <select id="dialect-select" aria-label="Varianta angličtiny">
+            <option value="BrE">🇬🇧 BrE</option>
+            <option value="AmE">🇺🇸 AmE</option>
+          </select>
+        </label>
+        <button id="theme-toggle" class="icon-btn" aria-label="Přepnout tmavý režim">🌙</button>
+        <div class="menu-wrap">
+          <button id="menu-btn" class="icon-btn" aria-label="Menu" aria-expanded="false">☰</button>
+          <div id="menu-dropdown" class="menu-dropdown" role="menu">
+            <button class="menu-item" data-view="lesson" role="menuitem">🎓 Lekce</button>
+            <button class="menu-item" data-view="browse" role="menuitem">📚 Přehled skupin</button>
+            <button class="menu-item" data-view="flashcards" role="menuitem">🃏 Flashcards</button>
+            <button class="menu-item" data-view="quiz" role="menuitem">✅ Volný kvíz</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- LESSON VIEW (default) -->
+    <section id="view-lesson" class="view active">
+      <!-- Step 0: pick group -->
+      <div class="lesson-picker">
+        <div class="intro">
+          <h2>Vyber skupinu sloves</h2>
+          <p>Každá skupina má společný výslovnostní vzorec. Lekce tě provede dvěma fázemi: <strong>seznámení → psaní</strong>.</p>
+        </div>
+        <div id="stats-strip" class="stats-strip"></div>
+        <div id="lesson-groups"></div>
+      </div>
+
+      <!-- Step 1-3: active lesson -->
+      <div class="lesson-active hidden">
+        <div class="lesson-topbar">
+          <button id="lesson-exit" class="btn-link">← Zpět</button>
+          <div class="lesson-group-label" id="lesson-group-label"></div>
+          <div class="lesson-stage-dots">
+            <span class="stage-dot" data-stage="1">1</span>
+            <span class="stage-dot stage-dot-mark" data-stage="1.5" title="Mezifáze">★</span>
+            <span class="stage-dot" data-stage="2">2</span>
+          </div>
+        </div>
+        <div class="lesson-progress">
+          <div class="verb-chips" id="verb-chips"></div>
+          <div class="lesson-bar"><div class="lesson-bar-fill" id="lesson-bar-fill"></div></div>
+          <div class="lesson-meta"><span id="lesson-stage-title"></span> · <span id="lesson-remaining"></span></div>
+        </div>
+        <div class="lesson-stage-intro hidden" id="lesson-stage-intro">
+          <div class="stage-intro-emoji" id="stage-intro-emoji">🃏</div>
+          <h3 id="stage-intro-title">Fáze 1</h3>
+          <p id="stage-intro-desc">popis</p>
+          <button id="stage-intro-start" class="btn btn-primary">Začít</button>
+        </div>
+        <div class="lesson-question" id="lesson-question"></div>
+      </div>
+
+      <!-- Step 4: results -->
+      <div class="lesson-results hidden">
+        <h2>Hotovo! 🎉</h2>
+        <div class="results-summary" id="results-summary"></div>
+        <h3>Tvůj výsledek</h3>
+        <div class="results-list" id="results-list"></div>
+        <div class="results-actions">
+          <button id="results-again" class="btn btn-primary">Procvičit znovu jen problematická</button>
+          <button id="results-new" class="btn btn-secondary">Nová lekce</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- BROWSE VIEW -->
+    <section id="view-browse" class="view">
+      <div class="intro">
+        <h2>Přehled výslovnostních skupin</h2>
+        <p>Každá skupina má společný vzorec. Klikni na slovo pro výslovnost 🔊.</p>
+      </div>
+      <div id="sections-list"></div>
+    </section>
+
+    <!-- FLASHCARDS VIEW -->
+    <section id="view-flashcards" class="view">
+      <div class="intro">
+        <h2>Flashcards</h2>
+        <p>Klikni na kartu a otočí se. Karty jsou rozdělené podle skupin.</p>
+        <div class="fc-toolbar">
+          <label class="fc-side-toggle">
+            Výchozí strana:
+            <select id="fc-side">
+              <option value="cs" selected>česky → anglicky</option>
+              <option value="en">anglicky → česky</option>
+            </select>
+          </label>
+          <button id="fc-flip-all" class="btn btn-ghost">Otočit všechny</button>
+        </div>
+      </div>
+      <div id="fc-sections"></div>
+    </section>
+
+    <!-- QUIZ VIEW -->
+    <section id="view-quiz" class="view">
+      <div class="quiz-setup">
+        <h2>Volný kvíz</h2>
+        <p>Rychlý test napříč libovolnými skupinami.</p>
+        <div id="quiz-filter" class="filter-chips"></div>
+        <div class="quiz-options">
+          <label>Počet otázek:
+            <select id="quiz-count">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+              <option value="0">všechna</option>
+            </select>
+          </label>
+          <label>Typ otázek:
+            <select id="quiz-type">
+              <option value="mixed">Smíšené</option>
+              <option value="mc">Výběr (a/b/c/d)</option>
+              <option value="fill">Doplňování</option>
+            </select>
+          </label>
+        </div>
+        <button id="quiz-start" class="btn btn-primary">Spustit kvíz</button>
+      </div>
+      <div class="quiz-play hidden">
+        <div class="quiz-progress">
+          <div class="quiz-counter"><span id="quiz-current">1</span> / <span id="quiz-total">10</span></div>
+          <div class="quiz-score">Skóre: <span id="quiz-score">0</span></div>
+        </div>
+        <div class="quiz-bar"><div class="quiz-bar-fill" id="quiz-bar-fill"></div></div>
+        <div class="quiz-card" id="quiz-card"></div>
+      </div>
+      <div class="quiz-done hidden">
+        <h3>Kvíz hotov! 🏆</h3>
+        <p>Tvé skóre: <strong id="quiz-final">—</strong></p>
+        <div id="quiz-review" class="quiz-review"></div>
+        <button id="quiz-restart" class="btn btn-primary">Zkusit znovu</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container">
+      <p>Nepravidelná slovesa · <span id="verb-count">—</span> sloves</p>
+    </div>
+  </footer>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
