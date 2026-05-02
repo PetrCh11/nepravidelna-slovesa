@@ -608,7 +608,8 @@ main { flex: 1; padding: 28px 0 48px; }
   text-align: center;
   min-width: 140px;
 }
-.quiz-fill-inputs input.correct { border-color: var(--success); background: var(--success-soft); }
+/* Hide the right-side indicator for the correct case (the ✓ now lives inside the input) */
+.fill-row .field-indicator.correct { display: none; }
 .quiz-fill-inputs input.wrong { border-color: var(--error); background: var(--error-soft); }
 .quiz-feedback { min-height: 1.5em; text-align: center; font-weight: 600; margin: 10px 0; }
 .quiz-feedback.correct { color: var(--success); }
@@ -2188,8 +2189,14 @@ body {
 .quiz-fill-inputs input.correct,
 .sentence-blank.correct {
   border-color: rgba(46, 160, 67, 0.7);
-  background: linear-gradient(180deg, rgba(255,255,255,0.3), rgba(46,160,67,0.10));
+  background-image:
+    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTZhMzRhIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgb3BhY2l0eT0iMC43Ij48cG9seWxpbmUgcG9pbnRzPSIyMCA2IDkgMTcgNCAxMiIvPjwvc3ZnPg=="),
+    linear-gradient(180deg, rgba(255,255,255,0.3), rgba(46,160,67,0.10));
+  background-repeat: no-repeat, no-repeat;
+  background-position: right 12px center, 0 0;
+  background-size: 14px 14px, auto;
   box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 0 0 3px rgba(46,160,67,0.18);
+  padding-right: 32px;
 }
 .fc-inputs input.wrong,
 .quiz-fill-inputs input.wrong,
