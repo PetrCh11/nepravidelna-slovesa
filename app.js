@@ -2,6 +2,8 @@
 // Irregular Verbs App — guided lesson + browse/flashcards/quiz
 // ============================================================
 
+import * as cloud from './cloud.js';
+
 const state = {
   data: null,
   dialect: localStorage.getItem('dialect') || 'BrE',
@@ -766,6 +768,7 @@ function finishLesson() {
 
 function persistProgress() {
   localStorage.setItem('progress', JSON.stringify(state.progress));
+  cloud.pushSoon();
 }
 
 // ---------- Macro progress: mastery counts, group medals, study streak ----------
@@ -784,6 +787,7 @@ function markStudyToday() {
   const days = loadStudyDays();
   days.add(todayKey());
   saveStudyDays(days);
+  cloud.pushSoon();
 }
 function computeStreak() {
   const days = loadStudyDays();
@@ -1209,6 +1213,38 @@ function toggleMenu() {
 }
 
 // ============================================================
+// Cloud sync UI helpers
+// ============================================================
+
+function updateCloudUI(user) {
+  const label = $('#cloud-label');
+  const btn = $('#cloud-btn');
+  if (!label || !btn) return;
+  if (user) {
+    const name = user.displayName || user.email || 'účet';
+    label.textContent = `Odhlásit (${name})`;
+    btn.classList.add('signed-in');
+  } else {
+    label.textContent = 'Přihlásit se přes Google';
+    btn.classList.remove('signed-in');
+  }
+}
+
+function updateSyncStatus(status) {
+  const dot = $('#cloud-status');
+  if (!dot) return;
+  dot.dataset.status = status;
+  const titles = {
+    idle: 'cloud sync vypnutý',
+    'signing-in': 'přihlašování…',
+    syncing: 'synchronizace…',
+    synced: 'synchronizováno',
+    error: 'chyba synchronizace',
+  };
+  dot.title = titles[status] || status;
+}
+
+// ============================================================
 // Init
 // ============================================================
 
@@ -1223,6 +1259,21 @@ async function init() {
   renderFlashcards();
   renderSectionChips($('#quiz-filter'), state.quiz.selectedSections);
   renderStatsStrip();
+
+  // Cloud sync wiring
+  cloud.setListeners({
+    onUser: (user) => updateCloudUI(user),
+    onSync: (status) => updateSyncStatus(status),
+  });
+  document.addEventListener('cloud-merged', () => {
+    state.progress = JSON.parse(localStorage.getItem('progress') || '{}');
+    renderLessonPicker();
+    renderStatsStrip();
+  });
+  $('#cloud-btn').addEventListener('click', () => {
+    if (cloud.getCurrentUser()) cloud.signOutNow();
+    else cloud.signIn();
+  });
 
   // Menu
   $('#menu-btn').addEventListener('click', toggleMenu);

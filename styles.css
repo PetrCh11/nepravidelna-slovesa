@@ -2343,6 +2343,36 @@ body {
 }
 .next-btn-corner:hover { box-shadow: 0 6px 18px rgba(255, 90, 60, 0.36); }
 .next-btn-corner:active { transform: scale(0.97); }
+
+/* ----- Cloud sync menu item ----- */
+.menu-divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 6px 8px;
+}
+.menu-cloud {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.menu-cloud .cloud-line { display: inline-flex; align-items: center; gap: 8px; }
+.menu-cloud .cloud-status {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.menu-cloud .cloud-status[data-status="synced"]    { background: hsl(140 65% 50%); }
+.menu-cloud .cloud-status[data-status="syncing"]   { background: hsl(45 95% 55%); animation: cloud-pulse 1.2s ease-in-out infinite; }
+.menu-cloud .cloud-status[data-status="signing-in"]{ background: hsl(45 95% 55%); animation: cloud-pulse 1.2s ease-in-out infinite; }
+.menu-cloud .cloud-status[data-status="error"]     { background: hsl(0 70% 55%); }
+.menu-cloud .cloud-status[data-status="idle"]      { background: var(--text-muted); opacity: 0.4; }
+@keyframes cloud-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.4); opacity: 0.6; }
+}
+.menu-cloud.signed-in .cloud-icon { filter: hue-rotate(170deg); }
 [data-theme="dark"] .give-up-btn:hover { background: rgba(255,255,255,0.06); }
 .quiz-fill-inputs input.gave-up {
   border-color: rgba(245, 158, 11, 0.7);
