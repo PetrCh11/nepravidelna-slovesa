@@ -81,6 +81,11 @@ function mergeIntoLocal(remote) {
   const remoteProgress = remote.progress || {};
   const remoteDays = new Set(remote.studyDays || []);
 
+  // Premium flag is server-authoritative (set by Stripe webhook). Always reflect remote value.
+  if (typeof remote.premium === 'boolean') {
+    localStorage.setItem('premium', remote.premium ? 'true' : 'false');
+  }
+
   // Per-verb LWW by lastSeen
   const merged = {};
   let shouldPush = false;

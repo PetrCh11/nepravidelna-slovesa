@@ -4,6 +4,9 @@
 
 import * as cloud from './cloud.js';
 
+// Subsections free without premium. Premium unlocks all 106 verbs across all groups.
+const FREE_SUB_IDS = new Set(['1.1.0', '1.2.1', '1.2.5']);
+
 const state = {
   data: null,
   dialect: localStorage.getItem('dialect') || 'BrE',
@@ -12,6 +15,7 @@ const state = {
   lesson: null, // lesson state when active
   quiz: { pool: [], idx: 0, score: 0, total: 0, type: 'mixed', selectedSections: new Set(), review: [] },
   progress: JSON.parse(localStorage.getItem('progress') || '{}'), // { inf: {status, lastSeen, attempts} }
+  premium: localStorage.getItem('premium') === 'true',
 };
 
 const $ = (s) => document.querySelector(s);
@@ -138,6 +142,8 @@ function renderLessonPicker() {
       const progress = subProgress(sub);
       const allMastered = sub.verbs.every((v) => state.progress[v.inf]?.status === 'green');
       if (allMastered) card.classList.add('group-card-mastered');
+      const isLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
+      if (isLocked) card.classList.add('group-card-locked');
       const previewVerbs = sub.verbs.slice(0, 8);
       const previewHtml = previewVerbs.map((v) => `
         <span class="group-preview-verb">
@@ -147,6 +153,7 @@ function renderLessonPicker() {
       `).join('');
       card.innerHTML = `
         ${allMastered ? '<span class="group-medal" title="Všechna slovesa zvládnuta!">🏅</span>' : ''}
+        ${isLocked ? '<span class="group-lock" title="Pouze pro Premium">🔒</span>' : ''}
         <div class="group-card-top">
           <span class="subsection-id">${sub.id}</span>
           <span class="subsection-pattern">${sub.pattern}</span>
@@ -159,7 +166,10 @@ function renderLessonPicker() {
           ${progress.red ? `<span class="dot red" title="bojuje: ${progress.red}"></span>${progress.red}` : ''}
         </div>
       `;
-      card.addEventListener('click', () => startLesson(sub));
+      card.addEventListener('click', () => {
+        if (isLocked) showPaywall(sub);
+        else startLesson(sub);
+      });
       c.appendChild(card);
     });
   });
@@ -1230,6 +1240,21 @@ function updateCloudUI(user) {
   }
 }
 
+function showPaywall(sub) {
+  const m = $('#paywall');
+  m.classList.remove('hidden');
+  // Phase 2 will hook these to Stripe Checkout. For now, log + alert.
+  m.querySelectorAll('.paywall-option').forEach((btn) => {
+    btn.onclick = () => {
+      const plan = btn.dataset.plan;
+      console.log('Paywall plan selected:', plan);
+      alert(`Stripe checkout (${plan}) — bude integrováno ve Fázi 2.\nPro testování si můžeš v konzoli pustit:\n  state.premium = true; localStorage.setItem('premium','true'); renderLessonPicker();`);
+    };
+  });
+  m.querySelector('#paywall-close').onclick = () => m.classList.add('hidden');
+  m.onclick = (e) => { if (e.target === m) m.classList.add('hidden'); };
+}
+
 function updateSyncStatus(status) {
   const dot = $('#cloud-status');
   if (!dot) return;
@@ -1267,6 +1292,7 @@ async function init() {
   });
   document.addEventListener('cloud-merged', () => {
     state.progress = JSON.parse(localStorage.getItem('progress') || '{}');
+    state.premium = localStorage.getItem('premium') === 'true';
     renderLessonPicker();
     renderStatsStrip();
   });
