@@ -7,6 +7,13 @@ import * as cloud from './cloud.js';
 // Subsections free without premium. Premium unlocks all 106 verbs across all groups.
 const FREE_SUB_IDS = new Set(['1.1.0', '1.2.1', '1.2.5']);
 
+// Stripe / backend config — backend URL set after Railway deploy
+const BACKEND_URL = ''; // e.g. 'https://slovesa-backend-production.up.railway.app'
+const STRIPE_PRICES = {
+  lifetime: { id: 'price_1TTHfv2OnsjUwFrwzP8rr2uF', mode: 'payment' },     // 149 Kč one-time
+  monthly:  { id: 'price_1TTHgw2OnsjUwFrwF1uEsLFO', mode: 'subscription' }, // 49 Kč/mo
+};
+
 const state = {
   data: null,
   dialect: localStorage.getItem('dialect') || 'BrE',
@@ -1243,16 +1250,60 @@ function updateCloudUI(user) {
 function showPaywall(sub) {
   const m = $('#paywall');
   m.classList.remove('hidden');
-  // Phase 2 will hook these to Stripe Checkout. For now, log + alert.
   m.querySelectorAll('.paywall-option').forEach((btn) => {
-    btn.onclick = () => {
-      const plan = btn.dataset.plan;
-      console.log('Paywall plan selected:', plan);
-      alert(`Stripe checkout (${plan}) — bude integrováno ve Fázi 2.\nPro testování si můžeš v konzoli pustit:\n  state.premium = true; localStorage.setItem('premium','true'); renderLessonPicker();`);
-    };
+    btn.onclick = () => startCheckout(btn.dataset.plan, btn);
   });
   m.querySelector('#paywall-close').onclick = () => m.classList.add('hidden');
   m.onclick = (e) => { if (e.target === m) m.classList.add('hidden'); };
+}
+
+async function startCheckout(plan, btn) {
+  const price = STRIPE_PRICES[plan];
+  if (!price) return;
+  if (!BACKEND_URL) {
+    alert('Stripe backend zatím není nasazen. Pro testování zapni premium ručně v konzoli:\n  state.premium = true; localStorage.setItem("premium","true"); renderLessonPicker();');
+    return;
+  }
+  const user = cloud.getCurrentUser();
+  if (!user) {
+    alert('Pro nákup se prosím nejdřív přihlas přes Google: Menu (☰) → „Přihlásit se přes Google".');
+    return;
+  }
+  const orig = btn?.innerHTML;
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Načítám…'; }
+  try {
+    const resp = await fetch(`${BACKEND_URL}/create-checkout-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        priceId: price.id,
+        uid: user.uid,
+        mode: price.mode,
+        returnUrl: window.location.origin + window.location.pathname,
+        email: user.email,
+      }),
+    });
+    const data = await resp.json();
+    if (data.url) window.location.href = data.url;
+    else throw new Error(data.error || 'unknown error');
+  } catch (e) {
+    alert('Chyba při zahájení platby: ' + e.message);
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+function handlePaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('premium');
+  if (!status) return;
+  // Clean URL so refresh doesn't re-trigger
+  const url = window.location.origin + window.location.pathname;
+  history.replaceState({}, '', url);
+  if (status === 'success') {
+    setTimeout(() => alert('🎉 Platba proběhla! Premium se aktivuje za pár sekund (sync z cloudu). Pokud nevidíš změnu do minuty, refreshni stránku.'), 100);
+  } else if (status === 'cancel') {
+    setTimeout(() => alert('Platba zrušena. Můžeš se k ní vrátit kdykoli z paywall okna.'), 100);
+  }
 }
 
 function updateSyncStatus(status) {
@@ -1344,6 +1395,9 @@ async function init() {
       else if (next && !next.classList.contains('hidden')) { e.preventDefault(); next.click(); }
     }
   });
+
+  // Handle Stripe Checkout return (?premium=success|cancel)
+  handlePaymentReturn();
 
   // Register service worker for PWA (offline)
   if ('serviceWorker' in navigator) {
