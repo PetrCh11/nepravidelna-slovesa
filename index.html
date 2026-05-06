@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-  <title>Uč se! – nepravidelná slovesa</title>
-  <meta name="description" content="Aplikace pro učení anglických nepravidelných sloves podle výslovnostních skupin." />
+  <title>Nepravidelná slovesa – jednou a provždy</title>
+  <meta name="description" content="Nauč se 106 anglických nepravidelných sloves jednou a provždy. Chytrý systém tě provede od seznámení po automatické zvládnutí — bez biflování, podle výslovnostních vzorců." />
   <meta name="theme-color" content="#5dc9bd" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Uč se!" />
+  <meta name="apple-mobile-web-app-title" content="Slovesa" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="icon" type="image/png" href="icon-192.png" />
@@ -17,7 +17,7 @@
 <body>
   <header class="app-header">
     <div class="container header-inner">
-      <h1 class="logo">🎯 Slovesa</h1>
+      <h1 class="logo"><span class="logo-emoji">🎯</span><span class="logo-text"><span class="logo-line1">Nepravidelná slovesa</span><span class="logo-line2">jednou a provždy</span></span></h1>
       <div class="header-controls">
         <label class="dialect-switch" title="Britská vs. americká angličtina">
           <select id="dialect-select" aria-label="Varianta angličtiny">
@@ -52,9 +52,15 @@
     <section id="view-lesson" class="view active">
       <!-- Step 0: pick group -->
       <div class="lesson-picker">
-        <div class="intro">
-          <h2>Vyber skupinu sloves</h2>
-          <p>Každá skupina má společný výslovnostní vzorec. Lekce tě provede dvěma fázemi: <strong>seznámení → psaní</strong>.</p>
+        <div class="intro intro-hero">
+          <h2>Konečně si je zapamatuješ. Bez biflování.</h2>
+          <p class="hero-lead">Místo plochého seznamu 106 sloves tě provedeme <strong>24 výslovnostními skupinami</strong>, ve kterých se slovesa chovají stejně. Když pochopíš jeden vzorec, zvládneš celou skupinu.</p>
+          <ul class="hero-bullets">
+            <li>🧠 <strong>Seznámení</strong> — projdeš si slovesa s českým překladem a zvukem.</li>
+            <li>✍️ <strong>Procvičení ve 3 krocích</strong> — od pořadí přes opravu chyb až po zamíchaný finále.</li>
+            <li>🏅 <strong>Pokrok, který vidíš</strong> — chipy, medaile za skupiny, denní streak.</li>
+          </ul>
+          <p class="hero-foot">Vyber si skupinu níže a začni. Zdarma máš 3 ukázkové skupiny.</p>
         </div>
         <div id="stats-strip" class="stats-strip"></div>
         <div id="lesson-groups"></div>
@@ -176,6 +182,10 @@
       <div class="paywall-emoji">🔓</div>
       <h2 class="paywall-title" id="paywall-title">Odemkni všechna slovesa</h2>
       <p class="paywall-sub">Zdarma máš 3 výslovnostní skupiny (15 sloves). Premium ti otevře všech <strong>106 sloves</strong> ve 24 skupinách s plně strukturovanou lekcí.</p>
+      <div class="paywall-signin hidden" id="paywall-signin">
+        <p class="paywall-signin-text">📌 Pro zakoupení se nejdřív přihlas — abychom ti premium svázali s účtem a fungoval i na jiných zařízeních.</p>
+        <button class="btn btn-primary paywall-signin-btn" id="paywall-signin-btn">Přihlásit se přes Google</button>
+      </div>
       <div class="paywall-options">
         <button class="paywall-option paywall-option-primary" data-plan="lifetime">
           <div class="paywall-option-name">Jednorázově</div>
@@ -191,6 +201,9 @@
       <p class="paywall-fineprint">Cloud sync + Flashcards + Volný kvíz zůstává zdarma.</p>
     </div>
   </div>
+
+  <!-- Toast notifications -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <footer class="app-footer">
     <div class="container">

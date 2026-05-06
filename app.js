@@ -522,6 +522,7 @@ function stage2AdvanceToStep3() {
     const p = L.perVerb.get(v.inf);
     p.step3Streak = 0;
     p.step3Attempts = 0;
+    p.step3HadError = false;
   });
   $('#lesson-stage-intro').classList.remove('hidden');
   $('#stage-intro-emoji').textContent = '🔀';
@@ -538,9 +539,9 @@ function stage2Finish() {
   const L = state.lesson;
   L.verbs.forEach((v) => {
     const p = L.perVerb.get(v.inf);
-    // Green for verbs that aced step 1 and got step 3 right on first try (fast-track exit); yellow otherwise.
-    const fastTrack = p.step1Perfect && p.step3Attempts === 1 && p.step3Streak === 0;
-    p.status = fastTrack ? 'green' : 'yellow';
+    // Green = sloveso vyřešeno bez chyby ve fázi 3 (fast-track NEBO čistý 2× streak).
+    // Yellow = sloveso sice nakonec zvládnuto, ale s chybou cestou.
+    p.status = p.step3HadError ? 'yellow' : 'green';
   });
   finishLesson();
 }
@@ -682,6 +683,7 @@ function askStage2Verb(verb, step) {
         }
       } else {
         p.step3Streak = 0;
+        p.step3HadError = true;
         L.stage2Q.push(L.stage2Q.shift());
         msg = '❌ Streak vynulován. Zkusíme později znovu.';
       }
@@ -724,9 +726,24 @@ function askStage2Verb(verb, step) {
     q.querySelector('#s2-check').addEventListener('click', finalize);
   }
 
-  // Give-up: fill any empty input with the correct form, count all unfilled fields as wrong, then finalize
+  // Give-up: requires double-tap to prevent accidental triggers (especially on mobile)
+  let giveUpArmed = false;
+  let giveUpResetTimer = null;
   giveUpBtn?.addEventListener('click', () => {
     if (finalized) return;
+    if (!giveUpArmed) {
+      giveUpArmed = true;
+      const orig = giveUpBtn.textContent;
+      giveUpBtn.textContent = 'Opravdu? Klikni znovu 😭';
+      giveUpBtn.classList.add('armed');
+      giveUpResetTimer = setTimeout(() => {
+        giveUpArmed = false;
+        giveUpBtn.textContent = orig;
+        giveUpBtn.classList.remove('armed');
+      }, 2500);
+      return;
+    }
+    if (giveUpResetTimer) clearTimeout(giveUpResetTimer);
     inputs.forEach((inp) => {
       const k = inp.dataset.form;
       if (k in fieldResults) return;
@@ -897,7 +914,10 @@ function againOnlyProblem() {
   // restart with only yellow + red verbs
   const L = state.lesson;
   const keep = L.verbs.filter((v) => L.perVerb.get(v.inf).status !== 'green');
-  if (keep.length === 0) { exitLesson(); return; }
+  if (keep.length === 0) {
+    toast('🎉 Skvělé! Žádná problematická slovesa — celou skupinu máš zvládnutou.', 'success');
+    return;
+  }
   const pseudoSub = { ...L.sub, verbs: keep };
   startLesson(pseudoSub);
 }
@@ -1250,6 +1270,35 @@ function updateCloudUI(user) {
 function showPaywall(sub) {
   const m = $('#paywall');
   m.classList.remove('hidden');
+  // Inline sign-in prompt if not signed in
+  const signin = m.querySelector('#paywall-signin');
+  const options = m.querySelector('.paywall-options');
+  const refreshSignInState = () => {
+    const user = cloud.getCurrentUser();
+    if (user) {
+      signin.classList.add('hidden');
+      options.classList.remove('disabled');
+    } else {
+      signin.classList.remove('hidden');
+      options.classList.add('disabled');
+    }
+  };
+  refreshSignInState();
+  m._refreshSignIn = refreshSignInState;
+  const signBtn = m.querySelector('#paywall-signin-btn');
+  signBtn.onclick = async () => {
+    signBtn.disabled = true;
+    signBtn.textContent = 'Přihlašuji…';
+    try {
+      await cloud.signIn();
+      refreshSignInState();
+    } catch (e) {
+      toast('Přihlášení selhalo: ' + (e?.message || e), 'error');
+    } finally {
+      signBtn.disabled = false;
+      signBtn.textContent = 'Přihlásit se přes Google';
+    }
+  };
   m.querySelectorAll('.paywall-option').forEach((btn) => {
     btn.onclick = () => startCheckout(btn.dataset.plan, btn);
   });
@@ -1257,16 +1306,36 @@ function showPaywall(sub) {
   m.onclick = (e) => { if (e.target === m) m.classList.add('hidden'); };
 }
 
+// Toast notifications (replaces window.alert)
+function toast(message, type = 'info', duration = 4500) {
+  const c = document.getElementById('toast-container');
+  if (!c) { console.log('[toast]', message); return; }
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = message;
+  c.appendChild(t);
+  // Animate in
+  requestAnimationFrame(() => t.classList.add('show'));
+  const close = () => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 250);
+  };
+  t.addEventListener('click', close);
+  setTimeout(close, duration);
+}
+
 async function startCheckout(plan, btn) {
   const price = STRIPE_PRICES[plan];
   if (!price) return;
   if (!BACKEND_URL) {
-    alert('Stripe backend zatím není nasazen. Pro testování zapni premium ručně v konzoli:\n  state.premium = true; localStorage.setItem("premium","true"); renderLessonPicker();');
+    toast('Backend zatím není dostupný. Zkus to prosím za chvíli.', 'error');
     return;
   }
   const user = cloud.getCurrentUser();
   if (!user) {
-    alert('Pro nákup se prosím nejdřív přihlas přes Google: Menu (☰) → „Přihlásit se přes Google".');
+    // Show inline sign-in prompt in paywall instead of alert
+    const m = $('#paywall');
+    if (m && m._refreshSignIn) m._refreshSignIn();
     return;
   }
   const orig = btn?.innerHTML;
@@ -1287,7 +1356,7 @@ async function startCheckout(plan, btn) {
     if (data.url) window.location.href = data.url;
     else throw new Error(data.error || 'unknown error');
   } catch (e) {
-    alert('Chyba při zahájení platby: ' + e.message);
+    toast('Chyba při zahájení platby: ' + e.message, 'error');
     if (btn) { btn.disabled = false; btn.innerHTML = orig; }
   }
 }
@@ -1300,9 +1369,9 @@ function handlePaymentReturn() {
   const url = window.location.origin + window.location.pathname;
   history.replaceState({}, '', url);
   if (status === 'success') {
-    setTimeout(() => alert('🎉 Platba proběhla! Premium se aktivuje za pár sekund (sync z cloudu). Pokud nevidíš změnu do minuty, refreshni stránku.'), 100);
+    setTimeout(() => toast('🎉 Platba proběhla! Premium se aktivuje během několika sekund.', 'success', 6000), 300);
   } else if (status === 'cancel') {
-    setTimeout(() => alert('Platba zrušena. Můžeš se k ní vrátit kdykoli z paywall okna.'), 100);
+    setTimeout(() => toast('Platba zrušena. Můžeš se k ní kdykoli vrátit.', 'info'), 300);
   }
 }
 

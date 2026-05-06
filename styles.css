@@ -73,10 +73,28 @@ body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inse
   flex-wrap: wrap;
 }
 .logo {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.1;
+}
+.logo-emoji { font-size: 1.4rem; }
+.logo-text { display: inline-flex; flex-direction: column; }
+.logo-line1 { font-size: 1rem; }
+.logo-line2 {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent, #5dc9bd);
+  letter-spacing: 0.01em;
+}
+@media (max-width: 480px) {
+  .logo-line1 { font-size: 0.92rem; }
+  .logo-line2 { font-size: 0.65rem; }
+  .logo-emoji { font-size: 1.2rem; }
 }
 .header-controls { display: flex; gap: 8px; align-items: center; margin-left: auto; }
 .menu-wrap { position: relative; }
@@ -2772,3 +2790,114 @@ body, .text { color: var(--text); }
   }
   ::-webkit-scrollbar-thumb:hover { background: rgba(120, 100, 160, 0.4); background-clip: padding-box; }
 }
+
+/* ================== Hero intro ================== */
+.intro-hero h2 {
+  font-size: 1.85rem;
+  line-height: 1.2;
+  margin: 0 0 10px;
+  background: linear-gradient(135deg, #5dc9bd, #7c6ff5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero-lead {
+  font-size: 1.02rem;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 0 0 16px;
+}
+.hero-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: grid;
+  gap: 10px;
+}
+.hero-bullets li {
+  background: var(--card-bg, rgba(255,255,255,0.6));
+  border: 1px solid var(--border, rgba(0,0,0,0.06));
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+.hero-foot {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 22px;
+}
+@media (max-width: 480px) {
+  .intro-hero h2 { font-size: 1.5rem; }
+  .hero-lead { font-size: 0.95rem; }
+  .hero-bullets li { font-size: 0.88rem; padding: 9px 12px; }
+}
+
+/* ================== Paywall sign-in inline ================== */
+.paywall-signin {
+  background: linear-gradient(135deg, rgba(93,201,189,0.12), rgba(124,111,245,0.12));
+  border: 1px solid rgba(93,201,189,0.3);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 0 0 16px;
+  text-align: center;
+}
+.paywall-signin-text {
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+.paywall-signin-btn {
+  width: 100%;
+}
+.paywall-options.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  filter: grayscale(0.4);
+}
+
+/* ================== Give-up armed state ================== */
+.give-up-btn.armed {
+  background: #f59e0b !important;
+  color: white !important;
+  animation: giveup-pulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes giveup-pulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.04); }
+}
+
+/* ================== Toast notifications ================== */
+.toast-container {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  width: min(92vw, 480px);
+}
+.toast {
+  background: rgba(30, 30, 40, 0.95);
+  color: white;
+  padding: 13px 18px;
+  border-radius: 12px;
+  font-size: 0.94rem;
+  line-height: 1.4;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-success { background: rgba(34, 139, 96, 0.95); }
+.toast-error { background: rgba(190, 60, 60, 0.95); }
+.toast-info { background: rgba(50, 90, 160, 0.95); }

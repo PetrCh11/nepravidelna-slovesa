@@ -1,7 +1,7 @@
 {
-  "name": "Uč se! Nepravidelná slovesa",
-  "short_name": "Uč se!",
-  "description": "Efektivní učení anglických nepravidelných sloves podle výslovnostních skupin",
+  "name": "Nepravidelná slovesa – jednou a provždy",
+  "short_name": "Slovesa",
+  "description": "Nauč se 106 anglických nepravidelných sloves jednou a provždy — chytrý systém tě provede od seznámení po automatické zvládnutí.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
