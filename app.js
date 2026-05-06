@@ -8,7 +8,7 @@ import * as cloud from './cloud.js';
 const FREE_SUB_IDS = new Set(['1.1.0', '1.2.1', '1.2.5']);
 
 // Stripe / backend config — backend URL set after Railway deploy
-const BACKEND_URL = ''; // e.g. 'https://slovesa-backend-production.up.railway.app'
+const BACKEND_URL = 'https://nepravidelna-slovesa-production.up.railway.app';
 const STRIPE_PRICES = {
   lifetime: { id: 'price_1TTHfv2OnsjUwFrwzP8rr2uF', mode: 'payment' },     // 149 Kč one-time
   monthly:  { id: 'price_1TTHgw2OnsjUwFrwF1uEsLFO', mode: 'subscription' }, // 49 Kč/mo
