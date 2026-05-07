@@ -1415,14 +1415,33 @@ function toggleMenu() {
 function updateCloudUI(user) {
   const label = $('#cloud-label');
   const btn = $('#cloud-btn');
-  if (!label || !btn) return;
-  if (user) {
-    const name = user.displayName || user.email || 'účet';
-    label.textContent = `Odhlásit (${name})`;
-    btn.classList.add('signed-in');
-  } else {
-    label.textContent = 'Přihlásit se přes Google';
-    btn.classList.remove('signed-in');
+  if (label && btn) {
+    if (user) {
+      const name = user.displayName || user.email || 'účet';
+      label.textContent = `Odhlásit (${name})`;
+      btn.classList.add('signed-in');
+    } else {
+      label.textContent = 'Přihlásit se přes Google';
+      btn.classList.remove('signed-in');
+    }
+  }
+  // Header Google button
+  const gBtn = $('#google-btn');
+  const gLabel = $('#google-btn-label');
+  if (gBtn && gLabel) {
+    if (user) {
+      // Show short first name + signed-in style
+      const first = (user.displayName || user.email || 'účet').split(' ')[0].split('@')[0];
+      gLabel.textContent = first.length > 12 ? first.slice(0, 12) + '…' : first;
+      gBtn.classList.add('signed-in');
+      gBtn.setAttribute('aria-label', `Přihlášen jako ${user.displayName || user.email}. Kliknutím odhlásit.`);
+      gBtn.title = `Přihlášen: ${user.displayName || user.email} — klikni pro odhlášení`;
+    } else {
+      gLabel.textContent = 'Přihlásit';
+      gBtn.classList.remove('signed-in');
+      gBtn.setAttribute('aria-label', 'Přihlásit se přes Google');
+      gBtn.title = 'Přihlásit se přes Google';
+    }
   }
 }
 
@@ -1574,6 +1593,10 @@ async function init() {
     state.premium = localStorage.getItem('premium') === 'true';
     renderLessonPicker();
     renderStatsStrip();
+  });
+  $('#google-btn')?.addEventListener('click', () => {
+    if (cloud.getCurrentUser()) cloud.signOutNow();
+    else cloud.signIn().catch((e) => toast('Přihlášení selhalo: ' + (e?.message || e), 'error'));
   });
   $('#cloud-btn').addEventListener('click', () => {
     if (cloud.getCurrentUser()) cloud.signOutNow();
