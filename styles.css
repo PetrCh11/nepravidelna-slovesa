@@ -82,6 +82,26 @@ body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inse
   gap: 8px;
   line-height: 1.1;
 }
+.logo-btn {
+  background: none;
+  border: 0;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  font: inherit;
+  transition: background-color 0.18s ease, transform 0.12s ease;
+}
+.logo-btn:hover { background: rgba(120, 100, 160, 0.10); }
+.logo-btn:active { transform: scale(0.97); }
+.logo-btn:focus-visible {
+  outline: 2px solid var(--accent, #5dc9bd);
+  outline-offset: 2px;
+}
 .logo-emoji { font-size: 1.4rem; }
 .logo-img {
   width: 34px;

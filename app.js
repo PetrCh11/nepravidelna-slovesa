@@ -1589,6 +1589,19 @@ async function init() {
     }
   });
   $$('.menu-item').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+  // Logo → return to home (lesson picker)
+  $('#logo-home')?.addEventListener('click', () => {
+    // If a lesson is in progress, just hide it and show the picker (snapshot already saved)
+    if (state.lesson && !state.lesson.done) {
+      $('.lesson-active').classList.add('hidden');
+      $('.lesson-results').classList.add('hidden');
+      $('.lesson-picker').classList.remove('hidden');
+      state.lesson = null;
+      renderLessonPicker();
+      renderStatsStrip();
+    }
+    setView('lesson');
+  });
 
   // Theme & dialect
   $('#theme-toggle').addEventListener('click', toggleTheme);
