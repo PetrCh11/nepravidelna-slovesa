@@ -124,6 +124,7 @@ function setView(view) {
 // ============================================================
 
 function renderLessonPicker() {
+  renderResumeCard();
   const c = $('#lesson-groups');
   c.innerHTML = '';
   let subIdx = 0;
@@ -212,12 +213,163 @@ function startLesson(sub) {
     markedHard: new Set(),
     done: false,
   };
+  clearActiveLesson(); // fresh start — wipe any previous resume snapshot for any group
   $('.lesson-picker').classList.add('hidden');
   $('.lesson-results').classList.add('hidden');
   $('.lesson-active').classList.remove('hidden');
   $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sub.id)} 65% 45%)">${sub.id}</span> ${sub.pattern}`;
   document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sub.id));
   showStageIntro(1);
+}
+
+// ============================================================
+// Resume / persistence of in-progress lesson
+// ============================================================
+const ACTIVE_LESSON_KEY = 'activeLesson';
+
+function persistActiveLesson() {
+  const L = state.lesson;
+  if (!L || L.done) return;
+  const perVerb = {};
+  L.perVerb.forEach((p, inf) => {
+    perVerb[inf] = {
+      ...p,
+      step1Wrong: p.step1Wrong instanceof Set ? Array.from(p.step1Wrong) : (p.step1Wrong || []),
+    };
+  });
+  const data = {
+    subId: L.sub.id,
+    subPattern: L.sub.pattern,
+    stage: L.stage,
+    stage2Step: L.stage2Step || null,
+    stage2Q: (L.stage2Q || []).map((v) => v.inf),
+    markedHard: Array.from(L.markedHard || []),
+    perVerb,
+    updatedAt: Date.now(),
+  };
+  try { localStorage.setItem(ACTIVE_LESSON_KEY, JSON.stringify(data)); } catch {}
+}
+
+function clearActiveLesson() {
+  try { localStorage.removeItem(ACTIVE_LESSON_KEY); } catch {}
+}
+
+function getActiveLesson() {
+  try {
+    const raw = localStorage.getItem(ACTIVE_LESSON_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function findSubById(subId) {
+  for (const sec of state.data.sections) {
+    for (const sub of sec.subsections) {
+      if (sub.id === subId) return sub;
+    }
+  }
+  return null;
+}
+
+function renderResumeCard() {
+  const picker = document.querySelector('.lesson-picker');
+  if (!picker) return;
+  const old = picker.querySelector('.resume-card');
+  if (old) old.remove();
+  const saved = getActiveLesson();
+  if (!saved) return;
+  const sub = findSubById(saved.subId);
+  if (!sub) { clearActiveLesson(); return; }
+  const isLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
+  const stageLabels = { 1: 'Fáze 1 · Seznámení', 1.5: 'Mezifáze · Označ obtížná', 2: 'Fáze 2 · Psaní' };
+  const stageLabel = stageLabels[saved.stage] || 'rozdělané cvičení';
+  const stepLabels = { 1: '1. krok – v pořadí', 2: '2. krok – oprav chyby', 3: '3. krok – zamícháno' };
+  const stepLabel = saved.stage === 2 && saved.stage2Step ? ` · ${stepLabels[saved.stage2Step]}` : '';
+  const card = document.createElement('div');
+  card.className = 'resume-card';
+  card.style.setProperty('--sub-hue', hueOf(sub.id));
+  card.innerHTML = `
+    <div class="resume-icon">⏯️</div>
+    <div class="resume-text">
+      <div class="resume-title">Máš rozdělané cvičení</div>
+      <div class="resume-meta">
+        <span class="subsection-id">${sub.id}</span>
+        <span class="resume-pattern">${sub.pattern}</span>
+      </div>
+      <div class="resume-stage">${stageLabel}${stepLabel}</div>
+    </div>
+    <div class="resume-actions">
+      <button class="btn btn-primary" id="resume-continue">Pokračovat</button>
+      <button class="btn btn-secondary" id="resume-restart">Začít znovu</button>
+    </div>
+  `;
+  // Insert after stats-strip (or at top of picker)
+  const statsStrip = picker.querySelector('#stats-strip');
+  if (statsStrip && statsStrip.nextSibling) {
+    picker.insertBefore(card, statsStrip.nextSibling);
+  } else {
+    picker.appendChild(card);
+  }
+  card.querySelector('#resume-continue').addEventListener('click', () => {
+    if (isLocked) { showPaywall(sub); return; }
+    resumeLesson(saved);
+  });
+  card.querySelector('#resume-restart').addEventListener('click', () => {
+    if (isLocked) { showPaywall(sub); return; }
+    clearActiveLesson();
+    startLesson(sub);
+  });
+}
+
+function resumeLesson(saved) {
+  const sub = findSubById(saved.subId);
+  if (!sub) { clearActiveLesson(); return; }
+  const verbs = sub.verbs.map((v) => ({ ...v, subId: sub.id }));
+  const perVerb = new Map();
+  verbs.forEach((v) => {
+    const sp = saved.perVerb && saved.perVerb[v.inf] ? saved.perVerb[v.inf] : {};
+    perVerb.set(v.inf, {
+      status: 'pending', stage1: null, stage2R1: null, stage2R2: null, stage2Correct: 0, hard: false,
+      ...sp,
+      step1Wrong: new Set(sp.step1Wrong || []),
+    });
+  });
+  state.lesson = {
+    sub, verbs,
+    stage: saved.stage,
+    perVerb,
+    stage2Round: 1,
+    stage2Step: saved.stage2Step || null,
+    stage2Q: (saved.stage2Q || []).map((inf) => verbs.find((v) => v.inf === inf)).filter(Boolean),
+    markedHard: new Set(saved.markedHard || []),
+    done: false,
+  };
+  $('.lesson-picker').classList.add('hidden');
+  $('.lesson-results').classList.add('hidden');
+  $('.lesson-active').classList.remove('hidden');
+  $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sub.id)} 65% 45%)">${sub.id}</span> ${sub.pattern}`;
+  document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sub.id));
+  if (saved.stage === 1) {
+    showStageIntro(1);
+  } else if (saved.stage === 1.5) {
+    stage1Mark();
+  } else if (saved.stage === 2) {
+    // Skip the stage intro; jump directly back to the next pending question
+    $('#lesson-stage-intro').classList.add('hidden');
+    renderVerbChips();
+    renderStepPills(saved.stage2Step || 1);
+    if (state.lesson.stage2Q.length === 0) {
+      // Edge case: queue empty for current step → advance
+      if (saved.stage2Step === 1) stage2AdvanceToStep2();
+      else if (saved.stage2Step === 2) stage2AdvanceToStep3();
+      else if (saved.stage2Step === 3) stage2Finish();
+    } else {
+      stage2Next();
+    }
+  }
+  updateStageDots();
+  updateLessonBar();
+  toast('Pokračujeme tam, kde jsi skončil(a). 👍', 'info', 2500);
 }
 
 function hueOf(subId) {
@@ -338,6 +490,7 @@ function stage1Study() {
   q.querySelector('#study-done').addEventListener('click', () => {
     // Go straight to interlude (mezifáze) — no extra intro screen
     L.stage = 1.5;
+    persistActiveLesson();
     stage1Mark();
   });
   updateStageDots();
@@ -402,6 +555,7 @@ function stage1Mark() {
       }
       $('#mark-counter').textContent = L.markedHard.size;
       updateLessonBar();
+      persistActiveLesson();
     });
   });
   q.querySelector('#mark-done').addEventListener('click', () => {
@@ -412,6 +566,7 @@ function stage1Mark() {
     showStageIntro(2);
     renderVerbChips();
     renderStepPills(1);
+    persistActiveLesson();
   });
   updateStageDots();
   updateLessonBar();
@@ -512,6 +667,7 @@ function stage2AdvanceToStep2() {
   updateLessonBar();
   renderVerbChips();
   renderStepPills(2);
+  persistActiveLesson();
 }
 
 function stage2AdvanceToStep3() {
@@ -533,6 +689,7 @@ function stage2AdvanceToStep3() {
   updateLessonBar();
   renderVerbChips();
   renderStepPills(3);
+  persistActiveLesson();
 }
 
 function stage2Finish() {
@@ -693,6 +850,7 @@ function askStage2Verb(verb, step) {
     fb.innerHTML = msg;
     fb.className = `q-feedback ${allRight ? 'correct' : 'wrong'}`;
     persistProgress();
+    persistActiveLesson();
     L.currentInf = null;
     renderVerbChips();
     const checkBtn = q.querySelector('#s2-check');
@@ -766,6 +924,7 @@ function askStage2Verb(verb, step) {
 function finishLesson() {
   const L = state.lesson;
   L.done = true;
+  clearActiveLesson(); // lesson finished — no resume needed
   // Save to progress
   L.perVerb.forEach((p, inf) => {
     state.progress[inf] = { status: p.status, lastSeen: Date.now() };

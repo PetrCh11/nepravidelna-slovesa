@@ -2879,6 +2879,61 @@ body, .text { color: var(--text); }
   to   { transform: scale(1.04); }
 }
 
+/* ================== Resume card (in-progress lesson) ================== */
+.resume-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  background: linear-gradient(135deg,
+    hsl(var(--sub-hue, 200) 70% 96%),
+    hsl(var(--sub-hue, 200) 70% 99%));
+  border: 1px solid hsl(var(--sub-hue, 200) 60% 70% / 0.55);
+  border-left: 5px solid hsl(var(--sub-hue, 200) 65% 55%);
+  border-radius: 16px;
+  padding: 14px 18px;
+  margin: 0 0 22px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+.resume-icon { font-size: 2rem; line-height: 1; }
+.resume-text { min-width: 0; }
+.resume-title { font-weight: 700; font-size: 1.02rem; margin: 0 0 4px; }
+.resume-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 4px; }
+.resume-meta .subsection-id {
+  background: hsl(var(--sub-hue, 200) 65% 45%);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.resume-pattern { font-size: 0.92rem; color: var(--text); }
+.resume-stage { font-size: 0.85rem; color: var(--text-muted); }
+.resume-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.resume-actions .btn { padding: 8px 14px; font-size: 0.9rem; }
+
+@media (max-width: 560px) {
+  .resume-card {
+    grid-template-columns: auto 1fr;
+    grid-template-areas: "icon text" "actions actions";
+    gap: 10px 12px;
+  }
+  .resume-icon { grid-area: icon; font-size: 1.6rem; }
+  .resume-text { grid-area: text; }
+  .resume-actions { grid-area: actions; justify-content: stretch; }
+  .resume-actions .btn { flex: 1; }
+}
+
+/* Dark mode */
+body.theme-dark .resume-card,
+[data-theme="dark"] .resume-card {
+  background: linear-gradient(135deg,
+    hsl(var(--sub-hue, 200) 35% 22%),
+    hsl(var(--sub-hue, 200) 35% 16%));
+  border-color: hsl(var(--sub-hue, 200) 50% 50% / 0.6);
+  border-left-color: hsl(var(--sub-hue, 200) 60% 55%);
+}
+
 /* ================== Toast notifications ================== */
 .toast-container {
   position: fixed;
