@@ -83,6 +83,17 @@ body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inse
   line-height: 1.1;
 }
 .logo-emoji { font-size: 1.4rem; }
+.logo-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+@media (max-width: 480px) {
+  .logo-img { width: 28px; height: 28px; border-radius: 7px; }
+}
 .logo-text { display: inline-flex; flex-direction: column; }
 .logo-line1 { font-size: 1rem; }
 .logo-line2 {
