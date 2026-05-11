@@ -279,6 +279,7 @@ function startSectionReview(sec) {
       step1Perfect: true,           // skip step-2 backtrack — we go straight to step 3
       step2Streak: 0, step2Cleared: true,
       step3Streak: 0, step3Attempts: 0, step3Cleared: false, step3HadError: false,
+      step3Wrong: 0, gaveUp: false,
     }])),
     stage2Round: 1,
     stage2Step: 3,
@@ -762,6 +763,8 @@ function stage2AdvanceToStep3() {
     p.step3Streak = 0;
     p.step3Attempts = 0;
     p.step3HadError = false;
+    p.step3Wrong = 0;
+    p.gaveUp = false;
   });
   $('#lesson-stage-intro').classList.remove('hidden');
   $('#stage-intro-emoji').textContent = '🔀';
@@ -779,9 +782,13 @@ function stage2Finish() {
   const L = state.lesson;
   L.verbs.forEach((v) => {
     const p = L.perVerb.get(v.inf);
-    // Green = sloveso vyřešeno bez chyby ve fázi 3 (fast-track NEBO čistý 2× streak).
-    // Yellow = sloveso sice nakonec zvládnuto, ale s chybou cestou.
-    p.status = p.step3HadError ? 'yellow' : 'green';
+    // Red    = student použil "Nevím" v 3. kroku, NEBO udělal 3+ chyb (sloveso fakt nesedí)
+    // Yellow = 1-2 chyby v 3. kroku, ale nakonec to dal
+    // Green  = 3. krok bez jediné chyby
+    const wrong = p.step3Wrong || 0;
+    if (p.gaveUp || wrong >= 3) p.status = 'red';
+    else if (wrong >= 1) p.status = 'yellow';
+    else p.status = 'green';
   });
   finishLesson();
 }
@@ -924,6 +931,7 @@ function askStage2Verb(verb, step) {
       } else {
         p.step3Streak = 0;
         p.step3HadError = true;
+        p.step3Wrong = (p.step3Wrong || 0) + 1;
         L.stage2Q.push(L.stage2Q.shift());
         msg = '❌ Streak vynulován. Zkusíme později znovu.';
       }
@@ -985,6 +993,8 @@ function askStage2Verb(verb, step) {
       return;
     }
     if (giveUpResetTimer) clearTimeout(giveUpResetTimer);
+    // Mark gave-up on the per-verb record so final status can become 'red'
+    if (step === 3) p.gaveUp = true;
     inputs.forEach((inp) => {
       const k = inp.dataset.form;
       if (k in fieldResults) return;
