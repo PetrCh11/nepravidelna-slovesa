@@ -1,5 +1,5 @@
 // Simple cache-first service worker for offline PWA use
-const CACHE = 'slovesa-v40';
+const CACHE = 'slovesa-v41';
 const ASSETS = [
   './',
   './index.html',

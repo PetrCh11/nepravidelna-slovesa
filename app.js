@@ -164,7 +164,7 @@ function renderLessonPicker() {
         showPaywall(lockedSub);
         return;
       }
-      startSectionReview(sec);
+      openSectionReviewChoice(sec);
     });
     sec.subsections.forEach((sub) => {
       const hue = Math.round((subIdx / totalSubs) * 360);
@@ -254,6 +254,8 @@ function startLesson(sub) {
 function openGroupStartChoice(sub) {
   const modal = $('#group-start-modal');
   if (!modal) { startLesson(sub); return; }
+  $('#gsm-emoji').textContent = '🔁';
+  $('#gsm-title').textContent = 'Jak budeš procvičovat?';
   const all = sub.verbs.length;
   const problematic = sub.verbs.filter((v) => {
     const s = state.progress[v.inf]?.status;
@@ -285,12 +287,66 @@ function openGroupStartChoice(sub) {
   };
 }
 
-function startSectionReview(sec) {
-  // Gather all verbs across all subsections of the section, tagged with their original subId
-  const verbs = [];
+function openSectionReviewChoice(sec) {
+  const modal = $('#group-start-modal');
+  // Gather all + problematic counts
+  const all = [];
+  const problematic = [];
   sec.subsections.forEach((sub) => {
-    sub.verbs.forEach((v) => verbs.push({ ...v, subId: sub.id }));
+    sub.verbs.forEach((v) => {
+      all.push(v);
+      const s = state.progress[v.inf]?.status;
+      if (s === 'yellow' || s === 'red') problematic.push(v);
+    });
   });
+  if (!modal) { startSectionReview(sec); return; }
+  $('#gsm-emoji').textContent = '🎲';
+  $('#gsm-title').textContent = 'Zamíchané procvičení';
+  const sw = (n) => `${n} ${n === 1 ? 'sloveso' : (n < 5 ? 'slovesa' : 'sloves')}`;
+  $('#gsm-all-count').textContent = sw(all.length);
+  $('#gsm-problem-count').textContent = sw(problematic.length);
+  const problemBtn = $('#gsm-problem');
+  if (problematic.length === 0) {
+    problemBtn.classList.add('disabled');
+    problemBtn.disabled = true;
+    $('#gsm-sub').textContent = 'Celá sekce je zelená — žádná problematická slovesa. Klidně si všechna projdi znovu pro jistotu.';
+  } else {
+    problemBtn.classList.remove('disabled');
+    problemBtn.disabled = false;
+    $('#gsm-sub').textContent = 'Zamíchaná procházka napříč celou sekcí. Vyber si rozsah.';
+  }
+  modal.classList.remove('hidden');
+  const close = () => {
+    modal.classList.add('hidden');
+    // Restore default emoji for the per-group choice modal
+    $('#gsm-emoji').textContent = '🔁';
+    $('#gsm-title').textContent = 'Jak budeš procvičovat?';
+  };
+  $('#gsm-close').onclick = close;
+  modal.onclick = (e) => { if (e.target === modal) close(); };
+  $('#gsm-all').onclick = () => { close(); startSectionReview(sec); };
+  problemBtn.onclick = () => {
+    if (problematic.length === 0) return;
+    close();
+    startSectionReview(sec, problematic);
+  };
+}
+
+function startSectionReview(sec, customVerbs = null) {
+  // Gather all verbs across all subsections of the section, tagged with their original subId
+  let verbs;
+  if (customVerbs) {
+    // Filter passed in (e.g. only problematic). Re-tag with the right subId.
+    verbs = customVerbs.map((v) => {
+      const ownerSub = sec.subsections.find((s) => s.verbs.some((sv) => sv.inf === v.inf));
+      return { ...v, subId: ownerSub ? ownerSub.id : sec.id };
+    });
+  } else {
+    verbs = [];
+    sec.subsections.forEach((sub) => {
+      sub.verbs.forEach((v) => verbs.push({ ...v, subId: sub.id }));
+    });
+  }
   if (verbs.length === 0) return;
   shuffle(verbs);
   // Synthetic "sub" used by lesson code: id is sec.id, pattern reflects review mode
