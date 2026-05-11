@@ -131,6 +131,18 @@ function renderLessonPicker() {
   const totalSubs = state.data.sections.reduce((n, s) => n + s.subsections.length, 0);
   const sectionEmojis = { '1.0.0': '🎯', '2.0.0': '🌀', '3.0.0': '⚡' };
   state.data.sections.forEach((sec) => {
+    // Section-review chip in header (right side) — always visible, visuals change with mastery
+    const allSecMastered = sec.subsections.every((sub) =>
+      sub.verbs.every((v) => state.progress[v.inf]?.status === 'green')
+    );
+    const totalVerbs = sec.subsections.reduce((n, ss) => n + ss.verbs.length, 0);
+    const sectionLocked = !state.premium && sec.subsections.some((sub) => !FREE_SUB_IDS.has(sub.id));
+    const icon = allSecMastered ? '🏆' : '🎲';
+    const chipLabel = allSecMastered ? 'Souhrnný test' : 'Procvičit zamíchaně';
+    const chipTitle = allSecMastered
+      ? `Souhrnný test celé sekce — všech ${totalVerbs} sloves, zamíchaně`
+      : `Zamíchaná procházka přes všech ${totalVerbs} sloves této sekce`;
+
     const h = document.createElement('h3');
     h.className = 'lesson-sec-title';
     const emoji = sectionEmojis[sec.id] || '📚';
@@ -138,41 +150,22 @@ function renderLessonPicker() {
       <span class="lesson-sec-emoji">${emoji}</span>
       <span class="lesson-sec-num">${sec.id}</span>
       <span class="lesson-sec-name">${sec.title}</span>
+      <button type="button" class="section-review-chip${allSecMastered ? ' mastered' : ''}${sectionLocked ? ' locked' : ''}" title="${chipTitle}">
+        <span class="section-review-chip-icon">${icon}</span>
+        <span class="section-review-chip-label">${chipLabel}</span>
+        ${sectionLocked ? '<span class="section-review-chip-lock">🔒</span>' : ''}
+      </button>
     `;
     c.appendChild(h);
-    // Section-review card: always visible — visuals change based on mastery state
-    const allSecMastered = sec.subsections.every((sub) =>
-      sub.verbs.every((v) => state.progress[v.inf]?.status === 'green')
-    );
-    const totalVerbs = sec.subsections.reduce((n, ss) => n + ss.verbs.length, 0);
-    const sectionLocked = !state.premium && sec.subsections.some((sub) => !FREE_SUB_IDS.has(sub.id));
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'section-review-card' + (allSecMastered ? ' mastered' : '') + (sectionLocked ? ' locked' : '');
-    const icon = allSecMastered ? '🏆' : '🎲';
-    const title = allSecMastered ? 'Souhrnný test celé sekce' : 'Procvičit zamíchaně';
-    const sub = allSecMastered
-      ? `Všech ${totalVerbs} sloves z této sekce, zamíchaně. Otestuj, jestli ti to fakt sedí. 💪`
-      : `Zamíchaná procházka přes všech ${totalVerbs} sloves této sekce. Skvělé na opakování.`;
-    card.innerHTML = `
-      ${sectionLocked ? '<span class="section-review-lock">🔒</span>' : ''}
-      <div class="section-review-medal">${icon}</div>
-      <div class="section-review-text">
-        <div class="section-review-title">${title}</div>
-        <div class="section-review-sub">${sub}</div>
-      </div>
-      <div class="section-review-arrow">→</div>
-    `;
-    card.addEventListener('click', () => {
+    h.querySelector('.section-review-chip').addEventListener('click', (e) => {
+      e.stopPropagation();
       if (sectionLocked) {
-        // Open paywall using the first locked sub as the trigger
         const lockedSub = sec.subsections.find((s) => !FREE_SUB_IDS.has(s.id));
         showPaywall(lockedSub);
         return;
       }
       startSectionReview(sec);
     });
-    c.appendChild(card);
     sec.subsections.forEach((sub) => {
       const hue = Math.round((subIdx / totalSubs) * 360);
       subIdx++;
