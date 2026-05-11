@@ -140,26 +140,39 @@ function renderLessonPicker() {
       <span class="lesson-sec-name">${sec.title}</span>
     `;
     c.appendChild(h);
-    // Section-review card: appears when every verb in every sub of this section is mastered
+    // Section-review card: always visible — visuals change based on mastery state
     const allSecMastered = sec.subsections.every((sub) =>
       sub.verbs.every((v) => state.progress[v.inf]?.status === 'green')
     );
-    if (allSecMastered) {
-      const totalVerbs = sec.subsections.reduce((n, ss) => n + ss.verbs.length, 0);
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'section-review-card';
-      card.innerHTML = `
-        <div class="section-review-medal">🏆</div>
-        <div class="section-review-text">
-          <div class="section-review-title">Souhrnný test celé sekce</div>
-          <div class="section-review-sub">Všech ${totalVerbs} sloves z této sekce, zamíchaně. Otestuj, jestli ti to fakt sedí. 💪</div>
-        </div>
-        <div class="section-review-arrow">→</div>
-      `;
-      card.addEventListener('click', () => startSectionReview(sec));
-      c.appendChild(card);
-    }
+    const totalVerbs = sec.subsections.reduce((n, ss) => n + ss.verbs.length, 0);
+    const sectionLocked = !state.premium && sec.subsections.some((sub) => !FREE_SUB_IDS.has(sub.id));
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'section-review-card' + (allSecMastered ? ' mastered' : '') + (sectionLocked ? ' locked' : '');
+    const icon = allSecMastered ? '🏆' : '🎲';
+    const title = allSecMastered ? 'Souhrnný test celé sekce' : 'Procvičit zamíchaně';
+    const sub = allSecMastered
+      ? `Všech ${totalVerbs} sloves z této sekce, zamíchaně. Otestuj, jestli ti to fakt sedí. 💪`
+      : `Zamíchaná procházka přes všech ${totalVerbs} sloves této sekce. Skvělé na opakování.`;
+    card.innerHTML = `
+      ${sectionLocked ? '<span class="section-review-lock">🔒</span>' : ''}
+      <div class="section-review-medal">${icon}</div>
+      <div class="section-review-text">
+        <div class="section-review-title">${title}</div>
+        <div class="section-review-sub">${sub}</div>
+      </div>
+      <div class="section-review-arrow">→</div>
+    `;
+    card.addEventListener('click', () => {
+      if (sectionLocked) {
+        // Open paywall using the first locked sub as the trigger
+        const lockedSub = sec.subsections.find((s) => !FREE_SUB_IDS.has(s.id));
+        showPaywall(lockedSub);
+        return;
+      }
+      startSectionReview(sec);
+    });
+    c.appendChild(card);
     sec.subsections.forEach((sub) => {
       const hue = Math.round((subIdx / totalSubs) * 360);
       subIdx++;
