@@ -53,35 +53,31 @@ const TEXTS = {
   mh_intro_desc: { pro: 'Označ slovesa, u kterých si myslíš, že ti budou dělat největší problém.',
                    student: 'Která ti vypadají záludně? Označ je. Pak si na ně dáme bacha.' },
   mh_done_btn:   { pro: 'Hotovo, jdu na to →', student: 'Hotovo, jedem dál →' },
-  // Fáze 2
+  // Fáze 2 — combined pass (1) + finále (2)
   s2_intro_title:{ pro: 'Fáze 2 — Psaní tvarů', student: 'Fáze 2 — Píšeme to ✍️' },
-  s2_intro_desc: { pro: 'Vidíš česky, píšeš 3 anglické tvary, potvrdíš Enterem. Jdeme na to.',
-                   student: 'Češtinu vidíš, anglicky píšeš 3 tvary. Enter. Boom. 💥' },
-  s2_step2_title:{ pro: '2. krok — chyby pod lupou', student: '2. krok — chyby pod lupou 🔍' },
-  s2_step2_desc: { pro: (n, w) => `Tyhle ti utekly v prvním kole. Druhá šance 🔍 — projdeme jen ${n} ${w}, kde se chyby objevily. Každé sloveso musíš dát 2× po sobě bez chyby.`,
-                   student: (n, w) => `Tyhle ti minule utekly. Dáme jim druhou šanci 🔍 — ${n} ${w}. Musíš je trefit 2× po sobě bez chyby, jinak nás neopustí.` },
-  s2_step3_title:{ pro: '3. krok — finále, zamícháno', student: 'FINÁLE — všechno najednou 🔀' },
-  s2_step3_desc: { pro: 'Finále 🔀 — všechna slovesa zamíchaně. Napíšeš všechny 3 tvary najednou, výsledek uvidíš po Enteru. Každé sloveso musíš dát 2× po sobě bez chyby — kromě těch, která jsi měl(a) bezchybně už v 1. kroku a napíšeš je správně i napoprvé teď.',
-                   student: 'Náhodně, všechno najednou. Žádný šance pomalu psát — všechny 3 tvary, Enter, a pak uvidíš jak na tom jsi. Každý 2× po sobě bez chyby (nebo napoprvé, když jsi měl 1. krok čistej).' },
+  s2_intro_desc: { pro: 'Vidíš česky, píšeš 3 anglické tvary, potvrdíš Enterem. Když se chyba objeví, sloveso se vrátí na konec fronty a počkáš si na něj. Jdeme na to.',
+                   student: 'Češtinu vidíš, anglicky píšeš 3 tvary. Enter po každym poli. Když ti něco uteče, počkáme si na něj a dáme to znovu. Boom. 💥' },
+  s2_finale_title:{ pro: 'Finále — zamícháno', student: 'FINÁLE — všechno najednou 🔀' },
+  s2_finale_desc:{ pro: 'Všechna slovesa zamíchaně. Napíšeš všechny 3 tvary najednou, výsledek uvidíš po Enteru — a 1× bez chyby stačí, aby sloveso vypadlo z fronty.',
+                   student: 'Náhodně, všechno najednou. Napíšeš 3 tvary, mrkneš na výsledek a jedem dál. 1× bez chyby = hotovo. 🔀' },
   tip_atomic:    { pro: '<kbd>Enter</kbd> = další pole, vyhodnotí se na konci',
                    student: '<kbd>Enter</kbd> = další pole. Vyhodnocení až na konci.' },
   tip_field:     { pro: 'Po každém tvaru zmáčkni <kbd>Enter</kbd>',
                    student: 'Po každym tvaru <kbd>Enter</kbd>' },
   giveup_btn:    { pro: 'Nevím 😭', student: 'Vzdávám 🏳️' },
   giveup_confirm:{ pro: 'Vážně? Klikni znovu 😭', student: 'Fakt? Klikni ještě jednou 😭' },
-  // Feedback
-  fb_step2_more: { pro: (s) => `Sedí (${s}/2). Ještě jednou…`,
-                   student: (s) => `Trefa! (${s}/2) Ještě jednou…` },
-  fb_step2_done: { pro: '2× po sobě — sloveso máš v kapse! ✓',
-                   student: '2× po sobě — máš to v kapse! 🔥' },
-  fb_wrong:      { pro: 'Mimo. Streak je na nule, zkusíme později znovu.',
-                   student: 'Sejf! Streak na nule, zkusíme to znova 🙃' },
-  fb_step3_fast: { pro: 'Čisté jako v prvním kroku — máš to zvládnuté.',
-                   student: 'Bezchybný jak v prvním kroku. Příště ti to neproleze tak snadno 😎' },
-  fb_step3_more: { pro: (s) => `Sedí (${s}/2). Ještě jednou…`,
-                   student: (s) => `Trefa! (${s}/2) Ještě jednou…` },
-  fb_step3_done: { pro: '2× po sobě — sloveso je hotové! ✓',
-                   student: '2× po sobě — sloveso je hotový! 🔥' },
+  // Feedback — combined pass
+  fb_pass_ok:    { pro: 'Bezvadně. Hotovo!',
+                   student: 'Trefa! Hotovo. 🔥' },
+  fb_pass_redo_ok:{ pro: 'Tentokrát už trefa. Sloveso máš.',
+                   student: 'Boom, tentokrát trefa! 🔥' },
+  fb_pass_wrong: { pro: 'Mimo. Pošleme tohle sloveso na konec fronty a vrátíme se k němu.',
+                   student: 'Sejf. Pošleme tě na konec fronty, dáme to později znova. 🙃' },
+  // Feedback — finále
+  fb_finale_ok:  { pro: 'Sedí. Sloveso máš v kapse.',
+                   student: 'Trefa! Máš to. 🔥' },
+  fb_finale_wrong:{ pro: 'Mimo. Sloveso se vrátí na konec fronty.',
+                   student: 'Mimo. Sloveso poletí na konec, ještě se uvidíme. 🙃' },
   // Results
   results_h2:    { pro: 'Hotovo! 🎉', student: 'Hotovo, válíš! 🎉' },
   stat_green:    { pro: 'zvládnuto', student: 'v kapse' },
@@ -492,13 +488,11 @@ function startSectionReview(sec, customVerbs = null) {
     perVerb: new Map(verbs.map((v) => [v.inf, {
       status: 'pending', stage1: null, stage2R1: null, stage2R2: null, stage2Correct: 0, hard: false,
       step1Wrong: new Set(),
-      step1Perfect: true,           // skip step-2 backtrack — we go straight to step 3
-      step2Streak: 0, step2Cleared: true, step2Wrong: 0,
-      step3Streak: 0, step3Attempts: 0, step3Cleared: false, step3HadError: false,
-      step3Wrong: 0, gaveUp: false,
+      passWrong: 0, passCleared: true,        // skip combined pass — jump straight to finále
+      finalWrong: 0, finalHadError: false, finalCleared: false, gaveUp: false,
     }])),
     stage2Round: 1,
-    stage2Step: 3,
+    stage2Step: 2,
     stage2Q: verbs.slice(),
     markedHard: new Set(),
     isReview: true,
@@ -514,12 +508,12 @@ function startSectionReview(sec, customVerbs = null) {
   $('#lesson-stage-intro').classList.remove('hidden');
   $('#stage-intro-emoji').textContent = '🏆';
   $('#stage-intro-title').textContent = 'Souhrnný test sekce';
-  $('#stage-intro-desc').textContent = `Všech ${verbs.length} sloves z této sekce v náhodném pořadí. Napiš všechny tři tvary a stiskni Enter. Každé sloveso 2× za sebou bez chyby, aby z fronty vypadlo. Jdeme na to!`;
+  $('#stage-intro-desc').textContent = `Všech ${verbs.length} sloves z této sekce v náhodném pořadí. Napíšeš všechny tři tvary, stiskneš Enter — a 1× bez chyby stačí, aby sloveso vypadlo z fronty. Jdeme na to!`;
   $('#lesson-question').innerHTML = '';
   updateStageDots();
   updateLessonBar();
   renderVerbChips();
-  renderStepPills(3);
+  renderStepPills(2);
 }
 
 // ============================================================
@@ -584,7 +578,7 @@ function renderResumeCard() {
   const isLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
   const stageLabels = { 1: 'Fáze 1 · Seznámení', 1.5: 'Mezifáze · Označ obtížná', 2: 'Fáze 2 · Psaní' };
   const stageLabel = stageLabels[saved.stage] || 'rozdělané cvičení';
-  const stepLabels = { 1: '1. krok – v pořadí', 2: '2. krok – oprav chyby', 3: '3. krok – zamícháno' };
+  const stepLabels = { 1: '1. průchod', 2: 'finále – zamícháno' };
   const stepLabel = saved.stage === 2 && saved.stage2Step ? ` · ${stepLabels[saved.stage2Step]}` : '';
   const filteredNote = (saved.verbInfs && saved.verbInfs.length && saved.verbInfs.length < sub.verbs.length)
     ? ` · jen problematická (${saved.verbInfs.length})`
@@ -668,9 +662,8 @@ function resumeLesson(saved) {
     renderStepPills(saved.stage2Step || 1);
     if (state.lesson.stage2Q.length === 0) {
       // Edge case: queue empty for current step → advance
-      if (saved.stage2Step === 1) stage2AdvanceToStep2();
-      else if (saved.stage2Step === 2) stage2AdvanceToStep3();
-      else if (saved.stage2Step === 3) stage2Finish();
+      if (saved.stage2Step === 1) stage2AdvanceToFinale();
+      else if (saved.stage2Step === 2) stage2Finish();
     } else {
       stage2Next();
     }
@@ -732,8 +725,8 @@ function updateLessonBar() {
     const n = L.markedHard.size;
     $('#lesson-remaining').textContent = n === 0 ? 'označ těžká slovesa' : `označeno: ${n}`;
   } else if (L.stage === 2) {
-    const stepLabels = { 1: '1. krok · v pořadí', 2: '2. krok · chyby', 3: '3. krok · zamícháno' };
-    const lbl = stepLabels[L.stage2Step] || '1. krok';
+    const stepLabels = { 1: '1. průchod', 2: 'finále · zamícháno' };
+    const lbl = stepLabels[L.stage2Step] || '1. průchod';
     const remaining = (L.stage2Q || []).length;
     $('#lesson-remaining').textContent = `${lbl} · zbývá ${remaining} sloves`;
   }
@@ -889,20 +882,19 @@ function stage1Mark() {
 
 function stage2InitStep1() {
   const L = state.lesson;
-  L.stage2Step = 1;
+  L.stage2Step = 1; // 1 = combined pass (per-field), 2 = finale (atomic)
   L.stage2Q = L.verbs.slice();
   L.currentInf = null;
   L.lastCleared = null;
   L.verbs.forEach((v) => {
     const p = L.perVerb.get(v.inf);
-    p.step1Wrong = new Set();
-    p.step1Perfect = false;
-    p.step2Streak = 0;
-    p.step2Cleared = false;
-    p.step2Wrong = 0;
-    p.step3Streak = 0;
-    p.step3Attempts = 0;
-    p.step3Cleared = false;
+    p.step1Wrong = new Set();       // which fields were wrong last attempt — used for aura on requeue
+    p.passWrong = 0;                // count of failed attempts in combined pass
+    p.passCleared = false;
+    p.finalWrong = 0;
+    p.finalCleared = false;
+    p.finalHadError = false;
+    p.gaveUp = false;
   });
 }
 
@@ -911,12 +903,12 @@ function renderStepPills(activeStep) {
   if (!c) return;
   const L = state.lesson;
   if (!L || L.stage !== 2) { c.innerHTML = ''; return; }
-  const labels = { 1: '1) doplň', 2: '2) oprav chyby', 3: '3) zamíchat' };
-  c.innerHTML = [1, 2, 3].map((s) => {
+  const labels = { 1: '1) průchod', 2: '2) finále' };
+  c.innerHTML = [1, 2].map((s) => {
     let cls = 'step-pill';
     if (s === activeStep) cls += ' active';
     else if (s < activeStep) cls += ' done';
-    return `<span class="${cls}">${labels[s]}</span>${s < 3 ? '<span class="step-arrow">→</span>' : ''}`;
+    return `<span class="${cls}">${labels[s]}</span>${s < 2 ? '<span class="step-arrow">→</span>' : ''}`;
   }).join('');
 }
 
@@ -930,10 +922,9 @@ function renderVerbChips() {
   c.innerHTML = L.verbs.map((v) => {
     const p = L.perVerb.get(v.inf);
     let cls = 'verb-chip';
-    if (p.step3Cleared) cls += ' done';
-    else if (p.step2Cleared) cls += ' good';
-    else if (p.step1Perfect) cls += ' good';
-    else if (p.step1Wrong && p.step1Wrong.size > 0) cls += ' warn';
+    if (p.finalCleared) cls += ' done';
+    else if (p.passCleared) cls += ' good';
+    else if (p.passWrong > 0 || (p.step1Wrong && p.step1Wrong.size > 0)) cls += ' warn';
     else cls += ' pending';
     if (v.inf === L.currentInf) cls += ' current';
     if (v.inf === justInf) cls += ' just-cleared';
@@ -946,31 +937,30 @@ function stage2Next() {
   $('#lesson-stage-intro').classList.add('hidden');
   const L = state.lesson;
   if (L.stage2Step === 1) {
-    if (L.stage2Q.length === 0) return stage2AdvanceToStep2();
-    return askStage2Verb(L.stage2Q.shift(), 1);
+    if (L.stage2Q.length === 0) return stage2AdvanceToFinale();
+    return askStage2Verb(L.stage2Q[0], 1);
   }
   if (L.stage2Step === 2) {
-    if (L.stage2Q.length === 0) return stage2AdvanceToStep3();
-    return askStage2Verb(L.stage2Q[0], 2);
-  }
-  if (L.stage2Step === 3) {
     if (L.stage2Q.length === 0) return stage2Finish();
-    return askStage2Verb(L.stage2Q[0], 3);
+    return askStage2Verb(L.stage2Q[0], 2);
   }
 }
 
-function stage2AdvanceToStep2() {
+function stage2AdvanceToFinale() {
   const L = state.lesson;
-  const errored = L.verbs.filter((v) => !L.perVerb.get(v.inf).step1Perfect);
-  if (errored.length === 0) return stage2AdvanceToStep3();
   L.stage2Step = 2;
-  L.stage2Q = errored.slice();
-  L.verbs.forEach((v) => { L.perVerb.get(v.inf).step2Streak = 0; });
+  L.stage2Q = shuffle(L.verbs.slice());
+  L.verbs.forEach((v) => {
+    const p = L.perVerb.get(v.inf);
+    p.finalWrong = 0;
+    p.finalHadError = false;
+    p.finalCleared = false;
+    p.gaveUp = false;
+  });
   $('#lesson-stage-intro').classList.remove('hidden');
-  $('#stage-intro-emoji').textContent = '🔍';
-  $('#stage-intro-title').textContent = t('s2_step2_title');
-  const word = errored.length === 1 ? 'sloveso' : (errored.length < 5 ? 'slovesa' : 'sloves');
-  $('#stage-intro-desc').textContent = t('s2_step2_desc', errored.length, word);
+  $('#stage-intro-emoji').textContent = '🔀';
+  $('#stage-intro-title').textContent = t('s2_finale_title');
+  $('#stage-intro-desc').textContent = t('s2_finale_desc');
   $('#lesson-question').innerHTML = '';
   updateStageDots();
   updateLessonBar();
@@ -979,41 +969,17 @@ function stage2AdvanceToStep2() {
   persistActiveLesson();
 }
 
-function stage2AdvanceToStep3() {
-  const L = state.lesson;
-  L.stage2Step = 3;
-  L.stage2Q = shuffle(L.verbs.slice());
-  L.verbs.forEach((v) => {
-    const p = L.perVerb.get(v.inf);
-    p.step3Streak = 0;
-    p.step3Attempts = 0;
-    p.step3HadError = false;
-    p.step3Wrong = 0;
-    p.gaveUp = false;
-  });
-  $('#lesson-stage-intro').classList.remove('hidden');
-  $('#stage-intro-emoji').textContent = '🔀';
-  $('#stage-intro-title').textContent = t('s2_step3_title');
-  $('#stage-intro-desc').textContent = t('s2_step3_desc');
-  $('#lesson-question').innerHTML = '';
-  updateStageDots();
-  updateLessonBar();
-  renderVerbChips();
-  renderStepPills(3);
-  persistActiveLesson();
-}
-
 function stage2Finish() {
   const L = state.lesson;
   L.verbs.forEach((v) => {
     const p = L.perVerb.get(v.inf);
-    // Red    = "Nevím" v 3. kroku NEBO 3+ chyb v 3. kroku
-    // Yellow = jakákoli chyba v 2. kroku NEBO 1-2 chyby v 3. kroku
-    // Green  = 2. i 3. krok bez jediné chyby
-    const wrong3 = p.step3Wrong || 0;
-    const wrong2 = p.step2Wrong || 0;
-    if (p.gaveUp || wrong3 >= 3) p.status = 'red';
-    else if (wrong3 >= 1 || wrong2 >= 1) p.status = 'yellow';
+    // Red    = "Nevím" v Finále NEBO 3+ chyb ve Finále
+    // Yellow = jakákoli chyba v 1. průchodu NEBO 1-2 chyby ve Finále
+    // Green  = obojí bez chyby
+    const wrongFin = p.finalWrong || 0;
+    const wrongPass = p.passWrong || 0;
+    if (p.gaveUp || wrongFin >= 3) p.status = 'red';
+    else if (wrongFin >= 1 || wrongPass >= 1) p.status = 'yellow';
     else p.status = 'green';
   });
   finishLesson();
@@ -1029,19 +995,16 @@ function askStage2Verb(verb, step) {
   const past = pickForm(verb, 'past', state.dialect);
   const pp = pickForm(verb, 'pp', state.dialect);
   const hue = hueOf(verb.subId);
-  const isAtomicCheck = step === 3; // step 3 evaluates after all 3 forms
-  const auraSet = step === 2 ? (p.step1Wrong || new Set()) : new Set();
+  const isAtomicCheck = step === 2; // finále evaluates after all 3 forms
+  // Combined pass: show blue aura on fields that were wrong last attempt of this verb (only if it was requeued)
+  const auraSet = (step === 1 && (p.passWrong || 0) > 0) ? (p.step1Wrong || new Set()) : new Set();
 
   let progressText;
+  const total = L.verbs.length;
   if (step === 1) {
-    const total = L.verbs.length;
-    const done = total - L.stage2Q.length; // current already shifted
-    progressText = `${done}/${total}`;
-  } else if (step === 2) {
-    progressText = `zbývá ${L.stage2Q.length} · sloveso ${p.step2Streak}/2`;
+    progressText = `zbývá ${L.stage2Q.length} z ${total}`;
   } else {
-    const streakLabel = (p.step1Perfect && p.step3Attempts === 0) ? '1×' : `${p.step3Streak}/2`;
-    progressText = `zbývá ${L.stage2Q.length} · sloveso ${streakLabel}`;
+    progressText = `zbývá ${L.stage2Q.length}`;
   }
 
   const tipText = isAtomicCheck ? t('tip_atomic') : t('tip_field');
@@ -1106,59 +1069,33 @@ function askStage2Verb(verb, step) {
 
     let msg = '';
     if (step === 1) {
-      p.step1Wrong = new Set();
-      Object.entries(fieldResults).forEach(([k, v]) => { if (!v) p.step1Wrong.add(k); });
-      p.step1Perfect = allRight;
+      // Combined pass: per-field check. Right → remove from queue (1× clean clears it).
+      // Wrong → push to end of queue (must be re-attempted later until 1× clean).
+      const wrongFields = new Set();
+      Object.entries(fieldResults).forEach(([k, v]) => { if (!v) wrongFields.add(k); });
+      p.step1Wrong = wrongFields; // remembered for blue aura on requeue
       if (allRight) {
-        p.stage2Correct = (p.stage2Correct || 0) + 1;
+        L.stage2Q.shift();
+        p.passCleared = true;
         L.lastCleared = verb.inf;
+        msg = (p.passWrong || 0) > 0 ? '✅ ' + t('fb_pass_redo_ok') : '✅ ' + t('fb_pass_ok');
+      } else {
+        p.passWrong = (p.passWrong || 0) + 1;
+        L.stage2Q.push(L.stage2Q.shift());
+        msg = '🔍 ' + t('fb_pass_wrong');
       }
-      msg = allRight ? '✅ Bezvadně!' : '🔍 Tohle si v 2. kroku probereme detailněji.';
     } else if (step === 2) {
+      // Finále: atomic. 1× right clears it. Wrong → requeue.
       if (allRight) {
-        p.step2Streak++;
-        if (p.step2Streak >= 2) {
-          L.stage2Q.shift();
-          p.step2Cleared = true;
-          L.lastCleared = verb.inf;
-          msg = '✅ ' + t('fb_step2_done');
-        } else {
-          L.stage2Q.push(L.stage2Q.shift());
-          msg = '✅ ' + t('fb_step2_more', p.step2Streak);
-        }
+        L.stage2Q.shift();
+        p.finalCleared = true;
+        L.lastCleared = verb.inf;
+        msg = '✅ ' + t('fb_finale_ok');
       } else {
-        p.step2Streak = 0;
-        p.step2Wrong = (p.step2Wrong || 0) + 1;
+        p.finalWrong = (p.finalWrong || 0) + 1;
+        p.finalHadError = true;
         L.stage2Q.push(L.stage2Q.shift());
-        msg = '❌ ' + t('fb_wrong');
-      }
-    } else if (step === 3) {
-      const isFirstAttempt = p.step3Attempts === 0;
-      p.step3Attempts++;
-      if (allRight) {
-        if (p.step1Perfect && isFirstAttempt) {
-          L.stage2Q.shift();
-          p.step3Cleared = true;
-          L.lastCleared = verb.inf;
-          msg = '✅ ' + t('fb_step3_fast');
-        } else {
-          p.step3Streak++;
-          if (p.step3Streak >= 2) {
-            L.stage2Q.shift();
-            p.step3Cleared = true;
-            L.lastCleared = verb.inf;
-            msg = '✅ ' + t('fb_step3_done');
-          } else {
-            L.stage2Q.push(L.stage2Q.shift());
-            msg = '✅ ' + t('fb_step3_more', p.step3Streak);
-          }
-        }
-      } else {
-        p.step3Streak = 0;
-        p.step3HadError = true;
-        p.step3Wrong = (p.step3Wrong || 0) + 1;
-        L.stage2Q.push(L.stage2Q.shift());
-        msg = '❌ ' + t('fb_wrong');
+        msg = '❌ ' + t('fb_finale_wrong');
       }
     }
 
@@ -1219,7 +1156,7 @@ function askStage2Verb(verb, step) {
     }
     if (giveUpResetTimer) clearTimeout(giveUpResetTimer);
     // Mark gave-up on the per-verb record so final status can become 'red'
-    if (step === 3) p.gaveUp = true;
+    if (step === 2) p.gaveUp = true;
     inputs.forEach((inp) => {
       const k = inp.dataset.form;
       if (k in fieldResults) return;
