@@ -140,6 +140,26 @@ function renderLessonPicker() {
       <span class="lesson-sec-name">${sec.title}</span>
     `;
     c.appendChild(h);
+    // Section-review card: appears when every verb in every sub of this section is mastered
+    const allSecMastered = sec.subsections.every((sub) =>
+      sub.verbs.every((v) => state.progress[v.inf]?.status === 'green')
+    );
+    if (allSecMastered) {
+      const totalVerbs = sec.subsections.reduce((n, ss) => n + ss.verbs.length, 0);
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'section-review-card';
+      card.innerHTML = `
+        <div class="section-review-medal">🏆</div>
+        <div class="section-review-text">
+          <div class="section-review-title">Souhrnný test celé sekce</div>
+          <div class="section-review-sub">Všech ${totalVerbs} sloves z této sekce, zamíchaně. Otestuj, jestli ti to fakt sedí. 💪</div>
+        </div>
+        <div class="section-review-arrow">→</div>
+      `;
+      card.addEventListener('click', () => startSectionReview(sec));
+      c.appendChild(card);
+    }
     sec.subsections.forEach((sub) => {
       const hue = Math.round((subIdx / totalSubs) * 360);
       subIdx++;
@@ -220,6 +240,56 @@ function startLesson(sub) {
   $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sub.id)} 65% 45%)">${sub.id}</span> ${sub.pattern}`;
   document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sub.id));
   showStageIntro(1);
+}
+
+function startSectionReview(sec) {
+  // Gather all verbs across all subsections of the section, tagged with their original subId
+  const verbs = [];
+  sec.subsections.forEach((sub) => {
+    sub.verbs.forEach((v) => verbs.push({ ...v, subId: sub.id }));
+  });
+  if (verbs.length === 0) return;
+  shuffle(verbs);
+  // Synthetic "sub" used by lesson code: id is sec.id, pattern reflects review mode
+  const pseudoSub = {
+    id: sec.id,
+    pattern: `Souhrnný test · ${verbs.length} sloves`,
+    verbs,
+  };
+  state.lesson = {
+    sub: pseudoSub,
+    verbs,
+    stage: 2,
+    perVerb: new Map(verbs.map((v) => [v.inf, {
+      status: 'pending', stage1: null, stage2R1: null, stage2R2: null, stage2Correct: 0, hard: false,
+      step1Wrong: new Set(),
+      step1Perfect: true,           // skip step-2 backtrack — we go straight to step 3
+      step2Streak: 0, step2Cleared: true,
+      step3Streak: 0, step3Attempts: 0, step3Cleared: false, step3HadError: false,
+    }])),
+    stage2Round: 1,
+    stage2Step: 3,
+    stage2Q: verbs.slice(),
+    markedHard: new Set(),
+    isReview: true,
+    done: false,
+  };
+  clearActiveLesson(); // review doesn't compete with a regular saved lesson
+  $('.lesson-picker').classList.add('hidden');
+  $('.lesson-results').classList.add('hidden');
+  $('.lesson-active').classList.remove('hidden');
+  $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sec.subsections[0].id)} 65% 45%)">${sec.id}</span> 🏆 Souhrnný test`;
+  document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sec.subsections[0].id));
+  // Show a custom intro then jump straight to step 3
+  $('#lesson-stage-intro').classList.remove('hidden');
+  $('#stage-intro-emoji').textContent = '🏆';
+  $('#stage-intro-title').textContent = 'Souhrnný test sekce';
+  $('#stage-intro-desc').textContent = `Všech ${verbs.length} sloves z této sekce v náhodném pořadí. Napiš všechny tři tvary a stiskni Enter. Každé sloveso 2× za sebou bez chyby, aby z fronty vypadlo. Jdeme na to!`;
+  $('#lesson-question').innerHTML = '';
+  updateStageDots();
+  updateLessonBar();
+  renderVerbChips();
+  renderStepPills(3);
 }
 
 // ============================================================
