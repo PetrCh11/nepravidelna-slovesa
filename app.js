@@ -208,7 +208,10 @@ function renderLessonPicker() {
         </div>
       `;
       card.addEventListener('click', () => {
-        if (isLocked) showPaywall(sub);
+        if (isLocked) { showPaywall(sub); return; }
+        // If student already worked on this group, offer "all" vs "problematic"
+        const hasPrior = sub.verbs.some((v) => state.progress[v.inf]?.status);
+        if (hasPrior) openGroupStartChoice(sub);
         else startLesson(sub);
       });
       c.appendChild(card);
@@ -253,6 +256,40 @@ function startLesson(sub) {
   $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sub.id)} 65% 45%)">${sub.id}</span> ${sub.pattern}`;
   document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sub.id));
   showStageIntro(1);
+}
+
+function openGroupStartChoice(sub) {
+  const modal = $('#group-start-modal');
+  if (!modal) { startLesson(sub); return; }
+  const all = sub.verbs.length;
+  const problematic = sub.verbs.filter((v) => {
+    const s = state.progress[v.inf]?.status;
+    return s === 'yellow' || s === 'red';
+  });
+  $('#gsm-all-count').textContent = `${all} ${all === 1 ? 'sloveso' : (all < 5 ? 'slovesa' : 'sloves')}`;
+  const pn = problematic.length;
+  $('#gsm-problem-count').textContent = `${pn} ${pn === 1 ? 'sloveso' : (pn < 5 ? 'slovesa' : 'sloves')}`;
+  const problemBtn = $('#gsm-problem');
+  if (pn === 0) {
+    problemBtn.classList.add('disabled');
+    problemBtn.disabled = true;
+    $('#gsm-sub').textContent = 'Tuto skupinu už máš zvládnutou — žádná problematická slovesa. Klidně si ji projdi znovu pro jistotu.';
+  } else {
+    problemBtn.classList.remove('disabled');
+    problemBtn.disabled = false;
+    $('#gsm-sub').textContent = 'Tuto skupinu už znáš. Vyber si, na co se zaměříš.';
+  }
+  modal.classList.remove('hidden');
+  const close = () => modal.classList.add('hidden');
+  $('#gsm-close').onclick = close;
+  modal.onclick = (e) => { if (e.target === modal) close(); };
+  $('#gsm-all').onclick = () => { close(); startLesson(sub); };
+  problemBtn.onclick = () => {
+    if (pn === 0) return;
+    close();
+    const pseudoSub = { ...sub, verbs: problematic };
+    startLesson(pseudoSub);
+  };
 }
 
 function startSectionReview(sec) {
@@ -329,6 +366,7 @@ function persistActiveLesson() {
     stage2Q: (L.stage2Q || []).map((v) => v.inf),
     markedHard: Array.from(L.markedHard || []),
     perVerb,
+    verbInfs: L.verbs.map((v) => v.inf), // preserves filtered subset on resume
     updatedAt: Date.now(),
   };
   try { localStorage.setItem(ACTIVE_LESSON_KEY, JSON.stringify(data)); } catch {}
@@ -369,6 +407,9 @@ function renderResumeCard() {
   const stageLabel = stageLabels[saved.stage] || 'rozdělané cvičení';
   const stepLabels = { 1: '1. krok – v pořadí', 2: '2. krok – oprav chyby', 3: '3. krok – zamícháno' };
   const stepLabel = saved.stage === 2 && saved.stage2Step ? ` · ${stepLabels[saved.stage2Step]}` : '';
+  const filteredNote = (saved.verbInfs && saved.verbInfs.length && saved.verbInfs.length < sub.verbs.length)
+    ? ` · jen problematická (${saved.verbInfs.length})`
+    : '';
   const card = document.createElement('div');
   card.className = 'resume-card';
   card.style.setProperty('--sub-hue', hueOf(sub.id));
@@ -380,7 +421,7 @@ function renderResumeCard() {
         <span class="subsection-id">${sub.id}</span>
         <span class="resume-pattern">${sub.pattern}</span>
       </div>
-      <div class="resume-stage">${stageLabel}${stepLabel}</div>
+      <div class="resume-stage">${stageLabel}${stepLabel}${filteredNote}</div>
     </div>
     <div class="resume-actions">
       <button class="btn btn-primary" id="resume-continue">Pokračovat</button>
@@ -408,7 +449,11 @@ function renderResumeCard() {
 function resumeLesson(saved) {
   const sub = findSubById(saved.subId);
   if (!sub) { clearActiveLesson(); return; }
-  const verbs = sub.verbs.map((v) => ({ ...v, subId: sub.id }));
+  // If a filtered subset was saved, honor it (e.g. "jen problematická" lesson)
+  const sourceVerbs = saved.verbInfs && saved.verbInfs.length
+    ? saved.verbInfs.map((inf) => sub.verbs.find((v) => v.inf === inf)).filter(Boolean)
+    : sub.verbs;
+  const verbs = sourceVerbs.map((v) => ({ ...v, subId: sub.id }));
   const perVerb = new Map();
   verbs.forEach((v) => {
     const sp = saved.perVerb && saved.perVerb[v.inf] ? saved.perVerb[v.inf] : {};
