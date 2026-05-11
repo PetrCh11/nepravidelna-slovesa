@@ -38,10 +38,18 @@
         <div class="menu-wrap">
           <button id="menu-btn" class="icon-btn" aria-label="Menu" aria-expanded="false">☰</button>
           <div id="menu-dropdown" class="menu-dropdown" role="menu">
-            <button class="menu-item" data-view="lesson" role="menuitem">🎓 Lekce</button>
-            <button class="menu-item" data-view="browse" role="menuitem">📚 Přehled skupin</button>
-            <button class="menu-item" data-view="flashcards" role="menuitem">🃏 Flashcards</button>
-            <button class="menu-item" data-view="quiz" role="menuitem">✅ Volný kvíz</button>
+            <button class="menu-item" data-view="lesson" role="menuitem" data-tone="menu_lesson">🎓 Lekce</button>
+            <button class="menu-item" data-view="browse" role="menuitem" data-tone="menu_browse">📚 Přehled skupin</button>
+            <button class="menu-item" data-view="flashcards" role="menuitem" data-tone="menu_fc">🃏 Flashcards</button>
+            <button class="menu-item" data-view="quiz" role="menuitem" data-tone="menu_quiz">✅ Volný kvíz</button>
+            <hr class="menu-divider" />
+            <div class="menu-style-row" role="group" aria-label="Styl appky">
+              <span class="menu-style-label">Styl:</span>
+              <div class="menu-style-options">
+                <button class="menu-style-btn" data-style="pro" type="button">💼 Pracující</button>
+                <button class="menu-style-btn" data-style="student" type="button">🎓 Student</button>
+              </div>
+            </div>
             <hr class="menu-divider" />
             <button class="menu-item menu-cloud" id="cloud-btn" role="menuitem">
               <span class="cloud-line">
@@ -62,9 +70,9 @@
       <!-- Step 0: pick group -->
       <div class="lesson-picker">
         <div class="intro intro-hero">
-          <h2>Konečně si je zapamatuješ. Jednou a provždy.</h2>
-          <p class="hero-lead">Místo plochého seznamu 106 sloves tě provedeme <strong>24 výslovnostními skupinami</strong>, ve kterých se slovesa chovají stejně. Když pochopíš jeden vzorec, zvládneš celou skupinu.</p>
-          <p class="hero-foot">Vyber si skupinu níže a začni. Zdarma máš 3 ukázkové skupiny.</p>
+          <h2 data-tone="hero_h2">Konečně si je zapamatuješ. Jednou a provždy.</h2>
+          <p class="hero-lead" data-tone="hero_lead">Místo plochého seznamu 106 sloves tě provedeme 24 výslovnostními skupinami, ve kterých se slovesa chovají stejně. Když pochopíš jeden vzorec, zvládneš celou skupinu.</p>
+          <p class="hero-foot" data-tone="hero_foot">Vyber si skupinu níže a začni. Zdarma máš 3 ukázkové skupiny.</p>
         </div>
         <div id="stats-strip" class="stats-strip"></div>
         <div id="lesson-groups"></div>
@@ -98,13 +106,13 @@
 
       <!-- Step 4: results -->
       <div class="lesson-results hidden">
-        <h2>Hotovo! 🎉</h2>
+        <h2 data-tone="results_h2">Hotovo! 🎉</h2>
         <div class="results-summary" id="results-summary"></div>
         <h3>Tvůj výsledek</h3>
         <div class="results-list" id="results-list"></div>
         <div class="results-actions">
-          <button id="results-again" class="btn btn-primary">Procvičit znovu jen problematická</button>
-          <button id="results-new" class="btn btn-secondary">Nová lekce</button>
+          <button id="results-again" class="btn btn-primary" data-tone="res_again">Procvičit jen ta zlobivá</button>
+          <button id="results-new" class="btn btn-secondary" data-tone="res_new">Nová lekce</button>
         </div>
       </div>
     </section>
@@ -184,8 +192,8 @@
     <div class="paywall">
       <button class="paywall-close" id="paywall-close" aria-label="Zavřít">×</button>
       <div class="paywall-emoji">🔓</div>
-      <h2 class="paywall-title" id="paywall-title">Odemkni všechna slovesa</h2>
-      <p class="paywall-sub">Zdarma máš 3 výslovnostní skupiny (15 sloves). Premium ti otevře všech <strong>106 sloves</strong> ve 24 skupinách s plně strukturovanou lekcí.</p>
+      <h2 class="paywall-title" id="paywall-title" data-tone="pw_title">Odemkni všechna slovesa 🔓</h2>
+      <p class="paywall-sub" data-tone-html="pw_sub">Zdarma máš 3 výslovnostní skupiny (15 sloves). Premium ti otevře všech <strong>106 sloves</strong> ve 24 skupinách s plně strukturovanou lekcí.</p>
       <div class="paywall-signin hidden" id="paywall-signin">
         <p class="paywall-signin-text">📌 Pro zakoupení se nejdřív přihlas — abychom ti premium svázali s účtem a fungoval i na jiných zařízeních.</p>
         <button class="btn btn-primary paywall-signin-btn" id="paywall-signin-btn">Přihlásit se přes Google</button>
@@ -194,12 +202,12 @@
         <button class="paywall-option paywall-option-primary" data-plan="lifetime">
           <div class="paywall-option-name">Jednorázově</div>
           <div class="paywall-option-price">149 Kč</div>
-          <div class="paywall-option-note">navždy, bez obnovování</div>
+          <div class="paywall-option-note" data-tone="pw_plan1_note">navždy, bez obnovování</div>
         </button>
         <button class="paywall-option" data-plan="monthly">
           <div class="paywall-option-name">Měsíčně</div>
           <div class="paywall-option-price">49 Kč<span class="paywall-period">/měs</span></div>
-          <div class="paywall-option-note">kdykoli zrušíš</div>
+          <div class="paywall-option-note" data-tone="pw_plan2_note">kdykoli zrušíš</div>
         </button>
       </div>
       <p class="paywall-fineprint">Cloud sync + Flashcards + Volný kvíz zůstává zdarma.</p>
@@ -215,12 +223,12 @@
       <p class="modal-sub" id="gsm-sub">Tuto skupinu už znáš. Vyber si.</p>
       <div class="modal-options" id="gsm-options">
         <button class="modal-option" id="gsm-all">
-          <div class="modal-option-name">Všechna slovesa</div>
+          <div class="modal-option-name" data-tone="gsm_all">Všechna slovesa</div>
           <div class="modal-option-count" id="gsm-all-count">— sloves</div>
           <div class="modal-option-note">Celá lekce od začátku</div>
         </button>
         <button class="modal-option modal-option-primary" id="gsm-problem">
-          <div class="modal-option-name">Jen problematická</div>
+          <div class="modal-option-name" data-tone="gsm_problem">Jen problematická</div>
           <div class="modal-option-count" id="gsm-problem-count">— sloves</div>
           <div class="modal-option-note">Žlutá 🟡 + červená 🔴</div>
         </button>

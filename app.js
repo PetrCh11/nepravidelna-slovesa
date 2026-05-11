@@ -18,12 +18,137 @@ const state = {
   data: null,
   dialect: localStorage.getItem('dialect') || 'BrE',
   theme: localStorage.getItem('theme') || 'light',
+  style: localStorage.getItem('style') || 'pro', // 'pro' | 'student'
   currentView: 'lesson',
   lesson: null, // lesson state when active
   quiz: { pool: [], idx: 0, score: 0, total: 0, type: 'mixed', selectedSections: new Set(), review: [] },
   progress: JSON.parse(localStorage.getItem('progress') || '{}'), // { inf: {status, lastSeen, attempts} }
   premium: localStorage.getItem('premium') === 'true',
 };
+
+// ============================================================
+// Text presets: "pro" (default) vs "student" (slangy)
+// ============================================================
+const TEXTS = {
+  // Hero
+  hero_h2:       { pro: 'Konečně si je zapamatuješ. Jednou a provždy.',
+                   student: 'Tahle slovesa už ti nepoteče. Navždy.' },
+  hero_lead:     { pro: 'Žádné biflování — postupuješ podle výslovnostních vzorců. Když chytneš jeden, máš celou skupinu.',
+                   student: 'Žádný biflování. Žádný stres. Jen výslovnostní skupiny — jakmile chytneš vzorec, hotovka.' },
+  hero_foot:     { pro: 'Vyber si skupinu a začni. 3 máš zdarma na zkoušku.',
+                   student: 'Vyber skupinu a jedem. 3 máš zdarma na vyzkoušení.' },
+  // Fáze 1 (study)
+  s1_eyebrow:    { pro: 'Pohodová prohlídka', student: 'Mrk-mrk 👀' },
+  s1_title:      { pro: 'Mrkni se na všechna slovesa ve skupině',
+                   student: 'Mrk-mrk 👀 na všechna slovesa ve skupině' },
+  s1_sub:        { pro: 'Žádné psaní zatím — jen se podívej, klikni na 🔊 a všimni si, jak se mění samohláska.',
+                   student: 'Žádný stres, žádný psaní. Klikni si na 🔊 a poslechni, jak to zní.' },
+  s1_intro_desc: { pro: 'V klidu si projdi všechna slovesa v této skupině.',
+                   student: 'Žádný stres, jen koukáš. Klikni na 🔊 a poslouchej.' },
+  s1_done_btn:   { pro: 'Hotovo, jdu psát ✍️ →', student: 'OK, jdu na to ✍️ →' },
+  // Mezifáze
+  mh_title:      { pro: 'Hold your horses! / Zadrž! ✋', student: 'Hold your horses! / Zadrž! ✋' },
+  mh_sub:        { pro: 'Která ti vypadají záludně? Označ je — věnujeme jim potom víc péče.',
+                   student: 'Která vypadají, že tě potrápí? Cvakni je. Pak si na ně dáme bacha.' },
+  mh_intro_desc: { pro: 'Označ slovesa, u kterých si myslíš, že ti budou dělat největší problém.',
+                   student: 'Která ti vypadají záludně? Označ je. Pak si na ně dáme bacha.' },
+  mh_done_btn:   { pro: 'Hotovo, jdu na to →', student: 'Hotovo, jedem dál →' },
+  // Fáze 2
+  s2_intro_title:{ pro: 'Fáze 2 — Psaní tvarů', student: 'Fáze 2 — Píšeme to ✍️' },
+  s2_intro_desc: { pro: 'Vidíš česky, píšeš 3 anglické tvary, potvrdíš Enterem. Jdeme na to.',
+                   student: 'Češtinu vidíš, anglicky píšeš 3 tvary. Enter. Boom. 💥' },
+  s2_step2_title:{ pro: '2. krok — chyby pod lupou', student: '2. krok — chyby pod lupou 🔍' },
+  s2_step2_desc: { pro: (n, w) => `Tyhle ti utekly v prvním kole. Druhá šance 🔍 — projdeme jen ${n} ${w}, kde se chyby objevily. Každé sloveso musíš dát 2× po sobě bez chyby.`,
+                   student: (n, w) => `Tyhle ti minule utekly. Dáme jim druhou šanci 🔍 — ${n} ${w}. Musíš je trefit 2× po sobě bez chyby, jinak nás neopustí.` },
+  s2_step3_title:{ pro: '3. krok — finále, zamícháno', student: 'FINÁLE — všechno najednou 🔀' },
+  s2_step3_desc: { pro: 'Finále 🔀 — všechna slovesa zamíchaně. Napíšeš všechny 3 tvary najednou, výsledek uvidíš po Enteru. Každé sloveso musíš dát 2× po sobě bez chyby — kromě těch, která jsi měl(a) bezchybně už v 1. kroku a napíšeš je správně i napoprvé teď.',
+                   student: 'Náhodně, všechno najednou. Žádný šance pomalu psát — všechny 3 tvary, Enter, a pak uvidíš jak na tom jsi. Každý 2× po sobě bez chyby (nebo napoprvé, když jsi měl 1. krok čistej).' },
+  tip_atomic:    { pro: '<kbd>Enter</kbd> = další pole, vyhodnotí se na konci',
+                   student: '<kbd>Enter</kbd> = další pole. Vyhodnocení až na konci.' },
+  tip_field:     { pro: 'Po každém tvaru zmáčkni <kbd>Enter</kbd>',
+                   student: 'Po každym tvaru <kbd>Enter</kbd>' },
+  giveup_btn:    { pro: 'Nevím 😭', student: 'Vzdávám 🏳️' },
+  giveup_confirm:{ pro: 'Vážně? Klikni znovu 😭', student: 'Fakt? Klikni ještě jednou 😭' },
+  // Feedback
+  fb_step2_more: { pro: (s) => `Sedí (${s}/2). Ještě jednou…`,
+                   student: (s) => `Trefa! (${s}/2) Ještě jednou…` },
+  fb_step2_done: { pro: '2× po sobě — sloveso máš v kapse! ✓',
+                   student: '2× po sobě — máš to v kapse! 🔥' },
+  fb_wrong:      { pro: 'Mimo. Streak je na nule, zkusíme později znovu.',
+                   student: 'Sejf! Streak na nule, zkusíme to znova 🙃' },
+  fb_step3_fast: { pro: 'Čisté jako v prvním kroku — máš to zvládnuté.',
+                   student: 'Bezchybný jak v prvním kroku. Příště ti to neproleze tak snadno 😎' },
+  fb_step3_more: { pro: (s) => `Sedí (${s}/2). Ještě jednou…`,
+                   student: (s) => `Trefa! (${s}/2) Ještě jednou…` },
+  fb_step3_done: { pro: '2× po sobě — sloveso je hotové! ✓',
+                   student: '2× po sobě — sloveso je hotový! 🔥' },
+  // Results
+  results_h2:    { pro: 'Hotovo! 🎉', student: 'Hotovo, válíš! 🎉' },
+  stat_green:    { pro: 'zvládnuto', student: 'v kapse' },
+  stat_yellow:   { pro: 'rozjeté', student: 'na hraně' },
+  stat_red:      { pro: 'ještě bojuje', student: 'boj o život' },
+  res_again:     { pro: 'Procvičit jen ta zlobivá',
+                   student: 'Ještě jednou jen ty problematický' },
+  res_new:       { pro: 'Nová lekce', student: 'Nová skupina' },
+  // Section chip
+  chip_default:  { pro: 'Zamíchaně 🎲', student: 'Náhodný mix 🎲' },
+  chip_mastered: { pro: 'Velký test 🏆', student: 'Final boss 🏆' },
+  // Group modal
+  gsm_title:     { pro: 'Jak budeš procvičovat?', student: 'Jak na to půjdeš?' },
+  gsm_sub:       { pro: 'Tuhle skupinu už znáš — vyber si režim.',
+                   student: 'Tuhle skupinu už znáš. Co dneska?' },
+  gsm_all:       { pro: 'Všechna slovesa', student: 'Všechno' },
+  gsm_problem:   { pro: 'Jen ta zlobivá', student: 'Jen ta, co zlobí' },
+  // Section review modal (variant)
+  srm_title:     { pro: 'Zamíchané procvičení', student: 'Velký random 🎲' },
+  srm_sub_some:  { pro: 'Zamíchaná procházka napříč celou sekcí. Vyber si rozsah.',
+                   student: 'Náhodně přes celou sekci. Co dnes?' },
+  srm_sub_clean: { pro: 'Celou sekci máš zelenou — žádná problematická slovesa. Klidně si všechna projdi znovu pro jistotu.',
+                   student: 'Celá sekce v kapse! Žádný problémové, můžeš si všechno dát ještě jednou pro frajeřinu.' },
+  // Paywall
+  pw_title:      { pro: 'Odemkni všechna slovesa 🔓', student: 'Odemkni všechno 🔓' },
+  pw_sub:        { pro: 'Zdarma máš 3 skupiny (15 sloves). Premium ti otevře všech <strong>106 sloves</strong> ve 24 skupinách.',
+                   student: 'Zdarma máš 3 skupiny (15 sloves). Premium ti otevře všechny — všech <strong>106 sloves</strong> ve 24 skupinách.' },
+  pw_plan1_note: { pro: 'navždy, bez obnovování', student: 'klid, navždy' },
+  pw_plan2_note: { pro: 'kdykoli zrušíš', student: 'kdykoliv stopneš' },
+  // Toasts
+  toast_resume:  { pro: 'Pokračujeme tam, kde jsi skončil(a). 👍',
+                   student: 'Jedem od místa, kde jsi přestal. 👍' },
+  toast_pay_ok:  { pro: '🎉 Platba proběhla! Premium se aktivuje během pár vteřin.',
+                   student: '🎉 Platba prošla! Premium se chytne za pár vteřin.' },
+  toast_pay_cancel:{ pro: 'Platba zrušená. Můžeš se k ní kdykoli vrátit.',
+                     student: 'Platba zrušená. Žádný stres — můžeš se vrátit kdykoli.' },
+  toast_no_problem:{ pro: '🎉 Žádná problematická slovesa — celou skupinu máš zvládnutou.',
+                     student: '🎉 Žádný problémové — máš to celý zelený.' },
+  toast_login_fail:{ pro: (e) => 'Přihlášení se nezdařilo — ' + e,
+                     student: (e) => 'Něco se kouslo — ' + e },
+  // Menu
+  menu_lesson:   { pro: '🎓 Lekce', student: '🎓 Lekce' },
+  menu_browse:   { pro: '📚 Přehled skupin', student: '📚 Skupiny' },
+  menu_fc:       { pro: '🃏 Flashcards', student: '🃏 Karty' },
+  menu_quiz:     { pro: '✅ Volný kvíz', student: '✅ Rychlokvíz' },
+};
+
+function t(key, ...args) {
+  const entry = TEXTS[key];
+  if (!entry) return key;
+  const v = entry[state.style] ?? entry.pro;
+  return typeof v === 'function' ? v(...args) : v;
+}
+
+function applyStyleTexts() {
+  // Update all static elements tagged with data-tone="<key>"
+  document.querySelectorAll('[data-tone]').forEach((el) => {
+    el.textContent = t(el.dataset.tone);
+  });
+  document.querySelectorAll('[data-tone-html]').forEach((el) => {
+    el.innerHTML = t(el.dataset.toneHtml);
+  });
+  // Re-render dynamic views that might be currently visible
+  if (state.data) {
+    if (state.currentView === 'lesson' && !state.lesson) renderLessonPicker();
+  }
+}
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -138,7 +263,7 @@ function renderLessonPicker() {
     const totalVerbs = sec.subsections.reduce((n, ss) => n + ss.verbs.length, 0);
     const sectionLocked = !state.premium && sec.subsections.some((sub) => !FREE_SUB_IDS.has(sub.id));
     const icon = allSecMastered ? '🏆' : '🎲';
-    const chipLabel = allSecMastered ? 'Souhrnný test' : 'Procvičit zamíchaně';
+    const chipLabel = allSecMastered ? t('chip_mastered') : t('chip_default');
     const chipTitle = allSecMastered
       ? `Souhrnný test celé sekce — všech ${totalVerbs} sloves, zamíchaně`
       : `Zamíchaná procházka přes všech ${totalVerbs} sloves této sekce`;
@@ -195,9 +320,9 @@ function renderLessonPicker() {
         <div class="group-preview" aria-hidden="true">${previewHtml}</div>
         <div class="group-card-meta">
           <span>${sub.verbs.length} sloves</span>
-          ${progress.green ? `<span class="dot green" title="zvládnuto: ${progress.green}"></span>${progress.green}` : ''}
-          ${progress.yellow ? `<span class="dot yellow" title="v procesu: ${progress.yellow}"></span>${progress.yellow}` : ''}
-          ${progress.red ? `<span class="dot red" title="bojuje: ${progress.red}"></span>${progress.red}` : ''}
+          ${progress.green ? `<span class="dot green" title="${t('stat_green')}: ${progress.green}"></span>${progress.green}` : ''}
+          ${progress.yellow ? `<span class="dot yellow" title="${t('stat_yellow')}: ${progress.yellow}"></span>${progress.yellow}` : ''}
+          ${progress.red ? `<span class="dot red" title="${t('stat_red')}: ${progress.red}"></span>${progress.red}` : ''}
         </div>
       `;
       card.addEventListener('click', () => {
@@ -255,7 +380,10 @@ function openGroupStartChoice(sub) {
   const modal = $('#group-start-modal');
   if (!modal) { startLesson(sub); return; }
   $('#gsm-emoji').textContent = '🔁';
-  $('#gsm-title').textContent = 'Jak budeš procvičovat?';
+  $('#gsm-title').textContent = t('gsm_title');
+  // refresh button labels for current tone
+  $('#gsm-all').querySelector('.modal-option-name').textContent = t('gsm_all');
+  $('#gsm-problem').querySelector('.modal-option-name').textContent = t('gsm_problem');
   const all = sub.verbs.length;
   const problematic = sub.verbs.filter((v) => {
     const s = state.progress[v.inf]?.status;
@@ -268,11 +396,11 @@ function openGroupStartChoice(sub) {
   if (pn === 0) {
     problemBtn.classList.add('disabled');
     problemBtn.disabled = true;
-    $('#gsm-sub').textContent = 'Tuto skupinu už máš zvládnutou — žádná problematická slovesa. Klidně si ji projdi znovu pro jistotu.';
+    $('#gsm-sub').textContent = t('srm_sub_clean');
   } else {
     problemBtn.classList.remove('disabled');
     problemBtn.disabled = false;
-    $('#gsm-sub').textContent = 'Tuto skupinu už znáš. Vyber si, na co se zaměříš.';
+    $('#gsm-sub').textContent = t('gsm_sub');
   }
   modal.classList.remove('hidden');
   const close = () => modal.classList.add('hidden');
@@ -301,7 +429,9 @@ function openSectionReviewChoice(sec) {
   });
   if (!modal) { startSectionReview(sec); return; }
   $('#gsm-emoji').textContent = '🎲';
-  $('#gsm-title').textContent = 'Zamíchané procvičení';
+  $('#gsm-title').textContent = t('srm_title');
+  $('#gsm-all').querySelector('.modal-option-name').textContent = t('gsm_all');
+  $('#gsm-problem').querySelector('.modal-option-name').textContent = t('gsm_problem');
   const sw = (n) => `${n} ${n === 1 ? 'sloveso' : (n < 5 ? 'slovesa' : 'sloves')}`;
   $('#gsm-all-count').textContent = sw(all.length);
   $('#gsm-problem-count').textContent = sw(problematic.length);
@@ -309,11 +439,11 @@ function openSectionReviewChoice(sec) {
   if (problematic.length === 0) {
     problemBtn.classList.add('disabled');
     problemBtn.disabled = true;
-    $('#gsm-sub').textContent = 'Celá sekce je zelená — žádná problematická slovesa. Klidně si všechna projdi znovu pro jistotu.';
+    $('#gsm-sub').textContent = t('srm_sub_clean');
   } else {
     problemBtn.classList.remove('disabled');
     problemBtn.disabled = false;
-    $('#gsm-sub').textContent = 'Zamíchaná procházka napříč celou sekcí. Vyber si rozsah.';
+    $('#gsm-sub').textContent = t('srm_sub_some');
   }
   modal.classList.remove('hidden');
   const close = () => {
@@ -547,7 +677,7 @@ function resumeLesson(saved) {
   }
   updateStageDots();
   updateLessonBar();
-  toast('Pokračujeme tam, kde jsi skončil(a). 👍', 'info', 2500);
+  toast(t('toast_resume'), 'info', 2500);
 }
 
 function hueOf(subId) {
@@ -564,9 +694,9 @@ function hueOf(subId) {
 
 function showStageIntro(stage) {
   const intros = {
-    1:   { emoji: '👀', title: 'Fáze 1 — Seznámení', desc: 'V klidu si projdi všechna slovesa v této skupině.' },
-    1.5: { emoji: '✋', title: 'Hold your horses! / Zadrž!', desc: 'Označ slovesa, u kterých si myslíš, že ti budou dělat největší problém.' },
-    2:   { emoji: '✍️', title: 'Fáze 2 — Psaní tvarů', desc: 'Uvidíš český překlad a napíšeš všechny 3 tvary + Enter. 3, 2, 1 ...aaaaand... GO!' },
+    1:   { emoji: '👀', title: 'Fáze 1 — Seznámení', desc: t('s1_intro_desc') },
+    1.5: { emoji: '✋', title: t('mh_title'),         desc: t('mh_intro_desc') },
+    2:   { emoji: '✍️', title: t('s2_intro_title'),  desc: t('s2_intro_desc') },
   };
   const i = intros[stage];
   $('#stage-intro-emoji').textContent = i.emoji;
@@ -650,15 +780,15 @@ function stage1Study() {
       <div class="study-hero">
         <div class="study-hero-pattern">${L.sub.pattern}</div>
         <div class="study-hero-text">
-          <div class="study-hero-eyebrow">Fáze 1 · Seznámení</div>
-          <div class="study-hero-title">Projdi si všechna slovesa</div>
-          <div class="study-hero-sub">Přečti si význam, poslechni výslovnost 🔊 a všimni si, jak se mění <span class="study-hero-vowel">samohláska</span>.</div>
+          <div class="study-hero-eyebrow">${t('s1_eyebrow')}</div>
+          <div class="study-hero-title">${t('s1_title')}</div>
+          <div class="study-hero-sub">${t('s1_sub')}</div>
         </div>
         <div class="study-hero-count">${L.verbs.length}<span>sloves</span></div>
       </div>
       <div class="study-list">${rowsHtml}</div>
       <div class="study-actions">
-        <button class="btn btn-primary study-done-btn" id="study-done">Hotovo, jdu psát ✍️ →</button>
+        <button class="btn btn-primary study-done-btn" id="study-done">${t('s1_done_btn')}</button>
       </div>
     </div>
   `;
@@ -708,14 +838,14 @@ function stage1Mark() {
       <div class="mark-hero">
         <div class="mark-hero-emoji">✋</div>
         <div class="mark-hero-text">
-          <div class="mark-hero-title">Hold your horses! / Zadrž!</div>
-          <div class="mark-hero-sub">Označ slovesa, u kterých si myslíš, že ti budou dělat největší problém.</div>
+          <div class="mark-hero-title">${t('mh_title')}</div>
+          <div class="mark-hero-sub">${t('mh_sub')}</div>
         </div>
         <div class="mark-counter" id="mark-counter">${L.markedHard.size}</div>
       </div>
       <div class="study-list mark-list">${rowsHtml}</div>
       <div class="study-actions">
-        <button class="btn btn-primary study-done-btn" id="mark-done">Pokračovat na psaní ✍️ →</button>
+        <button class="btn btn-primary study-done-btn" id="mark-done">${t('mh_done_btn')}</button>
       </div>
     </div>
   `;
@@ -837,9 +967,9 @@ function stage2AdvanceToStep2() {
   L.verbs.forEach((v) => { L.perVerb.get(v.inf).step2Streak = 0; });
   $('#lesson-stage-intro').classList.remove('hidden');
   $('#stage-intro-emoji').textContent = '🔍';
-  $('#stage-intro-title').textContent = '2. krok — chyby pod lupou';
+  $('#stage-intro-title').textContent = t('s2_step2_title');
   const word = errored.length === 1 ? 'sloveso' : (errored.length < 5 ? 'slovesa' : 'sloves');
-  $('#stage-intro-desc').textContent = `Projdeme jen ${errored.length} ${word}, kde se chyby objevily. Políčka, ve kterých to bylo, mají jemnou modrou auru. Každé sloveso musíš napsat 2× za sebou bez chyby, aby z fronty vypadlo.`;
+  $('#stage-intro-desc').textContent = t('s2_step2_desc', errored.length, word);
   $('#lesson-question').innerHTML = '';
   updateStageDots();
   updateLessonBar();
@@ -862,8 +992,8 @@ function stage2AdvanceToStep3() {
   });
   $('#lesson-stage-intro').classList.remove('hidden');
   $('#stage-intro-emoji').textContent = '🔀';
-  $('#stage-intro-title').textContent = '3. krok — finále, zamícháno';
-  $('#stage-intro-desc').textContent = 'Všechna slovesa v náhodném pořadí. Napiš nejdřív všechny tři tvary, pak teprve uvidíš výsledek. Každé sloveso musíš napsat 2× za sebou bez chyby — kromě těch, která jsi měl(a) bezchybně už v 1. kroku a napíšeš je správně i napoprvé teď.';
+  $('#stage-intro-title').textContent = t('s2_step3_title');
+  $('#stage-intro-desc').textContent = t('s2_step3_desc');
   $('#lesson-question').innerHTML = '';
   updateStageDots();
   updateLessonBar();
@@ -912,9 +1042,7 @@ function askStage2Verb(verb, step) {
     progressText = `zbývá ${L.stage2Q.length} · sloveso ${streakLabel}`;
   }
 
-  const tipText = isAtomicCheck
-    ? '<kbd>Enter</kbd> = další pole, vyhodnotí se na konci'
-    : 'Po každém tvaru zmáčkni <kbd>Enter</kbd>';
+  const tipText = isAtomicCheck ? t('tip_atomic') : t('tip_field');
 
   const fieldHtml = (key, placeholder) => {
     const auraCls = auraSet.has(key) ? ' has-aura' : '';
@@ -939,7 +1067,7 @@ function askStage2Verb(verb, step) {
       </div>
       <div class="q-feedback"></div>
       <div class="q-actions">${isAtomicCheck ? '<button class="btn btn-primary" id="s2-check">Zkontrolovat</button>' : ''}</div>
-      <button type="button" class="give-up-btn" id="give-up-btn">Nevím 😭</button>
+      <button type="button" class="give-up-btn" id="give-up-btn">${t('giveup_btn')}</button>
     </div>
   `;
 
@@ -991,15 +1119,15 @@ function askStage2Verb(verb, step) {
           L.stage2Q.shift();
           p.step2Cleared = true;
           L.lastCleared = verb.inf;
-          msg = '✅ 2× po sobě bez chyby — sloveso máš!';
+          msg = '✅ ' + t('fb_step2_done');
         } else {
           L.stage2Q.push(L.stage2Q.shift());
-          msg = `✅ Správně (${p.step2Streak}/2). Ještě jednou…`;
+          msg = '✅ ' + t('fb_step2_more', p.step2Streak);
         }
       } else {
         p.step2Streak = 0;
         L.stage2Q.push(L.stage2Q.shift());
-        msg = '❌ Streak vynulován. Zkusíme znovu.';
+        msg = '❌ ' + t('fb_wrong');
       }
     } else if (step === 3) {
       const isFirstAttempt = p.step3Attempts === 0;
@@ -1009,17 +1137,17 @@ function askStage2Verb(verb, step) {
           L.stage2Q.shift();
           p.step3Cleared = true;
           L.lastCleared = verb.inf;
-          msg = '✅ Hotovo! V 1. kroku jsi byl(a) bezchybný(á), tak nemusíš dvakrát.';
+          msg = '✅ ' + t('fb_step3_fast');
         } else {
           p.step3Streak++;
           if (p.step3Streak >= 2) {
             L.stage2Q.shift();
             p.step3Cleared = true;
             L.lastCleared = verb.inf;
-            msg = '✅ 2× po sobě — sloveso je hotové!';
+            msg = '✅ ' + t('fb_step3_done');
           } else {
             L.stage2Q.push(L.stage2Q.shift());
-            msg = `✅ Správně (${p.step3Streak}/2). Ještě jednou…`;
+            msg = '✅ ' + t('fb_step3_more', p.step3Streak);
           }
         }
       } else {
@@ -1027,7 +1155,7 @@ function askStage2Verb(verb, step) {
         p.step3HadError = true;
         p.step3Wrong = (p.step3Wrong || 0) + 1;
         L.stage2Q.push(L.stage2Q.shift());
-        msg = '❌ Streak vynulován. Zkusíme později znovu.';
+        msg = '❌ ' + t('fb_wrong');
       }
     }
 
@@ -1077,7 +1205,7 @@ function askStage2Verb(verb, step) {
     if (!giveUpArmed) {
       giveUpArmed = true;
       const orig = giveUpBtn.textContent;
-      giveUpBtn.textContent = 'Opravdu? Klikni znovu 😭';
+      giveUpBtn.textContent = t('giveup_confirm');
       giveUpBtn.classList.add('armed');
       giveUpResetTimer = setTimeout(() => {
         giveUpArmed = false;
@@ -1124,9 +1252,9 @@ function finishLesson() {
   const counts = { green: 0, yellow: 0, red: 0 };
   L.perVerb.forEach((p) => { counts[p.status] = (counts[p.status] || 0) + 1; });
   $('#results-summary').innerHTML = `
-    <div class="stat stat-green"><div class="stat-num">${counts.green || 0}</div><div class="stat-label">zvládnuto</div></div>
-    <div class="stat stat-yellow"><div class="stat-num">${counts.yellow || 0}</div><div class="stat-label">v procesu</div></div>
-    <div class="stat stat-red"><div class="stat-num">${counts.red || 0}</div><div class="stat-label">bojuje</div></div>
+    <div class="stat stat-green"><div class="stat-num">${counts.green || 0}</div><div class="stat-label">${t('stat_green')}</div></div>
+    <div class="stat stat-yellow"><div class="stat-num">${counts.yellow || 0}</div><div class="stat-label">${t('stat_yellow')}</div></div>
+    <div class="stat stat-red"><div class="stat-num">${counts.red || 0}</div><div class="stat-label">${t('stat_red')}</div></div>
   `;
   const list = $('#results-list');
   list.innerHTML = '';
@@ -1261,7 +1389,7 @@ function againOnlyProblem() {
   const L = state.lesson;
   const keep = L.verbs.filter((v) => L.perVerb.get(v.inf).status !== 'green');
   if (keep.length === 0) {
-    toast('🎉 Skvělé! Žádná problematická slovesa — celou skupinu máš zvládnutou.', 'success');
+    toast(t('toast_no_problem'), 'success');
     return;
   }
   const pseudoSub = { ...L.sub, verbs: keep };
@@ -1734,9 +1862,9 @@ function handlePaymentReturn() {
   const url = window.location.origin + window.location.pathname;
   history.replaceState({}, '', url);
   if (status === 'success') {
-    setTimeout(() => toast('🎉 Platba proběhla! Premium se aktivuje během několika sekund.', 'success', 6000), 300);
+    setTimeout(() => toast(t('toast_pay_ok'), 'success', 6000), 300);
   } else if (status === 'cancel') {
-    setTimeout(() => toast('Platba zrušena. Můžeš se k ní kdykoli vrátit.', 'info'), 300);
+    setTimeout(() => toast(t('toast_pay_cancel'), 'info'), 300);
   }
 }
 
@@ -1799,6 +1927,18 @@ async function init() {
     }
   });
   $$('.menu-item').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+  // Style toggle (Pracující / Student)
+  const reflectStyleBtns = () => {
+    $$('.menu-style-btn').forEach((b) => b.classList.toggle('active', b.dataset.style === state.style));
+  };
+  reflectStyleBtns();
+  applyStyleTexts();
+  $$('.menu-style-btn').forEach((b) => b.addEventListener('click', () => {
+    state.style = b.dataset.style;
+    localStorage.setItem('style', state.style);
+    reflectStyleBtns();
+    applyStyleTexts();
+  }));
   // Logo → return to home (lesson picker)
   $('#logo-home')?.addEventListener('click', () => {
     // If a lesson is in progress, just hide it and show the picker (snapshot already saved)
