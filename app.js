@@ -32,7 +32,7 @@ const state = {
 const TEXTS = {
   // Hero
   hero_h2:       { pro: 'Konečně si je zapamatuješ. Jednou a provždy.',
-                   student: 'Tahle slovesa už ti nepoteče. Navždy.' },
+                   student: 'Nepravidelný slovesa? Easy.' },
   hero_lead:     { pro: 'Žádné biflování — postupuješ podle výslovnostních vzorců. Když chytneš jeden, máš celou skupinu.',
                    student: 'Žádný biflování. Žádný stres. Jen výslovnostní skupiny — jakmile chytneš vzorec, hotovka.' },
   hero_foot:     { pro: 'Vyber si skupinu a začni. 3 máš zdarma na zkoušku.',
