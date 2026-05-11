@@ -493,7 +493,7 @@ function startSectionReview(sec, customVerbs = null) {
       status: 'pending', stage1: null, stage2R1: null, stage2R2: null, stage2Correct: 0, hard: false,
       step1Wrong: new Set(),
       step1Perfect: true,           // skip step-2 backtrack — we go straight to step 3
-      step2Streak: 0, step2Cleared: true,
+      step2Streak: 0, step2Cleared: true, step2Wrong: 0,
       step3Streak: 0, step3Attempts: 0, step3Cleared: false, step3HadError: false,
       step3Wrong: 0, gaveUp: false,
     }])),
@@ -899,6 +899,7 @@ function stage2InitStep1() {
     p.step1Perfect = false;
     p.step2Streak = 0;
     p.step2Cleared = false;
+    p.step2Wrong = 0;
     p.step3Streak = 0;
     p.step3Attempts = 0;
     p.step3Cleared = false;
@@ -1006,12 +1007,13 @@ function stage2Finish() {
   const L = state.lesson;
   L.verbs.forEach((v) => {
     const p = L.perVerb.get(v.inf);
-    // Red    = student použil "Nevím" v 3. kroku, NEBO udělal 3+ chyb (sloveso fakt nesedí)
-    // Yellow = 1-2 chyby v 3. kroku, ale nakonec to dal
-    // Green  = 3. krok bez jediné chyby
-    const wrong = p.step3Wrong || 0;
-    if (p.gaveUp || wrong >= 3) p.status = 'red';
-    else if (wrong >= 1) p.status = 'yellow';
+    // Red    = "Nevím" v 3. kroku NEBO 3+ chyb v 3. kroku
+    // Yellow = jakákoli chyba v 2. kroku NEBO 1-2 chyby v 3. kroku
+    // Green  = 2. i 3. krok bez jediné chyby
+    const wrong3 = p.step3Wrong || 0;
+    const wrong2 = p.step2Wrong || 0;
+    if (p.gaveUp || wrong3 >= 3) p.status = 'red';
+    else if (wrong3 >= 1 || wrong2 >= 1) p.status = 'yellow';
     else p.status = 'green';
   });
   finishLesson();
@@ -1126,6 +1128,7 @@ function askStage2Verb(verb, step) {
         }
       } else {
         p.step2Streak = 0;
+        p.step2Wrong = (p.step2Wrong || 0) + 1;
         L.stage2Q.push(L.stage2Q.shift());
         msg = '❌ ' + t('fb_wrong');
       }
