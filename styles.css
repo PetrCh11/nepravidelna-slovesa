@@ -2640,6 +2640,40 @@ body.theme-dark .menu-style-btn.active,
 .paywall-period { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
 .paywall-option-note { grid-area: note; font-size: 0.78rem; color: var(--text-muted); }
 .paywall-fineprint { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
+
+/* Highlighted "best value" tier */
+.paywall-option-highlight {
+  position: relative;
+  border-width: 2px;
+  border-color: hsl(20 90% 50%);
+  background: linear-gradient(135deg, hsl(20 95% 94%), hsl(45 95% 95%) 70%);
+  box-shadow: 0 6px 20px rgba(255, 100, 50, 0.18);
+  transform: scale(1.015);
+  margin: 6px 0;
+}
+.paywall-option-highlight:hover {
+  box-shadow: 0 10px 26px rgba(255, 100, 50, 0.28);
+  transform: scale(1.025);
+}
+.paywall-badge {
+  position: absolute;
+  top: -10px;
+  right: 14px;
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 3px 10px rgba(255, 107, 53, 0.4);
+  white-space: nowrap;
+}
+[data-theme="dark"] .paywall-option-highlight,
+body.theme-dark .paywall-option-highlight {
+  background: linear-gradient(135deg, hsl(20 60% 20%), hsl(45 50% 16%) 70%);
+}
+
 [data-theme="dark"] .give-up-btn:hover { background: rgba(255,255,255,0.06); }
 .quiz-fill-inputs input.gave-up {
   border-color: rgba(245, 158, 11, 0.7);

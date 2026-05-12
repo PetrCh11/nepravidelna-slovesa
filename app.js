@@ -11,6 +11,7 @@ const FREE_SUB_IDS = new Set(['1.1.0', '1.2.1', '1.2.5']);
 const BACKEND_URL = 'https://nepravidelna-slovesa-production.up.railway.app'; // backend stays on Railway
 const STRIPE_PRICES = {
   lifetime: { id: 'price_1TTHfv2OnsjUwFrwzP8rr2uF', mode: 'payment' },     // 149 Kč one-time
+  yearly:   { id: 'TODO_YEARLY_PRICE_ID',           mode: 'subscription' }, // 299 Kč/year — fill in after creating price
   monthly:  { id: 'price_1TTHgw2OnsjUwFrwF1uEsLFO', mode: 'subscription' }, // 49 Kč/mo
 };
 
@@ -105,8 +106,10 @@ const TEXTS = {
   pw_title:      { pro: 'Odemkni všechna slovesa 🔓', student: 'Odemkni všechno 🔓' },
   pw_sub:        { pro: 'Zdarma máš 3 skupiny (15 sloves). Premium ti otevře všech <strong>106 sloves</strong> ve 24 skupinách.',
                    student: 'Zdarma máš 3 skupiny (15 sloves). Premium ti otevře všechny — všech <strong>106 sloves</strong> ve 24 skupinách.' },
-  pw_plan1_note: { pro: 'navždy, bez obnovování', student: 'klid, navždy' },
+  pw_plan1_note: { pro: 'jednorázově, bez obnovování', student: 'jednorázově, klid navždy' },
   pw_plan2_note: { pro: 'kdykoli zrušíš', student: 'kdykoliv stopneš' },
+  pw_plan_yearly_note: { pro: 'jen 25 Kč/měs · ušetříš polovinu',
+                         student: 'jen 25 Kč/měs · poloviční cena 🔥' },
   // Toasts
   toast_resume:  { pro: 'Pokračujeme tam, kde jsi skončil(a). 👍',
                    student: 'Jedem od místa, kde jsi přestal. 👍' },
