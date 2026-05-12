@@ -104,7 +104,14 @@ app.post('/create-checkout-session', async (req, res) => {
           trial_period_days: 7,
           trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
         },
-      } : {}),
+      } : {
+        // For one-time (lifetime) payments, force creation of a permanent Stripe
+        // customer so the buyer can later use Customer Portal (invoice download,
+        // payment method update). Without this, Stripe issues a 'guest customer'
+        // which portal refuses.
+        customer_creation: 'always',
+        invoice_creation: { enabled: true },
+      }),
       ...(email ? { customer_email: email } : {}),
       allow_promotion_codes: true,
       locale: 'cs',
