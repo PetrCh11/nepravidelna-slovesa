@@ -1204,8 +1204,6 @@ function finishLesson() {
 
   $('.lesson-active').classList.add('hidden');
   $('.lesson-results').classList.remove('hidden');
-  const counts = { green: 0, yellow: 0, red: 0 };
-  L.perVerb.forEach((p) => { counts[p.status] = (counts[p.status] || 0) + 1; });
   $('#results-summary').innerHTML = `
     <div class="stat stat-green"><div class="stat-num">${counts.green || 0}</div><div class="stat-label">${t('stat_green')}</div></div>
     <div class="stat stat-yellow"><div class="stat-num">${counts.yellow || 0}</div><div class="stat-label">${t('stat_yellow')}</div></div>
