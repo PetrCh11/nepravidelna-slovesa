@@ -54,12 +54,15 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     if (!uid) return res.json({ ignored: true, reason: 'no uid' });
 
     if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid') {
+      // Capture Stripe customer ID so we can open the Customer Portal later
+      const stripeCustomerId = o.customer || null;
       await db.collection('users').doc(uid).set({
         premium: true,
-        premiumPlan: o.mode === 'subscription' ? 'monthly' : 'lifetime',
+        premiumPlan: o.mode === 'subscription' ? 'subscription' : 'lifetime',
         premiumUpdatedAt: Date.now(),
+        ...(stripeCustomerId ? { stripeCustomerId } : {}),
       }, { merge: true });
-      console.log('Premium granted →', uid);
+      console.log('Premium granted →', uid, stripeCustomerId ? `(customer ${stripeCustomerId})` : '');
     } else if (event.type === 'customer.subscription.deleted' || event.type === 'invoice.payment_failed') {
       // Subscription cancelled or payment failed → revoke
       await db.collection('users').doc(uid).set({
@@ -157,6 +160,29 @@ app.post('/redeem-code', async (req, res) => {
     const codeStatus = ['not_found', 'inactive', 'expired', 'exhausted', 'already_redeemed'].includes(msg) ? 400 : 500;
     if (codeStatus === 500) console.error('Redeem error:', e);
     res.status(codeStatus).json({ error: msg });
+  }
+});
+
+// Stripe Customer Portal — lets users cancel, update card, download invoices
+app.post('/create-portal-session', async (req, res) => {
+  const { uid, returnUrl } = req.body || {};
+  if (!uid || !returnUrl) return res.status(400).json({ error: 'missing uid or returnUrl' });
+  try {
+    const userSnap = await db.collection('users').doc(uid).get();
+    const data = userSnap.exists ? userSnap.data() : {};
+    const customerId = data.stripeCustomerId;
+    if (!customerId) {
+      // User has no Stripe customer yet (e.g. promo-redeemed premium or never paid)
+      return res.status(404).json({ error: 'no_customer' });
+    }
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl,
+    });
+    res.json({ url: session.url });
+  } catch (e) {
+    console.error('Portal create failed:', e);
+    res.status(500).json({ error: e.message });
   }
 });
 

@@ -2454,6 +2454,16 @@ body {
 .next-btn-corner:hover { box-shadow: 0 6px 18px rgba(255, 90, 60, 0.36); }
 .next-btn-corner:active { transform: scale(0.97); }
 
+/* ----- Customer portal menu item ----- */
+.menu-portal {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.menu-portal.hidden { display: none !important; }
+.menu-portal-icon { font-size: 1.1rem; }
+
 /* ----- Cloud sync menu item ----- */
 .menu-divider {
   border: 0;

@@ -1684,7 +1684,46 @@ function toggleMenu() {
 // Cloud sync UI helpers
 // ============================================================
 
+function updatePortalBtn() {
+  const btn = $('#portal-btn');
+  if (!btn) return;
+  // Show only for signed-in premium users (promo redemptions also see it; backend will return no_customer for those)
+  if (cloud.getCurrentUser() && state.premium) btn.classList.remove('hidden');
+  else btn.classList.add('hidden');
+}
+
+async function openCustomerPortal() {
+  if (!BACKEND_URL) { toast('Backend není dostupný.', 'error'); return; }
+  const user = cloud.getCurrentUser();
+  if (!user) { toast('Nejdřív se přihlas přes Google.', 'error'); return; }
+  const btn = $('#portal-btn');
+  const origHtml = btn?.innerHTML;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span>Otevírám…</span>'; }
+  try {
+    const resp = await fetch(`${BACKEND_URL}/create-portal-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uid: user.uid,
+        returnUrl: window.location.origin + window.location.pathname,
+      }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.status === 404 && data.error === 'no_customer') {
+      toast('Předplatné nemáš přes Stripe (např. promo kód). Není co spravovat.', 'info', 6000);
+      return;
+    }
+    if (!resp.ok || !data.url) throw new Error(data.error || 'unknown');
+    window.location.href = data.url;
+  } catch (e) {
+    toast('Chyba při otevírání portálu: ' + (e.message || e), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+  }
+}
+
 function updateCloudUI(user) {
+  updatePortalBtn();
   const label = $('#cloud-label');
   const btn = $('#cloud-btn');
   if (label && btn) {
@@ -1817,6 +1856,7 @@ async function redeemPromo(rawCode, ctx) {
     // Success — flip local state and close paywall
     state.premium = true;
     localStorage.setItem('premium', 'true');
+    updatePortalBtn();
     track('promo_redeemed', { code });
     ctx.setMsg('Kód uplatněn! 🎉 Premium je tvoje.', 'success');
     toast('🎉 Kód uplatněn — všechny skupiny jsou tvoje!', 'success', 5000);
@@ -1898,6 +1938,7 @@ function handlePaymentReturn() {
   history.replaceState({}, '', url);
   if (status === 'success') {
     track('payment_success');
+    updatePortalBtn();
     setTimeout(() => toast(t('toast_pay_ok'), 'success', 6000), 300);
   } else if (status === 'cancel') {
     track('payment_cancelled');
@@ -1946,6 +1987,7 @@ async function init() {
     renderLessonPicker();
     renderStatsStrip();
   });
+  $('#portal-btn')?.addEventListener('click', openCustomerPortal);
   $('#google-btn')?.addEventListener('click', () => {
     if (cloud.getCurrentUser()) cloud.signOutNow();
     else cloud.signIn().catch((e) => toast('Přihlášení selhalo: ' + (e?.message || e), 'error'));
