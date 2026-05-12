@@ -2641,6 +2641,29 @@ body.theme-dark .menu-style-btn.active,
 .paywall-option-note { grid-area: note; font-size: 0.78rem; color: var(--text-muted); }
 .paywall-fineprint { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
 
+/* Trial highlight banner above plans */
+.paywall-trial-banner {
+  background: linear-gradient(135deg, hsl(45 95% 92%), hsl(20 95% 92%));
+  border: 1.5px solid hsl(35 85% 60%);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  color: hsl(20 65% 30%);
+  text-align: center;
+  line-height: 1.4;
+}
+.paywall-trial-banner strong { color: hsl(20 75% 35%); }
+[data-theme="dark"] .paywall-trial-banner,
+body.theme-dark .paywall-trial-banner {
+  background: linear-gradient(135deg, hsl(35 50% 20%), hsl(20 50% 18%));
+  border-color: hsl(35 60% 45%);
+  color: hsl(45 80% 80%);
+}
+[data-theme="dark"] .paywall-trial-banner strong,
+body.theme-dark .paywall-trial-banner strong { color: hsl(45 90% 75%); }
+
+
 /* Highlighted "best value" tier */
 .paywall-option-highlight {
   position: relative;

@@ -93,7 +93,15 @@ app.post('/create-checkout-session', async (req, res) => {
       success_url: `${returnUrl}?premium=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${returnUrl}?premium=cancel`,
       metadata: { uid, app: 'slovesa' },
-      ...(mode === 'subscription' ? { subscription_data: { metadata: { uid, app: 'slovesa' } } } : {}),
+      ...(mode === 'subscription' ? {
+        subscription_data: {
+          metadata: { uid, app: 'slovesa' },
+          // 7-day free trial on subscriptions (monthly + yearly).
+          // Card is collected upfront; Stripe auto-charges at trial end unless cancelled.
+          trial_period_days: 7,
+          trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
+        },
+      } : {}),
       ...(email ? { customer_email: email } : {}),
       allow_promotion_codes: true,
       locale: 'cs',
