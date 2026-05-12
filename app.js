@@ -10,8 +10,8 @@ const FREE_SUB_IDS = new Set(['1.1.0', '1.2.1', '1.2.5']);
 // Stripe / backend config — backend URL set after Railway deploy
 const BACKEND_URL = 'https://nepravidelna-slovesa-production.up.railway.app'; // backend stays on Railway
 const STRIPE_PRICES = {
-  lifetime: { id: 'TODO_LIFETIME_449_PRICE_ID',     mode: 'payment' },      // 449 Kč one-time — fill in after creating new price
-  yearly:   { id: 'TODO_YEARLY_249_PRICE_ID',       mode: 'subscription' }, // 249 Kč/year — fill in after creating price
+  lifetime: { id: 'price_1TWBCB2OnsjUwFrw7MXb4pri', mode: 'payment' },      // 449 Kč one-time
+  yearly:   { id: 'price_1TWBAz2OnsjUwFrw6U6yLjGD', mode: 'subscription' }, // 249 Kč/year
   monthly:  { id: 'price_1TTHgw2OnsjUwFrwF1uEsLFO', mode: 'subscription' }, // 49 Kč/mo
 };
 
