@@ -10,8 +10,8 @@ const FREE_SUB_IDS = new Set(['1.1.0', '1.2.1', '1.2.5']);
 // Stripe / backend config — backend URL set after Railway deploy
 const BACKEND_URL = 'https://nepravidelna-slovesa-production.up.railway.app'; // backend stays on Railway
 const STRIPE_PRICES = {
-  lifetime: { id: 'price_1TTHfv2OnsjUwFrwzP8rr2uF', mode: 'payment' },     // 149 Kč one-time
-  yearly:   { id: 'TODO_YEARLY_PRICE_ID',           mode: 'subscription' }, // 299 Kč/year — fill in after creating price
+  lifetime: { id: 'TODO_LIFETIME_449_PRICE_ID',     mode: 'payment' },      // 449 Kč one-time — fill in after creating new price
+  yearly:   { id: 'TODO_YEARLY_249_PRICE_ID',       mode: 'subscription' }, // 249 Kč/year — fill in after creating price
   monthly:  { id: 'price_1TTHgw2OnsjUwFrwF1uEsLFO', mode: 'subscription' }, // 49 Kč/mo
 };
 
@@ -108,8 +108,8 @@ const TEXTS = {
                    student: 'Zdarma máš 3 skupiny (15 sloves). Premium ti otevře všechny — všech <strong>106 sloves</strong> ve 24 skupinách.' },
   pw_plan1_note: { pro: 'jednorázově, bez obnovování', student: 'jednorázově, klid navždy' },
   pw_plan2_note: { pro: 'kdykoli zrušíš', student: 'kdykoliv stopneš' },
-  pw_plan_yearly_note: { pro: 'jen 25 Kč/měs · ušetříš polovinu',
-                         student: 'jen 25 Kč/měs · poloviční cena 🔥' },
+  pw_plan_yearly_note: { pro: 'vychází na 21 Kč/měs · ušetříš 57 %',
+                         student: '21 Kč/měs · ušetříš víc než půlku 🔥' },
   // Toasts
   toast_resume:  { pro: 'Pokračujeme tam, kde jsi skončil(a). 👍',
                    student: 'Jedem od místa, kde jsi přestal. 👍' },
