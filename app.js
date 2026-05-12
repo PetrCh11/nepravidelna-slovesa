@@ -125,6 +125,15 @@ const TEXTS = {
   menu_quiz:     { pro: '✅ Volný kvíz', student: '✅ Rychlokvíz' },
 };
 
+// Plausible custom event helper — safe to call even if script blocked / not loaded
+function track(eventName, props) {
+  try {
+    if (typeof window.plausible === 'function') {
+      window.plausible(eventName, props ? { props } : undefined);
+    }
+  } catch {}
+}
+
 function t(key, ...args) {
   const entry = TEXTS[key];
   if (!entry) return key;
@@ -352,6 +361,7 @@ function subProgress(sub) {
 }
 
 function startLesson(sub) {
+  track('lesson_started', { sub: sub.id });
   const verbs = sub.verbs.map((v) => ({ ...v, subId: sub.id }));
   state.lesson = {
     sub,
@@ -459,6 +469,7 @@ function openSectionReviewChoice(sec) {
 }
 
 function startSectionReview(sec, customVerbs = null) {
+  track('section_review_started', { sec: sec.id, filtered: !!customVerbs });
   // Gather all verbs across all subsections of the section, tagged with their original subId
   let verbs;
   if (customVerbs) {
@@ -1179,6 +1190,10 @@ function askStage2Verb(verb, step) {
 function finishLesson() {
   const L = state.lesson;
   L.done = true;
+  // Telemetry — how many verbs ended up in each bucket
+  const counts = { green: 0, yellow: 0, red: 0 };
+  L.perVerb.forEach((p) => { counts[p.status] = (counts[p.status] || 0) + 1; });
+  track('lesson_completed', { sub: L.sub.id, green: counts.green, yellow: counts.yellow, red: counts.red });
   clearActiveLesson(); // lesson finished — no resume needed
   // Save to progress
   L.perVerb.forEach((p, inf) => {
@@ -1703,6 +1718,7 @@ function updateCloudUI(user) {
 function showPaywall(sub) {
   const m = $('#paywall');
   m.classList.remove('hidden');
+  track('paywall_shown', sub ? { sub: sub.id } : undefined);
   // Inline sign-in prompt if not signed in
   const signin = m.querySelector('#paywall-signin');
   const options = m.querySelector('.paywall-options');
@@ -1799,6 +1815,7 @@ async function redeemPromo(rawCode, ctx) {
     // Success — flip local state and close paywall
     state.premium = true;
     localStorage.setItem('premium', 'true');
+    track('promo_redeemed', { code });
     ctx.setMsg('Kód uplatněn! 🎉 Premium je tvoje.', 'success');
     toast('🎉 Kód uplatněn — všechny skupiny jsou tvoje!', 'success', 5000);
     setTimeout(() => {
@@ -1835,6 +1852,7 @@ function toast(message, type = 'info', duration = 4500) {
 async function startCheckout(plan, btn) {
   const price = STRIPE_PRICES[plan];
   if (!price) return;
+  track('checkout_started', { plan });
   if (!BACKEND_URL) {
     toast('Backend zatím není dostupný. Zkus to prosím za chvíli.', 'error');
     return;
@@ -1877,8 +1895,10 @@ function handlePaymentReturn() {
   const url = window.location.origin + window.location.pathname;
   history.replaceState({}, '', url);
   if (status === 'success') {
+    track('payment_success');
     setTimeout(() => toast(t('toast_pay_ok'), 'success', 6000), 300);
   } else if (status === 'cancel') {
+    track('payment_cancelled');
     setTimeout(() => toast(t('toast_pay_cancel'), 'info'), 300);
   }
 }
