@@ -1737,6 +1737,81 @@ function showPaywall(sub) {
   });
   m.querySelector('#paywall-close').onclick = () => m.classList.add('hidden');
   m.onclick = (e) => { if (e.target === m) m.classList.add('hidden'); };
+  // Promo code redemption
+  const promoToggle = m.querySelector('#paywall-promo-toggle');
+  const promoForm = m.querySelector('#paywall-promo-form');
+  const promoInput = m.querySelector('#paywall-promo-input');
+  const promoSubmit = m.querySelector('#paywall-promo-submit');
+  const promoMsg = m.querySelector('#paywall-promo-msg');
+  promoToggle.onclick = () => {
+    promoForm.classList.toggle('hidden');
+    if (!promoForm.classList.contains('hidden')) setTimeout(() => promoInput.focus(), 50);
+  };
+  const setMsg = (text, kind) => {
+    promoMsg.textContent = text;
+    promoMsg.className = 'paywall-promo-msg' + (kind ? ' is-' + kind : '');
+  };
+  setMsg('', null);
+  promoSubmit.onclick = () => redeemPromo(promoInput.value, { promoSubmit, promoInput, setMsg, modal: m });
+  promoInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); promoSubmit.click(); } };
+}
+
+const PROMO_ERRORS = {
+  not_found: 'Tento kód neznáme. Zkontroluj překlepy.',
+  inactive: 'Kód je deaktivovaný.',
+  expired: 'Kód už vypršel.',
+  exhausted: 'Kód byl vyčerpán — všechna místa obsazená.',
+  already_redeemed: 'Tento kód už jsi jednou uplatnil(a).',
+  invalid_code_format: 'Kód má špatný formát.',
+  no_user: 'Nejdřív se prosím přihlas přes Google.',
+  no_backend: 'Backend není dostupný. Zkus to později.',
+  network: 'Síťová chyba. Zkus to za chvíli.',
+};
+
+async function redeemPromo(rawCode, ctx) {
+  const code = String(rawCode || '').trim().toUpperCase();
+  if (!code) { ctx.setMsg('Zadej kód.', 'error'); return; }
+  if (!BACKEND_URL) { ctx.setMsg(PROMO_ERRORS.no_backend, 'error'); return; }
+  const user = cloud.getCurrentUser();
+  if (!user) {
+    ctx.setMsg(PROMO_ERRORS.no_user, 'error');
+    // Open inline sign-in in paywall
+    const signin = ctx.modal.querySelector('#paywall-signin');
+    if (signin) signin.classList.remove('hidden');
+    return;
+  }
+  ctx.promoSubmit.disabled = true;
+  ctx.promoInput.disabled = true;
+  const origLabel = ctx.promoSubmit.textContent;
+  ctx.promoSubmit.textContent = 'Ověřuji…';
+  ctx.setMsg('', null);
+  try {
+    const resp = await fetch(`${BACKEND_URL}/redeem-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: user.uid, code }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      ctx.setMsg(PROMO_ERRORS[data.error] || ('Chyba: ' + (data.error || resp.status)), 'error');
+      return;
+    }
+    // Success — flip local state and close paywall
+    state.premium = true;
+    localStorage.setItem('premium', 'true');
+    ctx.setMsg('Kód uplatněn! 🎉 Premium je tvoje.', 'success');
+    toast('🎉 Kód uplatněn — všechny skupiny jsou tvoje!', 'success', 5000);
+    setTimeout(() => {
+      ctx.modal.classList.add('hidden');
+      renderLessonPicker();
+    }, 1200);
+  } catch (e) {
+    ctx.setMsg(PROMO_ERRORS.network, 'error');
+  } finally {
+    ctx.promoSubmit.disabled = false;
+    ctx.promoInput.disabled = false;
+    ctx.promoSubmit.textContent = origLabel;
+  }
 }
 
 // Toast notifications (replaces window.alert)

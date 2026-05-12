@@ -105,6 +105,53 @@ app.post('/create-checkout-session', async (req, res) => {
   }
 });
 
+// Redeem a free-access promo code (e.g. teacher codes for their class).
+// Stripe-based percentage discounts work natively via the checkout's
+// allow_promotion_codes flag — this endpoint is only for granting full
+// premium without a payment.
+app.post('/redeem-code', async (req, res) => {
+  const { uid, code } = req.body || {};
+  if (!uid || !code) return res.status(400).json({ error: 'missing uid or code' });
+  const normalized = String(code).trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{3,40}$/.test(normalized)) {
+    return res.status(400).json({ error: 'invalid_code_format' });
+  }
+  const ref = db.collection('promoCodes').doc(normalized);
+  try {
+    const result = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('not_found');
+      const data = snap.data() || {};
+      if (data.active === false) throw new Error('inactive');
+      if (data.expiresAt && Date.now() > Number(data.expiresAt)) throw new Error('expired');
+      const used = Number(data.usedCount || 0);
+      if (data.maxUses && used >= Number(data.maxUses)) throw new Error('exhausted');
+      // Prevent same uid redeeming twice
+      const redeemers = Array.isArray(data.redeemers) ? data.redeemers : [];
+      if (redeemers.includes(uid)) throw new Error('already_redeemed');
+      tx.update(ref, {
+        usedCount: used + 1,
+        redeemers: [...redeemers, uid],
+        lastRedeemedAt: Date.now(),
+      });
+      tx.set(db.collection('users').doc(uid), {
+        premium: true,
+        premiumPlan: data.plan || 'promo',
+        premiumCode: normalized,
+        premiumUpdatedAt: Date.now(),
+      }, { merge: true });
+      return { plan: data.plan || 'promo', note: data.note || null };
+    });
+    console.log('Promo redeemed →', normalized, 'uid', uid);
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    const msg = e?.message || 'error';
+    const codeStatus = ['not_found', 'inactive', 'expired', 'exhausted', 'already_redeemed'].includes(msg) ? 400 : 500;
+    if (codeStatus === 500) console.error('Redeem error:', e);
+    res.status(codeStatus).json({ error: msg });
+  }
+});
+
 app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
 const port = process.env.PORT || 3000;

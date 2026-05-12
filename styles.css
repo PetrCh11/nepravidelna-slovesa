@@ -3332,6 +3332,68 @@ body.theme-dark .modal-option-primary,
   border-color: #a07a30;
 }
 
+/* ================== Paywall promo code ================== */
+.paywall-promo {
+  margin-top: 14px;
+  border-top: 1px dashed var(--border, rgba(0,0,0,0.1));
+  padding-top: 14px;
+}
+.paywall-promo-toggle {
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: color 0.18s ease, background-color 0.18s ease;
+}
+.paywall-promo-toggle:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+.paywall-promo-form {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+}
+.paywall-promo-form.hidden { display: none; }
+.paywall-promo-form input {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border, rgba(0,0,0,0.15));
+  background: var(--card-bg, #fff);
+  font: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.paywall-promo-form input:focus {
+  outline: none;
+  border-color: var(--accent, #5dc9bd);
+}
+.paywall-promo-form .btn { flex: 0 0 auto; padding: 10px 16px; font-size: 0.92rem; }
+.paywall-promo-msg {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  min-height: 1.2em;
+  color: var(--text-muted);
+}
+.paywall-promo-msg.is-error { color: #b1271b; }
+.paywall-promo-msg.is-success { color: #1e7a3a; }
+
+body.theme-dark .paywall-promo-form input,
+[data-theme="dark"] .paywall-promo-form input {
+  background: #2a2d33;
+  border-color: rgba(255,255,255,0.14);
+  color: var(--text);
+}
+body.theme-dark .paywall-promo-msg.is-error,
+[data-theme="dark"] .paywall-promo-msg.is-error { color: #ff6b5a; }
+body.theme-dark .paywall-promo-msg.is-success,
+[data-theme="dark"] .paywall-promo-msg.is-success { color: #6dd58a; }
+
 /* ================== Toast notifications ================== */
 .toast-container {
   position: fixed;
