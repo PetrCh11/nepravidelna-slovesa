@@ -752,6 +752,12 @@ main { flex: 1; padding: 28px 0 48px; }
   font-size: 0.85rem;
   text-align: center;
 }
+.app-footer .footer-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 1px dotted currentColor;
+}
+.app-footer .footer-link:hover { color: var(--text); }
 
 /* ---------- Speak button ---------- */
 .speak-btn {
