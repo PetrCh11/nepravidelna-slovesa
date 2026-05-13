@@ -173,6 +173,13 @@ body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inse
   .google-btn { padding: 7px 9px; }
 }
 
+/* While a lesson is active on mobile, hide secondary header controls
+   (Google sign-in + theme toggle) — these live in the hamburger menu */
+@media (max-width: 600px) {
+  body.practicing #google-btn,
+  body.practicing #theme-toggle { display: none; }
+}
+
 /* Dark mode */
 body.theme-dark .google-btn,
 [data-theme="dark"] .google-btn {
@@ -1039,12 +1046,14 @@ main { flex: 1; padding: 28px 0 48px; }
 }
 .lesson-group-label .subsection-id { color: white; margin-right: 8px; }
 .lesson-stage-dots { justify-self: end; }
+.lesson-stage-spacer { justify-self: end; min-width: 1px; }
 
 @media (max-width: 560px) {
   /* On mobile, hide the group label entirely to save vertical space */
   .lesson-topbar { grid-template-columns: auto 1fr; gap: 8px; }
   .lesson-group-label { display: none; }
   .lesson-stage-dots { justify-self: end; }
+  .lesson-stage-spacer { display: none; }
 }
 .lesson-stage-dots { display: flex; gap: 6px; }
 .stage-dot {

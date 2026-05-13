@@ -381,6 +381,7 @@ function startLesson(sub) {
   $('.lesson-picker').classList.add('hidden');
   $('.lesson-results').classList.add('hidden');
   $('.lesson-active').classList.remove('hidden');
+  document.body.classList.add('practicing');
   $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sub.id)} 65% 45%)">${sub.id}</span> ${sub.pattern}`;
   document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sub.id));
   showStageIntro(1);
@@ -517,6 +518,7 @@ function startSectionReview(sec, customVerbs = null) {
   $('.lesson-picker').classList.add('hidden');
   $('.lesson-results').classList.add('hidden');
   $('.lesson-active').classList.remove('hidden');
+  document.body.classList.add('practicing');
   $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sec.subsections[0].id)} 65% 45%)">${sec.id}</span> 🏆 Souhrnný test`;
   document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sec.subsections[0].id));
   // Show a custom intro then jump straight to step 3
@@ -664,6 +666,7 @@ function resumeLesson(saved) {
   $('.lesson-picker').classList.add('hidden');
   $('.lesson-results').classList.add('hidden');
   $('.lesson-active').classList.remove('hidden');
+  document.body.classList.add('practicing');
   $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sub.id)} 65% 45%)">${sub.id}</span> ${sub.pattern}`;
   document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sub.id));
   if (saved.stage === 1) {
@@ -714,6 +717,7 @@ function showStageIntro(stage) {
   $('#lesson-stage-intro').classList.remove('hidden');
   updateStageDots();
   updateLessonBar();
+  renderStepPills();
 }
 
 function updateStageDots() {
@@ -798,6 +802,7 @@ function stage1Study() {
   });
   updateStageDots();
   updateLessonBar();
+  renderStepPills();
 }
 
 // ---------- Mezifáze: Mark verbs the student thinks will be hardest ----------
@@ -868,11 +873,12 @@ function stage1Mark() {
     if (L.stage2Q.length === 0) { finishLesson(); return; }
     showStageIntro(2);
     renderVerbChips();
-    renderStepPills(1);
+    renderStepPills();
     persistActiveLesson();
   });
   updateStageDots();
   updateLessonBar();
+  renderStepPills();
 }
 
 // ---------- Stage 2: Type all 3 forms — 3 steps ----------
@@ -900,17 +906,26 @@ function stage2InitStep1() {
   });
 }
 
-function renderStepPills(activeStep) {
+function renderStepPills(_ignored) {
   const c = $('#step-pills');
   if (!c) return;
   const L = state.lesson;
-  if (!L || L.stage !== 2) { c.innerHTML = ''; return; }
-  const labels = { 1: '1) v pořadí', 2: '2) zamícháno' };
-  c.innerHTML = [1, 2].map((s) => {
+  if (!L) { c.innerHTML = ''; return; }
+  // Compute active step from current lesson state — 3 unified steps:
+  //   1) studium (= old stage 1 + 1.5 mark)
+  //   2) v pořadí (= old stage 2 step 1)
+  //   3) zamícháno (= old stage 2 step 2)
+  let activeStep;
+  if (L.stage === 1 || L.stage === 1.5) activeStep = 1;
+  else if (L.stage === 2 && L.stage2Step === 1) activeStep = 2;
+  else if (L.stage === 2 && L.stage2Step === 2) activeStep = 3;
+  else activeStep = 1;
+  const labels = { 1: '1) studium', 2: '2) v pořadí', 3: '3) zamícháno' };
+  c.innerHTML = [1, 2, 3].map((s) => {
     let cls = 'step-pill';
     if (s === activeStep) cls += ' active';
     else if (s < activeStep) cls += ' done';
-    return `<span class="${cls}">${labels[s]}</span>${s < 2 ? '<span class="step-arrow">→</span>' : ''}`;
+    return `<span class="${cls}">${labels[s]}</span>${s < 3 ? '<span class="step-arrow">→</span>' : ''}`;
   }).join('');
 }
 
@@ -918,6 +933,7 @@ function renderVerbChips() {
   const L = state.lesson;
   const c = $('#verb-chips');
   if (!c) return;
+  // Verb chips only relevant during writing stages (Fáze 2)
   if (!L || L.stage !== 2) { c.innerHTML = ''; return; }
   const justInf = L.lastCleared;
   L.lastCleared = null;
@@ -1197,6 +1213,7 @@ function finishLesson() {
   markStudyToday();
 
   $('.lesson-active').classList.add('hidden');
+  document.body.classList.remove('practicing');
   $('.lesson-results').classList.remove('hidden');
   $('#results-summary').innerHTML = `
     <div class="stat stat-green"><div class="stat-num">${counts.green || 0}</div><div class="stat-label">${t('stat_green')}</div></div>
@@ -1316,6 +1333,7 @@ function renderStatsStrip() {
 function exitLesson() {
   state.lesson = null;
   $('.lesson-active').classList.add('hidden');
+  document.body.classList.remove('practicing');
   $('.lesson-results').classList.add('hidden');
   $('.lesson-picker').classList.remove('hidden');
   $('#step-pills').innerHTML = '';
@@ -1656,7 +1674,12 @@ function quizFinish() {
 
 function applyTheme() {
   document.documentElement.dataset.theme = state.theme;
-  $('#theme-toggle').textContent = state.theme === 'dark' ? '☀️' : '🌙';
+  const ht = $('#theme-toggle');
+  if (ht) ht.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+  const mi = $('#theme-toggle-menu-icon');
+  const ml = $('#theme-toggle-menu-label');
+  if (mi) mi.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+  if (ml) ml.textContent = state.theme === 'dark' ? 'Světlý režim' : 'Tmavý režim';
 }
 function toggleTheme() {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
@@ -2013,6 +2036,7 @@ async function init() {
     // If a lesson is in progress, just hide it and show the picker (snapshot already saved)
     if (state.lesson && !state.lesson.done) {
       $('.lesson-active').classList.add('hidden');
+  document.body.classList.remove('practicing');
       $('.lesson-results').classList.add('hidden');
       $('.lesson-picker').classList.remove('hidden');
       state.lesson = null;
@@ -2024,6 +2048,7 @@ async function init() {
 
   // Theme & dialect
   $('#theme-toggle').addEventListener('click', toggleTheme);
+  $('#theme-toggle-menu')?.addEventListener('click', toggleTheme);
   $('#dialect-select').value = state.dialect;
   $('#dialect-select').addEventListener('change', (e) => {
     state.dialect = e.target.value;

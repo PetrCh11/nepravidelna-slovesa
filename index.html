@@ -49,6 +49,10 @@
             <button class="menu-item" data-view="flashcards" role="menuitem" data-tone="menu_fc">🃏 Flashcards</button>
             <button class="menu-item" data-view="quiz" role="menuitem" data-tone="menu_quiz">✅ Volný kvíz</button>
             <hr class="menu-divider" />
+            <button class="menu-item" id="theme-toggle-menu" role="menuitem" type="button">
+              <span id="theme-toggle-menu-icon">🌙</span>
+              <span id="theme-toggle-menu-label">Tmavý režim</span>
+            </button>
             <div class="menu-style-row" role="group" aria-label="Styl appky">
               <span class="menu-style-label">Styl:</span>
               <div class="menu-style-options">
@@ -93,11 +97,7 @@
         <div class="lesson-topbar">
           <button id="lesson-exit" class="btn-link">← Zpět</button>
           <div class="lesson-group-label" id="lesson-group-label"></div>
-          <div class="lesson-stage-dots">
-            <span class="stage-dot" data-stage="1">1</span>
-            <span class="stage-dot stage-dot-mark" data-stage="1.5" title="Mezifáze">★</span>
-            <span class="stage-dot" data-stage="2">2</span>
-          </div>
+          <div class="lesson-stage-spacer"></div>
         </div>
         <div class="lesson-progress">
           <div class="verb-chips" id="verb-chips"></div>
