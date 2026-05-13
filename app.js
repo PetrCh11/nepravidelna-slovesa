@@ -58,7 +58,7 @@ const TEXTS = {
   s2_intro_title:{ pro: 'Fáze 2 — Psaní tvarů', student: 'Fáze 2 — Píšeme to ✍️' },
   s2_intro_desc: { pro: 'Vidíš česky, píšeš 3 anglické tvary, potvrdíš Enterem. Když se chyba objeví, sloveso se vrátí na konec fronty a počkáš si na něj. Jdeme na to.',
                    student: 'Češtinu vidíš, anglicky píšeš 3 tvary. Enter po každym poli. Když ti něco uteče, počkáme si na něj a dáme to znovu. Boom. 💥' },
-  s2_finale_title:{ pro: 'Finále — zamícháno', student: 'FINÁLE — všechno najednou 🔀' },
+  s2_finale_title:{ pro: 'Zamícháno', student: 'Zamícháno 🔀' },
   s2_finale_desc:{ pro: 'Všechna slovesa zamíchaně. Napíšeš všechny 3 tvary najednou, výsledek uvidíš po Enteru — a 1× bez chyby stačí, aby sloveso vypadlo z fronty.',
                    student: 'Náhodně, všechno najednou. Napíšeš 3 tvary, mrkneš na výsledek a jedem dál. 1× bez chyby = hotovo. 🔀' },
   tip_atomic:    { pro: '<kbd>Enter</kbd> = další pole, vyhodnotí se na konci',
@@ -593,7 +593,7 @@ function renderResumeCard() {
   const isLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
   const stageLabels = { 1: 'Fáze 1 · Seznámení', 1.5: 'Mezifáze · Označ obtížná', 2: 'Fáze 2 · Psaní' };
   const stageLabel = stageLabels[saved.stage] || 'rozdělané cvičení';
-  const stepLabels = { 1: '1. průchod', 2: 'finále – zamícháno' };
+  const stepLabels = { 1: 'v pořadí', 2: 'zamícháno' };
   const stepLabel = saved.stage === 2 && saved.stage2Step ? ` · ${stepLabels[saved.stage2Step]}` : '';
   const filteredNote = (saved.verbInfs && saved.verbInfs.length && saved.verbInfs.length < sub.verbs.length)
     ? ` · jen problematická (${saved.verbInfs.length})`
@@ -732,20 +732,8 @@ function updateLessonBar() {
   L.perVerb.forEach((v) => {
     if (v.status === 'green' || v.status === 'red') done++;
   });
-  const stageTitles = { 1: 'Fáze 1 · Seznámení', 1.5: 'Mezifáze · Označ obtížná', 2: 'Fáze 2 · Psaní' };
-  $('#lesson-stage-title').textContent = stageTitles[L.stage];
-  if (L.stage === 1) {
-    $('#lesson-remaining').textContent = `${total} sloves k prohlédnutí`;
-  } else if (L.stage === 1.5) {
-    const n = L.markedHard.size;
-    $('#lesson-remaining').textContent = n === 0 ? 'označ těžká slovesa' : `označeno: ${n}`;
-  } else if (L.stage === 2) {
-    const stepLabels = { 1: '1. průchod', 2: 'finále · zamícháno' };
-    const lbl = stepLabels[L.stage2Step] || '1. průchod';
-    const remaining = (L.stage2Q || []).length;
-    $('#lesson-remaining').textContent = `${lbl} · zbývá ${remaining} sloves`;
-  }
-  $('#lesson-bar-fill').style.width = `${Math.round((done / total) * 100)}%`;
+  const fill = $('#lesson-bar-fill');
+  if (fill) fill.style.width = `${Math.round((done / total) * 100)}%`;
 }
 
 // ---------- Stage 1: Study view — read all verbs in the group ----------
@@ -917,7 +905,7 @@ function renderStepPills(activeStep) {
   if (!c) return;
   const L = state.lesson;
   if (!L || L.stage !== 2) { c.innerHTML = ''; return; }
-  const labels = { 1: '1) průchod', 2: '2) finále' };
+  const labels = { 1: '1) v pořadí', 2: '2) zamícháno' };
   c.innerHTML = [1, 2].map((s) => {
     let cls = 'step-pill';
     if (s === activeStep) cls += ' active';
