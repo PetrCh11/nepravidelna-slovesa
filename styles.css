@@ -1616,6 +1616,7 @@ main { flex: 1; padding: 28px 0 48px; }
   grid-area: emoji;
   width: 44px; height: 44px;
   display: grid; place-items: center;
+  justify-self: center;
   background: var(--sub-emoji-bg);
   border-radius: var(--radius-sm);
   font-size: 1.55rem;
