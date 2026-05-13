@@ -790,7 +790,6 @@ function stage1Study() {
         <div class="study-hero-text">
           <div class="study-hero-eyebrow">${t('s1_eyebrow')}</div>
           <div class="study-hero-title">${t('s1_title')}</div>
-          <div class="study-hero-sub">${t('s1_sub')}</div>
         </div>
         <div class="study-hero-count">${L.verbs.length}<span>sloves</span></div>
       </div>
