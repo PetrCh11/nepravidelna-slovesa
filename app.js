@@ -941,10 +941,13 @@ function renderVerbChips() {
     else if (p.passCleared) cls += ' good';
     else if (p.passWrong > 0 || (p.step1Wrong && p.step1Wrong.size > 0)) cls += ' warn';
     else cls += ' pending';
-    if (v.inf === L.currentInf) cls += ' current';
+    const isCurrent = v.inf === L.currentInf;
+    if (isCurrent) cls += ' current';
     if (v.inf === justInf) cls += ' just-cleared';
-    const title = `${v.inf} – ${v.cs}`.replace(/"/g, '&quot;');
-    return `<span class="${cls}" title="${title}">${v.emoji || '·'}</span>`;
+    // Tooltip with infinitiv + cs translation — but never for the verb the student
+    // is currently answering (would spoil the answer).
+    const titleAttr = isCurrent ? '' : ` title="${`${v.inf} – ${v.cs}`.replace(/"/g, '&quot;')}"`;
+    return `<span class="${cls}"${titleAttr}>${v.emoji || '·'}</span>`;
   }).join('');
 }
 
