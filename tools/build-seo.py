@@ -265,7 +265,7 @@ page = f'''<!DOCTYPE html>
 
   <footer class="seo-footer">
     <div class="container">
-      <p>© ucseslovesa.cz · <a href="../">Aplikace</a> · <a href="#seznam">Seznam</a> · <a href="#faq">FAQ</a></p>
+      <p>© ucseslovesa.cz · <a href="../">Aplikace</a> · <a href="#seznam">Seznam</a> · <a href="#faq">FAQ</a> · <a href="mailto:hello@ucseslovesa.cz">✉️ hello@ucseslovesa.cz</a></p>
       <p class="seo-foot-meta">Aktualizováno: {today}</p>
     </div>
   </footer>
