@@ -14,6 +14,7 @@ import express from 'express';
 import Stripe from 'stripe';
 import admin from 'firebase-admin';
 import cors from 'cors';
+import { sendEmail, welcomeEmail } from './email.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -63,6 +64,29 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         ...(stripeCustomerId ? { stripeCustomerId } : {}),
       }, { merge: true });
       console.log('Premium granted →', uid, stripeCustomerId ? `(customer ${stripeCustomerId})` : '');
+
+      // Welcome email — only on the initial checkout, not on every recurring invoice.paid
+      if (event.type === 'checkout.session.completed') {
+        try {
+          const email = o.customer_details?.email || o.customer_email || null;
+          if (email) {
+            // Infer plan name from line items if available, fall back to mode
+            let plan = o.mode === 'subscription' ? 'monthly' : 'lifetime';
+            try {
+              const line = o.line_items?.data?.[0]
+                || (await stripe.checkout.sessions.listLineItems(o.id, { limit: 1 })).data[0];
+              const interval = line?.price?.recurring?.interval;
+              if (interval === 'year') plan = 'yearly';
+              else if (interval === 'month') plan = 'monthly';
+            } catch {}
+            const tpl = welcomeEmail({ plan, isPromo: false });
+            await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+            console.log('Welcome email sent →', email, plan);
+          }
+        } catch (e) {
+          console.error('Welcome email failed:', e?.message || e);
+        }
+      }
     } else if (event.type === 'customer.subscription.deleted' || event.type === 'invoice.payment_failed') {
       // Subscription cancelled or payment failed → revoke
       await db.collection('users').doc(uid).set({
@@ -161,6 +185,20 @@ app.post('/redeem-code', async (req, res) => {
       return { plan: data.plan || 'promo', note: data.note || null };
     });
     console.log('Promo redeemed →', normalized, 'uid', uid);
+
+    // Optional welcome email for promo redemptions (no Stripe → no auto receipt)
+    try {
+      const userRec = await admin.auth().getUser(uid).catch(() => null);
+      const email = userRec?.email || null;
+      if (email) {
+        const tpl = welcomeEmail({ plan: 'promo', isPromo: true });
+        await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+        console.log('Promo welcome email sent →', email);
+      }
+    } catch (e) {
+      console.error('Promo welcome email failed:', e?.message || e);
+    }
+
     res.json({ ok: true, ...result });
   } catch (e) {
     const msg = e?.message || 'error';
