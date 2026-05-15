@@ -48,6 +48,7 @@
             <button class="menu-item" data-view="browse" role="menuitem" data-tone="menu_browse">📚 Přehled skupin</button>
             <button class="menu-item" data-view="flashcards" role="menuitem" data-tone="menu_fc">🃏 Flashcards</button>
             <button class="menu-item" data-view="quiz" role="menuitem" data-tone="menu_quiz">✅ Volný kvíz</button>
+            <button class="menu-item" data-view="auto" role="menuitem">🚗 Audio jízda</button>
             <hr class="menu-divider" />
             <button class="menu-item" id="theme-toggle-menu" role="menuitem" type="button">
               <span id="theme-toggle-menu-icon">🌙</span>
@@ -152,6 +153,46 @@
         </div>
       </div>
       <div id="fc-sections"></div>
+    </section>
+
+    <!-- AUTO (driving) VIEW -->
+    <section id="view-auto" class="view">
+      <div class="auto-setup">
+        <div class="intro">
+          <h2>🚗 Audio jízda</h2>
+          <p>Bezpečné procvičování za jízdy. App přečte český překlad → pauza → pak všechny tři anglické tvary nahlas. <strong>Spusť před jízdou.</strong></p>
+        </div>
+        <div class="auto-form">
+          <label class="auto-field">
+            <span class="auto-field-label">Balíček sloves</span>
+            <select id="auto-package"></select>
+          </label>
+          <label class="auto-field">
+            <span class="auto-field-label">Minimální počet sloves</span>
+            <input type="number" id="auto-count" min="5" max="106" step="5" value="20" />
+          </label>
+          <button class="btn btn-primary auto-start-btn" id="auto-start" type="button">▶ Spustit audio jízdu</button>
+        </div>
+        <p class="auto-warn">⚠️ Spusť ještě před jízdou. Nedívej se na displej za volantem. Aplikace běží sama.</p>
+      </div>
+
+      <!-- Fullscreen driving overlay -->
+      <div class="auto-stage hidden" id="auto-stage" aria-live="polite">
+        <div class="auto-stage-bg"></div>
+        <div class="auto-stage-top">
+          <div class="auto-progress" id="auto-progress">0 / 0</div>
+          <button class="auto-shuffle-btn" id="auto-shuffle" type="button" title="Zamíchat zbývající slovesa">🔀 Zamíchat</button>
+        </div>
+        <div class="auto-stage-content">
+          <div class="auto-cs" id="auto-cs"></div>
+          <div class="auto-forms" id="auto-forms">
+            <div class="auto-form-item" data-form="inf"></div>
+            <div class="auto-form-item" data-form="past"></div>
+            <div class="auto-form-item" data-form="pp"></div>
+          </div>
+        </div>
+        <button class="auto-stop-btn" id="auto-stop" type="button" aria-label="Ukončit audio jízdu">⏹ Stop</button>
+      </div>
     </section>
 
     <!-- QUIZ VIEW -->

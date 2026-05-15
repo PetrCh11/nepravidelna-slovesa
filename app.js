@@ -1508,6 +1508,188 @@ function renderFlashcards() {
   });
 }
 
+// ============================================================
+// 🚗 Audio jízda — hands-free practice for driving
+// ============================================================
+const AUTO_PACKAGES = [
+  { id: 'all',      label: 'Vše (106 sloves)',                       picker: (d) => flattenVerbs(d) },
+  { id: 'sec1',     label: 'Sekce 1.0.0 — Všechny tři tvary se liší (41)', picker: (d) => flattenVerbs(d).filter((v) => v.subId.startsWith('1.')) },
+  { id: 'sec2',     label: 'Sekce 2.0.0 — Dva tvary shodné (53)',     picker: (d) => flattenVerbs(d).filter((v) => v.subId.startsWith('2.')) },
+  { id: 'sec3',     label: 'Sekce 3.0.0 — Všechny tři tvary shodné (12)', picker: (d) => flattenVerbs(d).filter((v) => v.subId.startsWith('3.')) },
+  { id: 'problem',  label: 'Jen problematická (žluté + červené)',     picker: (d) => flattenVerbs(d).filter((v) => {
+    const s = state.progress[v.inf]?.status; return s === 'yellow' || s === 'red';
+  }) },
+];
+
+function renderAutoSetup() {
+  const sel = $('#auto-package');
+  if (!sel) return;
+  sel.innerHTML = '';
+  AUTO_PACKAGES.forEach((p) => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.label;
+    sel.appendChild(opt);
+  });
+  // Disable Problem option if there are none
+  const probCount = AUTO_PACKAGES.find((p) => p.id === 'problem').picker(state.data).length;
+  if (probCount === 0) {
+    const probOpt = sel.querySelector('option[value="problem"]');
+    if (probOpt) probOpt.disabled = true;
+  }
+}
+
+// State holder for the running session
+let autoSession = null;
+
+function autoStart() {
+  const pkgId = $('#auto-package').value;
+  const pkg = AUTO_PACKAGES.find((p) => p.id === pkgId);
+  if (!pkg) return;
+  const allFromPkg = pkg.picker(state.data);
+  if (allFromPkg.length === 0) { toast('Tento balíček je prázdný.', 'error'); return; }
+  let count = Math.max(5, Math.min(allFromPkg.length, parseInt($('#auto-count').value || '20', 10)));
+  if (!Number.isFinite(count)) count = Math.min(20, allFromPkg.length);
+  // Default: in original group order (no shuffle).
+  const verbs = allFromPkg.slice(0, count);
+
+  autoSession = {
+    verbs,
+    index: 0,
+    shuffled: false,
+    aborted: false,
+    timers: [],
+  };
+  $('.auto-setup').classList.add('hidden');
+  $('#auto-stage').classList.remove('hidden');
+  document.body.classList.add('auto-driving');
+  // Try to keep screen on (Wake Lock API; might be blocked if dock isn't fullscreen)
+  try {
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen').then((lock) => { autoSession.wakeLock = lock; }).catch(() => {});
+    }
+  } catch {}
+  track('auto_started', { pkg: pkgId, count });
+  autoTickNext();
+}
+
+function autoStop() {
+  if (autoSession) {
+    autoSession.aborted = true;
+    (autoSession.timers || []).forEach(clearTimeout);
+    try { autoSession.wakeLock?.release?.(); } catch {}
+    autoSession = null;
+  }
+  try { window.speechSynthesis.cancel(); } catch {}
+  $('#auto-stage').classList.add('hidden');
+  $('.auto-setup').classList.remove('hidden');
+  document.body.classList.remove('auto-driving');
+  // Clear visuals
+  $('#auto-cs').textContent = '';
+  $('#auto-forms').querySelectorAll('.auto-form-item').forEach((el) => { el.textContent = ''; el.classList.remove('visible'); });
+}
+
+function autoShuffleRemaining() {
+  if (!autoSession) return;
+  const remaining = autoSession.verbs.slice(autoSession.index);
+  // Fisher-Yates
+  for (let i = remaining.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+  }
+  autoSession.verbs = [...autoSession.verbs.slice(0, autoSession.index), ...remaining];
+  autoSession.shuffled = true;
+  toast('🔀 Zamícháno.', 'info', 1500);
+}
+
+function scheduleAuto(fn, ms) {
+  if (!autoSession || autoSession.aborted) return;
+  const id = setTimeout(() => {
+    if (autoSession && !autoSession.aborted) fn();
+  }, ms);
+  autoSession.timers.push(id);
+}
+
+function speakCs(text) {
+  return new Promise((resolve) => {
+    if (!('speechSynthesis' in window) || autoSession?.aborted) return resolve();
+    try { window.speechSynthesis.cancel(); } catch {}
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'cs-CZ';
+    u.rate = 0.95;
+    u.onend = () => resolve();
+    u.onerror = () => resolve();
+    window.speechSynthesis.speak(u);
+  });
+}
+
+function speakEn(text) {
+  return new Promise((resolve) => {
+    if (!('speechSynthesis' in window) || autoSession?.aborted) return resolve();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = state.dialect === 'AmE' ? 'en-US' : 'en-GB';
+    u.rate = 0.85; // a touch slower so it's not rushed
+    u.onend = () => resolve();
+    u.onerror = () => resolve();
+    window.speechSynthesis.speak(u);
+  });
+}
+
+async function autoTickNext() {
+  if (!autoSession || autoSession.aborted) return;
+  if (autoSession.index >= autoSession.verbs.length) {
+    // Done. Brief celebratory beat, then stop.
+    toast('🎉 Hotovo! Audio jízda dokončena.', 'success', 4000);
+    setTimeout(() => autoStop(), 2000);
+    return;
+  }
+  const v = autoSession.verbs[autoSession.index];
+  updateAutoProgress();
+  await renderAutoVerb(v);
+  if (!autoSession || autoSession.aborted) return;
+  autoSession.index++;
+  // Gap between verbs
+  scheduleAuto(() => autoTickNext(), 800);
+}
+
+function updateAutoProgress() {
+  if (!autoSession) return;
+  const el = $('#auto-progress');
+  if (el) el.textContent = `${autoSession.index + 1} / ${autoSession.verbs.length}`;
+}
+
+async function renderAutoVerb(verb) {
+  const cs = $('#auto-cs');
+  const items = $('#auto-forms').querySelectorAll('.auto-form-item');
+  // Reset
+  cs.textContent = '';
+  items.forEach((el) => { el.textContent = ''; el.classList.remove('visible'); });
+
+  // 1. Show + say Czech
+  cs.textContent = verb.cs;
+  cs.classList.add('visible');
+  await speakCs(verb.cs);
+  if (!autoSession || autoSession.aborted) return;
+
+  // 2. Pause for student to think
+  await new Promise((res) => scheduleAuto(res, 2500));
+  if (!autoSession || autoSession.aborted) return;
+
+  // 3. Reveal + speak each of the three forms, with 1-sec gap between them
+  const past = pickForm(verb, 'past', state.dialect);
+  const pp = pickForm(verb, 'pp', state.dialect);
+  const forms = [verb.inf, past, pp];
+  for (let i = 0; i < forms.length; i++) {
+    if (!autoSession || autoSession.aborted) return;
+    items[i].textContent = forms[i];
+    items[i].classList.add('visible');
+    await speakEn(forms[i]);
+    if (i < forms.length - 1) {
+      await new Promise((res) => scheduleAuto(res, 1000));
+    }
+  }
+}
+
 function renderFlashCard(verb, side) {
   const past = pickForm(verb, 'past', state.dialect);
   const pp = pickForm(verb, 'pp', state.dialect);
@@ -2033,6 +2215,7 @@ async function init() {
   renderLessonPicker();
   renderBrowse();
   renderFlashcards();
+  renderAutoSetup();
   renderSectionChips($('#quiz-filter'), state.quiz.selectedSections);
   renderStatsStrip();
 
@@ -2065,7 +2248,15 @@ async function init() {
       $('#menu-btn').setAttribute('aria-expanded', 'false');
     }
   });
-  $$('.menu-item').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+  $$('.menu-item').forEach((b) => b.addEventListener('click', () => {
+    // If audio session running, stop it before switching views
+    if (autoSession && b.dataset.view !== 'auto') autoStop();
+    setView(b.dataset.view);
+    if (b.dataset.view === 'auto') renderAutoSetup();
+  }));
+  $('#auto-start')?.addEventListener('click', autoStart);
+  $('#auto-stop')?.addEventListener('click', autoStop);
+  $('#auto-shuffle')?.addEventListener('click', autoShuffleRemaining);
   // Style toggle (Pracující / Student)
   const reflectStyleBtns = () => {
     $$('.menu-style-btn').forEach((b) => b.classList.toggle('active', b.dataset.style === state.style));
@@ -2080,6 +2271,8 @@ async function init() {
   }));
   // Logo → return to home (lesson picker)
   $('#logo-home')?.addEventListener('click', () => {
+    // Stop a running audio session if any
+    if (autoSession) autoStop();
     // If a lesson is in progress, just hide it and show the picker (snapshot already saved)
     if (state.lesson && !state.lesson.done) {
       $('.lesson-active').classList.add('hidden');
