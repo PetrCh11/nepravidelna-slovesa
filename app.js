@@ -1528,9 +1528,9 @@ function saveAutoSetup() {
   try {
     localStorage.setItem(AUTO_SETUP_KEY, JSON.stringify({
       selectedSubs: Array.from(s.selectedSubs || []),
+      scope: s.scope,
       mode: s.mode,
       tempo: s.tempo,
-      count: s.count,
     }));
   } catch {}
 }
@@ -1546,16 +1546,34 @@ function renderAutoSetup() {
   if (!state.data) return;
   // Initialize state from localStorage or defaults
   if (!state.autoSetup) {
-    state.autoSetup = loadAutoSetup() || {
+    const loaded = loadAutoSetup();
+    state.autoSetup = loaded || {
       selectedSubs: new Set(),
+      scope: 'groups',  // 'problem' | 'groups'
       mode: 'test',
       tempo: 'normal',
-      count: 20,
     };
+    if (loaded && !loaded.scope) state.autoSetup.scope = 'groups';
   }
-  renderAutoQuickPicks();
+  // Update problematic count in scope card
+  const problemVerbs = flattenVerbs(state.data).filter((v) => {
+    const s = state.progress[v.inf]?.status; return s === 'yellow' || s === 'red';
+  });
+  const probDesc = $('#auto-scope-problem-desc');
+  if (probDesc) probDesc.textContent = `${problemVerbs.length} sloves`;
+  // Wire scope radios
+  $$('#view-auto input[name="auto-scope"]').forEach((r) => {
+    r.checked = r.value === state.autoSetup.scope;
+    if (r.value === 'problem' && problemVerbs.length === 0) r.disabled = true;
+    r.onchange = () => {
+      state.autoSetup.scope = r.value;
+      saveAutoSetup();
+      applyScopeVisibility();
+    };
+  });
+  applyScopeVisibility();
   renderAutoTiles();
-  // Wire form controls
+  // Wire mode + tempo
   $$('#auto-mode input').forEach((r) => {
     r.checked = r.value === state.autoSetup.mode;
     r.onchange = () => { state.autoSetup.mode = r.value; saveAutoSetup(); };
@@ -1564,72 +1582,14 @@ function renderAutoSetup() {
     r.checked = r.value === state.autoSetup.tempo;
     r.onchange = () => { state.autoSetup.tempo = r.value; saveAutoSetup(); };
   });
-  const countInp = $('#auto-count');
-  if (countInp) {
-    countInp.value = state.autoSetup.count;
-    countInp.oninput = () => {
-      const n = Math.max(5, Math.min(106, parseInt(countInp.value, 10) || 20));
-      state.autoSetup.count = n;
-      updateAutoCountNote();
-      saveAutoSetup();
-    };
-  }
   updateAutoSelectionCount();
-  updateAutoCountNote();
 }
 
-function updateAutoCountNote() {
-  const el = $('#auto-count-note');
-  if (!el) return;
-  const n = state.autoSetup.count;
-  const tempo = AUTO_TEMPOS[state.autoSetup.tempo];
-  // Rough per-verb time estimate: 1.5s cs speech + pauseAfterCs + 3 * (~0.9s speech + gapBetweenForms) + gapBetweenVerbs
-  const secsPerVerb = state.autoSetup.mode === 'listen'
-    ? (1.5 + 3 * 0.9 + 2 * tempo.gapBetweenForms / 1000 + tempo.gapBetweenVerbs / 1000)
-    : (1.5 + tempo.pauseAfterCs / 1000 + 3 * 0.9 + 2 * tempo.gapBetweenForms / 1000 + tempo.gapBetweenVerbs / 1000);
-  const totalMin = Math.max(1, Math.round((n * secsPerVerb) / 60));
-  el.textContent = `≈ ${totalMin} min`;
-}
-
-function renderAutoQuickPicks() {
-  const c = $('#auto-quick-picks');
-  if (!c) return;
-  const all = state.data.sections.flatMap((s) => s.subsections);
-  const problemVerbs = flattenVerbs(state.data).filter((v) => {
-    const s = state.progress[v.inf]?.status; return s === 'yellow' || s === 'red';
-  });
-  const picks = [
-    { id: 'all',     label: 'Vše',            emoji: '📚', filter: () => all.map((s) => s.id) },
-    { id: 'sec1',    label: 'Sekce 1.0.0',    emoji: '🎯', filter: () => all.filter((s) => s.id.startsWith('1.')).map((s) => s.id) },
-    { id: 'sec2',    label: 'Sekce 2.0.0',    emoji: '🌀', filter: () => all.filter((s) => s.id.startsWith('2.')).map((s) => s.id) },
-    { id: 'sec3',    label: 'Sekce 3.0.0',    emoji: '⚡', filter: () => all.filter((s) => s.id.startsWith('3.')).map((s) => s.id) },
-    { id: 'problem', label: `Problematická (${problemVerbs.length})`, emoji: '🟡🔴', filter: null, problem: true },
-    { id: 'clear',   label: 'Zrušit výběr',   emoji: '✖', filter: () => [] },
-  ];
-  c.innerHTML = '';
-  picks.forEach((p) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'auto-quick-pick';
-    if (p.problem && problemVerbs.length === 0) btn.disabled = true;
-    btn.innerHTML = `<span class="auto-quick-emoji">${p.emoji}</span><span class="auto-quick-label">${p.label}</span>`;
-    btn.onclick = () => {
-      if (p.problem) {
-        // Special: select all subs that contain at least one problematic verb
-        const subsWithProblem = new Set();
-        problemVerbs.forEach((pv) => subsWithProblem.add(pv.subId));
-        state.autoSetup.selectedSubs = subsWithProblem;
-        state.autoSetup._onlyProblemMode = true;
-      } else {
-        state.autoSetup._onlyProblemMode = false;
-        state.autoSetup.selectedSubs = new Set(p.filter());
-      }
-      saveAutoSetup();
-      renderAutoTiles();
-      updateAutoSelectionCount();
-    };
-    c.appendChild(btn);
-  });
+function applyScopeVisibility() {
+  const tilesSection = $('#auto-tiles-section');
+  if (!tilesSection) return;
+  if (state.autoSetup.scope === 'problem') tilesSection.classList.add('hidden');
+  else tilesSection.classList.remove('hidden');
 }
 
 function renderAutoTiles() {
@@ -1683,37 +1643,41 @@ function updateAutoSelectionCount() {
 }
 
 function getAutoSelectedVerbs() {
-  const picked = state.autoSetup.selectedSubs;
   const all = flattenVerbs(state.data);
-  let verbs = all.filter((v) => picked.has(v.subId));
-  if (state.autoSetup._onlyProblemMode) {
-    verbs = verbs.filter((v) => {
+  if (state.autoSetup.scope === 'problem') {
+    return all.filter((v) => {
       const s = state.progress[v.inf]?.status; return s === 'yellow' || s === 'red';
     });
   }
-  return verbs;
+  // 'groups' scope
+  const picked = state.autoSetup.selectedSubs;
+  return all.filter((v) => picked.has(v.subId));
 }
 
 // State holder for the running session
 let autoSession = null;
 
+const AUTO_ROUNDS = 3;
+
 function autoStart() {
-  if (!state.autoSetup || state.autoSetup.selectedSubs.size === 0) {
+  if (!state.autoSetup) return;
+  if (state.autoSetup.scope === 'groups' && state.autoSetup.selectedSubs.size === 0) {
     toast('Vyber alespoň jednu skupinu sloves.', 'error');
     return;
   }
-  const allFromPkg = getAutoSelectedVerbs();
-  if (allFromPkg.length === 0) {
-    toast('Vybrané skupiny neobsahují žádná slovesa.', 'error');
+  const base = getAutoSelectedVerbs();
+  if (base.length === 0) {
+    toast(state.autoSetup.scope === 'problem'
+      ? 'Žádná problematická slovesa — všechno máš zvládnuté! 🎉'
+      : 'Vybrané skupiny neobsahují žádná slovesa.', 'error');
     return;
   }
-  let count = Math.max(5, Math.min(allFromPkg.length, state.autoSetup.count || 20));
-  if (!Number.isFinite(count)) count = Math.min(20, allFromPkg.length);
-  // Default: in original group order (no shuffle).
-  const verbs = allFromPkg.slice(0, count);
 
   autoSession = {
-    verbs,
+    baseVerbs: base,
+    verbs: base.slice(),       // current round queue, fed from baseVerbs
+    round: 1,
+    totalRounds: AUTO_ROUNDS,
     index: 0,
     shuffled: false,
     aborted: false,
@@ -1730,7 +1694,13 @@ function autoStart() {
       navigator.wakeLock.request('screen').then((lock) => { autoSession.wakeLock = lock; }).catch(() => {});
     }
   } catch {}
-  track('auto_started', { subs: state.autoSetup.selectedSubs.size, count, mode: state.autoSetup.mode, tempo: state.autoSetup.tempo });
+  track('auto_started', {
+    scope: state.autoSetup.scope,
+    subs: state.autoSetup.scope === 'groups' ? state.autoSetup.selectedSubs.size : 0,
+    verbs: base.length,
+    mode: state.autoSetup.mode,
+    tempo: state.autoSetup.tempo,
+  });
   autoTickNext();
 }
 
@@ -1752,15 +1722,23 @@ function autoStop() {
 
 function autoShuffleRemaining() {
   if (!autoSession) return;
-  const remaining = autoSession.verbs.slice(autoSession.index);
-  // Fisher-Yates
-  for (let i = remaining.length - 1; i > 0; i--) {
+  // Shuffle the base verbs and restart 3 fresh rounds from the beginning
+  const base = autoSession.baseVerbs.slice();
+  for (let i = base.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+    [base[i], base[j]] = [base[j], base[i]];
   }
-  autoSession.verbs = [...autoSession.verbs.slice(0, autoSession.index), ...remaining];
+  autoSession.baseVerbs = base;
+  autoSession.verbs = base.slice();
+  autoSession.round = 1;
+  autoSession.index = 0;
   autoSession.shuffled = true;
-  toast('🔀 Zamícháno.', 'info', 1500);
+  // Reset any in-flight timers + speech
+  (autoSession.timers || []).forEach(clearTimeout);
+  autoSession.timers = [];
+  try { window.speechSynthesis.cancel(); } catch {}
+  toast('🔀 Zamícháno — začínáme 3 kola znovu.', 'info', 2000);
+  autoTickNext();
 }
 
 function scheduleAuto(fn, ms) {
@@ -1799,9 +1777,18 @@ function speakEn(text) {
 async function autoTickNext() {
   if (!autoSession || autoSession.aborted) return;
   if (autoSession.index >= autoSession.verbs.length) {
-    // Done. Brief celebratory beat, then stop.
-    toast('🎉 Hotovo! Audio jízda dokončena.', 'success', 4000);
-    setTimeout(() => autoStop(), 2000);
+    // Round finished. Move to next round, or finish if 3 done.
+    if (autoSession.round >= autoSession.totalRounds) {
+      toast('🎉 Hotovo! 3 kola dokončena.', 'success', 4000);
+      setTimeout(() => autoStop(), 2000);
+      return;
+    }
+    autoSession.round++;
+    autoSession.index = 0;
+    autoSession.verbs = autoSession.baseVerbs.slice();
+    toast(`Kolo ${autoSession.round} / ${autoSession.totalRounds} 🚀`, 'info', 1800);
+    // Brief breath before next round
+    scheduleAuto(() => autoTickNext(), 1500);
     return;
   }
   const v = autoSession.verbs[autoSession.index];
@@ -1817,7 +1804,8 @@ async function autoTickNext() {
 function updateAutoProgress() {
   if (!autoSession) return;
   const el = $('#auto-progress');
-  if (el) el.textContent = `${autoSession.index + 1} / ${autoSession.verbs.length}`;
+  if (!el) return;
+  el.textContent = `Kolo ${autoSession.round}/${autoSession.totalRounds} · ${autoSession.index + 1}/${autoSession.verbs.length}`;
 }
 
 async function renderAutoVerb(verb) {

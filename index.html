@@ -164,11 +164,26 @@
         </div>
 
         <div class="auto-section">
-          <h3 class="auto-section-title">Rychlý výběr</h3>
-          <div class="auto-quick-picks" id="auto-quick-picks"></div>
+          <h3 class="auto-section-title">Co testovat?</h3>
+          <div class="auto-scope-options">
+            <label class="auto-scope-option">
+              <input type="radio" name="auto-scope" value="problem" />
+              <span class="auto-scope-card">
+                <span class="auto-scope-title">🟡🔴 Pouze problematická</span>
+                <span class="auto-scope-desc" id="auto-scope-problem-desc">0 sloves</span>
+              </span>
+            </label>
+            <label class="auto-scope-option">
+              <input type="radio" name="auto-scope" value="groups" checked />
+              <span class="auto-scope-card">
+                <span class="auto-scope-title">📚 Zkoušet podle skupin</span>
+                <span class="auto-scope-desc">Vyber konkrétní skupiny níže</span>
+              </span>
+            </label>
+          </div>
         </div>
 
-        <div class="auto-section">
+        <div class="auto-section" id="auto-tiles-section">
           <h3 class="auto-section-title">
             <span>Skupiny sloves</span>
             <span class="auto-selection-count" id="auto-selection-count">0 vybráno</span>
@@ -207,13 +222,7 @@
           </div>
         </div>
 
-        <div class="auto-section">
-          <h3 class="auto-section-title">Min. počet sloves</h3>
-          <div class="auto-count-row">
-            <input type="number" id="auto-count" min="5" max="106" step="5" value="20" />
-            <span class="auto-count-note" id="auto-count-note">≈ 5 minut</span>
-          </div>
-        </div>
+        <div class="auto-duration-note" id="auto-duration-note">Každá skupina projde 3× dokola.</div>
 
         <button class="btn btn-primary auto-start-btn" id="auto-start" type="button">▶ Spustit audio jízdu</button>
         <p class="auto-warn">⚠️ Spusť před jízdou. Nedívej se na displej za volantem. Aplikace běží sama.</p>
@@ -224,7 +233,8 @@
         <div class="auto-stage-bg"></div>
         <div class="auto-stage-top">
           <div class="auto-progress" id="auto-progress">0 / 0</div>
-          <button class="auto-shuffle-btn" id="auto-shuffle" type="button" title="Zamíchat zbývající slovesa">🔀 Zamíchat</button>
+          <button class="auto-shuffle-btn" id="auto-shuffle" type="button" title="Zamíchat a začít 3 kola znovu">🔀 Zamíchat</button>
+          <div class="auto-progress-spacer"></div>
         </div>
         <div class="auto-stage-content">
           <div class="auto-cs" id="auto-cs"></div>

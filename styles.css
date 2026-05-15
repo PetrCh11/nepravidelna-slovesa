@@ -3519,37 +3519,44 @@ body.theme-dark .paywall-promo-msg.is-success,
 .auto-field-block { margin: 0; }
 .auto-field-block .auto-section-title { font-size: 0.95rem; margin-bottom: 8px; }
 
-/* Quick-pick pills */
-.auto-quick-picks {
+/* Scope choice (Pouze problematická vs. Zkoušet podle skupin) */
+.auto-scope-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 560px) {
+  .auto-scope-options { grid-template-columns: 1fr; }
+}
+.auto-scope-option { position: relative; cursor: pointer; }
+.auto-scope-option input { position: absolute; opacity: 0; pointer-events: none; }
+.auto-scope-option input:disabled ~ .auto-scope-card { opacity: 0.45; cursor: not-allowed; }
+.auto-scope-card {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.auto-quick-pick {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
-  border: 1.5px solid var(--border, rgba(0,0,0,0.1));
-  border-radius: 999px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 2px solid var(--border, rgba(0,0,0,0.1));
+  border-radius: 14px;
   background: var(--card-bg, #fff);
-  color: var(--text);
-  font: inherit;
-  font-size: 0.92rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.18s, background 0.18s, transform 0.12s;
+  transition: border-color 0.18s, background 0.18s;
 }
-.auto-quick-pick:hover:not(:disabled) {
+.auto-scope-option input:checked ~ .auto-scope-card {
   border-color: var(--accent, #5dc9bd);
   background: var(--accent-soft, rgba(93,201,189,0.08));
 }
-.auto-quick-pick:active { transform: scale(0.97); }
-.auto-quick-pick:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+.auto-scope-title { font-weight: 700; font-size: 1rem; }
+.auto-scope-desc { font-size: 0.82rem; color: var(--text-muted); }
+
+.auto-duration-note {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  margin: 18px 0 4px;
+  font-style: italic;
 }
-.auto-quick-emoji { font-size: 1.05rem; line-height: 1; }
+
+#auto-tiles-section.hidden { display: none; }
 
 /* Group tiles */
 .auto-tiles {
@@ -3756,38 +3763,50 @@ body.theme-dark .auto-tile::before {
 .auto-stage-top {
   position: relative;
   z-index: 1;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 18px 22px;
   gap: 12px;
 }
 .auto-progress {
+  justify-self: start;
   font-size: 0.95rem;
   font-weight: 700;
-  color: rgba(255,255,255,0.78);
-  padding: 6px 14px;
+  color: rgba(255,255,255,0.85);
+  padding: 7px 16px;
   background: rgba(255,255,255,0.08);
   border-radius: 999px;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  white-space: nowrap;
 }
+.auto-progress-spacer { justify-self: end; min-width: 1px; }
 .auto-shuffle-btn {
-  border: 1.5px solid rgba(255,255,255,0.25);
-  background: rgba(255,255,255,0.08);
+  justify-self: center;
+  border: 2px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.15);
   color: #fff;
   font: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
-  padding: 8px 16px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 14px 28px;
   border-radius: 999px;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: background-color 0.18s, transform 0.12s;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background-color 0.18s, transform 0.12s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  letter-spacing: 0.02em;
 }
-.auto-shuffle-btn:hover { background: rgba(255,255,255,0.15); }
-.auto-shuffle-btn:active { transform: scale(0.96); }
+.auto-shuffle-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+.auto-shuffle-btn:active { transform: scale(0.97); }
+
+@media (max-width: 560px) {
+  .auto-stage-top { padding: 14px 14px; grid-template-columns: 1fr auto 1fr; }
+  .auto-progress { font-size: 0.82rem; padding: 6px 12px; }
+  .auto-shuffle-btn { font-size: 0.95rem; padding: 12px 22px; }
+}
 
 .auto-stage-content {
   position: relative;
@@ -3870,8 +3889,6 @@ body.auto-driving .app-footer { display: none; }
 body.auto-driving { overflow: hidden; }
 
 @media (max-width: 480px) {
-  .auto-stage-top { padding: 14px 14px; }
-  .auto-shuffle-btn { font-size: 0.84rem; padding: 7px 14px; }
   .auto-stage-content { gap: 24px; padding: 14px; }
   .auto-stop-btn { width: min(160px, 70vw); padding: 16px 20px; font-size: 1.05rem; margin-bottom: 22px; }
 }
