@@ -158,22 +158,65 @@
     <!-- AUTO (driving) VIEW -->
     <section id="view-auto" class="view">
       <div class="auto-setup">
-        <div class="intro">
+        <div class="intro intro-hero">
           <h2>🚗 Audio jízda</h2>
-          <p>Bezpečné procvičování za jízdy. App přečte český překlad → pauza → pak všechny tři anglické tvary nahlas. <strong>Spusť před jízdou.</strong></p>
+          <p class="hero-lead">Bezpečné procvičování za jízdy. App přečte český překlad → pauza → pak nahlas všechny tři anglické tvary. <strong>Spusť před jízdou.</strong></p>
         </div>
-        <div class="auto-form">
-          <label class="auto-field">
-            <span class="auto-field-label">Balíček sloves</span>
-            <select id="auto-package"></select>
-          </label>
-          <label class="auto-field">
-            <span class="auto-field-label">Minimální počet sloves</span>
+
+        <div class="auto-section">
+          <h3 class="auto-section-title">Rychlý výběr</h3>
+          <div class="auto-quick-picks" id="auto-quick-picks"></div>
+        </div>
+
+        <div class="auto-section">
+          <h3 class="auto-section-title">
+            <span>Skupiny sloves</span>
+            <span class="auto-selection-count" id="auto-selection-count">0 vybráno</span>
+          </h3>
+          <div class="auto-tiles" id="auto-tiles"></div>
+        </div>
+
+        <div class="auto-section auto-section-grid">
+          <div class="auto-field-block">
+            <h3 class="auto-section-title">Režim</h3>
+            <div class="auto-radio-group" id="auto-mode">
+              <label class="auto-radio">
+                <input type="radio" name="auto-mode" value="test" checked />
+                <span class="auto-radio-card">
+                  <span class="auto-radio-name">🧠 Test</span>
+                  <span class="auto-radio-desc">Češky → pauza → tvary</span>
+                </span>
+              </label>
+              <label class="auto-radio">
+                <input type="radio" name="auto-mode" value="listen" />
+                <span class="auto-radio-card">
+                  <span class="auto-radio-name">🎧 Poslech</span>
+                  <span class="auto-radio-desc">Vše přečte bez pauzy</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="auto-field-block">
+            <h3 class="auto-section-title">Tempo</h3>
+            <div class="auto-radio-group auto-radio-row" id="auto-tempo">
+              <label class="auto-radio"><input type="radio" name="auto-tempo" value="slow" /><span class="auto-radio-pill">🐢 Pomalé</span></label>
+              <label class="auto-radio"><input type="radio" name="auto-tempo" value="normal" checked /><span class="auto-radio-pill">🚶 Normální</span></label>
+              <label class="auto-radio"><input type="radio" name="auto-tempo" value="fast" /><span class="auto-radio-pill">🏃 Rychlé</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="auto-section">
+          <h3 class="auto-section-title">Min. počet sloves</h3>
+          <div class="auto-count-row">
             <input type="number" id="auto-count" min="5" max="106" step="5" value="20" />
-          </label>
-          <button class="btn btn-primary auto-start-btn" id="auto-start" type="button">▶ Spustit audio jízdu</button>
+            <span class="auto-count-note" id="auto-count-note">≈ 5 minut</span>
+          </div>
         </div>
-        <p class="auto-warn">⚠️ Spusť ještě před jízdou. Nedívej se na displej za volantem. Aplikace běží sama.</p>
+
+        <button class="btn btn-primary auto-start-btn" id="auto-start" type="button">▶ Spustit audio jízdu</button>
+        <p class="auto-warn">⚠️ Spusť před jízdou. Nedívej se na displej za volantem. Aplikace běží sama.</p>
       </div>
 
       <!-- Fullscreen driving overlay -->

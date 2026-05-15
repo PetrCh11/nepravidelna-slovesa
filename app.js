@@ -1511,44 +1511,203 @@ function renderFlashcards() {
 // ============================================================
 // 🚗 Audio jízda — hands-free practice for driving
 // ============================================================
-const AUTO_PACKAGES = [
-  { id: 'all',      label: 'Vše (106 sloves)',                       picker: (d) => flattenVerbs(d) },
-  { id: 'sec1',     label: 'Sekce 1.0.0 — Všechny tři tvary se liší (41)', picker: (d) => flattenVerbs(d).filter((v) => v.subId.startsWith('1.')) },
-  { id: 'sec2',     label: 'Sekce 2.0.0 — Dva tvary shodné (53)',     picker: (d) => flattenVerbs(d).filter((v) => v.subId.startsWith('2.')) },
-  { id: 'sec3',     label: 'Sekce 3.0.0 — Všechny tři tvary shodné (12)', picker: (d) => flattenVerbs(d).filter((v) => v.subId.startsWith('3.')) },
-  { id: 'problem',  label: 'Jen problematická (žluté + červené)',     picker: (d) => flattenVerbs(d).filter((v) => {
-    const s = state.progress[v.inf]?.status; return s === 'yellow' || s === 'red';
-  }) },
-];
+// Persisted setup state
+const AUTO_SETUP_KEY = 'autoSetup';
+function loadAutoSetup() {
+  try {
+    const raw = localStorage.getItem(AUTO_SETUP_KEY);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (Array.isArray(o.selectedSubs)) o.selectedSubs = new Set(o.selectedSubs);
+    return o;
+  } catch { return null; }
+}
+function saveAutoSetup() {
+  const s = state.autoSetup;
+  if (!s) return;
+  try {
+    localStorage.setItem(AUTO_SETUP_KEY, JSON.stringify({
+      selectedSubs: Array.from(s.selectedSubs || []),
+      mode: s.mode,
+      tempo: s.tempo,
+      count: s.count,
+    }));
+  } catch {}
+}
+
+// Tempo presets — multipliers for pauses + speech rate
+const AUTO_TEMPOS = {
+  slow:   { pauseAfterCs: 4000, gapBetweenForms: 1500, gapBetweenVerbs: 1400, rateEn: 0.78, rateCs: 0.90 },
+  normal: { pauseAfterCs: 2500, gapBetweenForms: 1000, gapBetweenVerbs: 800,  rateEn: 0.85, rateCs: 0.95 },
+  fast:   { pauseAfterCs: 1500, gapBetweenForms: 500,  gapBetweenVerbs: 500,  rateEn: 1.0,  rateCs: 1.0  },
+};
 
 function renderAutoSetup() {
-  const sel = $('#auto-package');
-  if (!sel) return;
-  sel.innerHTML = '';
-  AUTO_PACKAGES.forEach((p) => {
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = p.label;
-    sel.appendChild(opt);
-  });
-  // Disable Problem option if there are none
-  const probCount = AUTO_PACKAGES.find((p) => p.id === 'problem').picker(state.data).length;
-  if (probCount === 0) {
-    const probOpt = sel.querySelector('option[value="problem"]');
-    if (probOpt) probOpt.disabled = true;
+  if (!state.data) return;
+  // Initialize state from localStorage or defaults
+  if (!state.autoSetup) {
+    state.autoSetup = loadAutoSetup() || {
+      selectedSubs: new Set(),
+      mode: 'test',
+      tempo: 'normal',
+      count: 20,
+    };
   }
+  renderAutoQuickPicks();
+  renderAutoTiles();
+  // Wire form controls
+  $$('#auto-mode input').forEach((r) => {
+    r.checked = r.value === state.autoSetup.mode;
+    r.onchange = () => { state.autoSetup.mode = r.value; saveAutoSetup(); };
+  });
+  $$('#auto-tempo input').forEach((r) => {
+    r.checked = r.value === state.autoSetup.tempo;
+    r.onchange = () => { state.autoSetup.tempo = r.value; saveAutoSetup(); };
+  });
+  const countInp = $('#auto-count');
+  if (countInp) {
+    countInp.value = state.autoSetup.count;
+    countInp.oninput = () => {
+      const n = Math.max(5, Math.min(106, parseInt(countInp.value, 10) || 20));
+      state.autoSetup.count = n;
+      updateAutoCountNote();
+      saveAutoSetup();
+    };
+  }
+  updateAutoSelectionCount();
+  updateAutoCountNote();
+}
+
+function updateAutoCountNote() {
+  const el = $('#auto-count-note');
+  if (!el) return;
+  const n = state.autoSetup.count;
+  const tempo = AUTO_TEMPOS[state.autoSetup.tempo];
+  // Rough per-verb time estimate: 1.5s cs speech + pauseAfterCs + 3 * (~0.9s speech + gapBetweenForms) + gapBetweenVerbs
+  const secsPerVerb = state.autoSetup.mode === 'listen'
+    ? (1.5 + 3 * 0.9 + 2 * tempo.gapBetweenForms / 1000 + tempo.gapBetweenVerbs / 1000)
+    : (1.5 + tempo.pauseAfterCs / 1000 + 3 * 0.9 + 2 * tempo.gapBetweenForms / 1000 + tempo.gapBetweenVerbs / 1000);
+  const totalMin = Math.max(1, Math.round((n * secsPerVerb) / 60));
+  el.textContent = `≈ ${totalMin} min`;
+}
+
+function renderAutoQuickPicks() {
+  const c = $('#auto-quick-picks');
+  if (!c) return;
+  const all = state.data.sections.flatMap((s) => s.subsections);
+  const problemVerbs = flattenVerbs(state.data).filter((v) => {
+    const s = state.progress[v.inf]?.status; return s === 'yellow' || s === 'red';
+  });
+  const picks = [
+    { id: 'all',     label: 'Vše',            emoji: '📚', filter: () => all.map((s) => s.id) },
+    { id: 'sec1',    label: 'Sekce 1.0.0',    emoji: '🎯', filter: () => all.filter((s) => s.id.startsWith('1.')).map((s) => s.id) },
+    { id: 'sec2',    label: 'Sekce 2.0.0',    emoji: '🌀', filter: () => all.filter((s) => s.id.startsWith('2.')).map((s) => s.id) },
+    { id: 'sec3',    label: 'Sekce 3.0.0',    emoji: '⚡', filter: () => all.filter((s) => s.id.startsWith('3.')).map((s) => s.id) },
+    { id: 'problem', label: `Problematická (${problemVerbs.length})`, emoji: '🟡🔴', filter: null, problem: true },
+    { id: 'clear',   label: 'Zrušit výběr',   emoji: '✖', filter: () => [] },
+  ];
+  c.innerHTML = '';
+  picks.forEach((p) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'auto-quick-pick';
+    if (p.problem && problemVerbs.length === 0) btn.disabled = true;
+    btn.innerHTML = `<span class="auto-quick-emoji">${p.emoji}</span><span class="auto-quick-label">${p.label}</span>`;
+    btn.onclick = () => {
+      if (p.problem) {
+        // Special: select all subs that contain at least one problematic verb
+        const subsWithProblem = new Set();
+        problemVerbs.forEach((pv) => subsWithProblem.add(pv.subId));
+        state.autoSetup.selectedSubs = subsWithProblem;
+        state.autoSetup._onlyProblemMode = true;
+      } else {
+        state.autoSetup._onlyProblemMode = false;
+        state.autoSetup.selectedSubs = new Set(p.filter());
+      }
+      saveAutoSetup();
+      renderAutoTiles();
+      updateAutoSelectionCount();
+    };
+    c.appendChild(btn);
+  });
+}
+
+function renderAutoTiles() {
+  const c = $('#auto-tiles');
+  if (!c) return;
+  c.innerHTML = '';
+  let subIdx = 0;
+  const totalSubs = state.data.sections.reduce((n, s) => n + s.subsections.length, 0);
+  state.data.sections.forEach((sec) => {
+    sec.subsections.forEach((sub) => {
+      const hue = Math.round((subIdx / totalSubs) * 360);
+      subIdx++;
+      const selected = state.autoSetup.selectedSubs.has(sub.id);
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = 'auto-tile' + (selected ? ' selected' : '');
+      tile.style.setProperty('--sub-hue', hue);
+      const previewVerbs = sub.verbs.slice(0, 4);
+      const previewHtml = previewVerbs.map((v) => `<span class="auto-tile-verb">${v.emoji || '·'} ${v.inf}</span>`).join('');
+      tile.innerHTML = `
+        <span class="auto-tile-check" aria-hidden="true">✓</span>
+        <div class="auto-tile-top">
+          <span class="subsection-id">${sub.id}</span>
+          <span class="auto-tile-pattern">${sub.pattern}</span>
+        </div>
+        <div class="auto-tile-preview">${previewHtml}</div>
+        <div class="auto-tile-meta">${sub.verbs.length} sloves</div>
+      `;
+      tile.onclick = () => {
+        if (state.autoSetup.selectedSubs.has(sub.id)) state.autoSetup.selectedSubs.delete(sub.id);
+        else state.autoSetup.selectedSubs.add(sub.id);
+        state.autoSetup._onlyProblemMode = false;
+        tile.classList.toggle('selected');
+        saveAutoSetup();
+        updateAutoSelectionCount();
+      };
+      c.appendChild(tile);
+    });
+  });
+}
+
+function updateAutoSelectionCount() {
+  const el = $('#auto-selection-count');
+  if (!el) return;
+  const picked = state.autoSetup.selectedSubs;
+  const totalVerbs = state.data.sections.flatMap((s) => s.subsections)
+    .filter((sub) => picked.has(sub.id))
+    .reduce((n, sub) => n + sub.verbs.length, 0);
+  if (picked.size === 0) el.textContent = '0 skupin';
+  else el.textContent = `${picked.size} skupin · ${totalVerbs} sloves`;
+}
+
+function getAutoSelectedVerbs() {
+  const picked = state.autoSetup.selectedSubs;
+  const all = flattenVerbs(state.data);
+  let verbs = all.filter((v) => picked.has(v.subId));
+  if (state.autoSetup._onlyProblemMode) {
+    verbs = verbs.filter((v) => {
+      const s = state.progress[v.inf]?.status; return s === 'yellow' || s === 'red';
+    });
+  }
+  return verbs;
 }
 
 // State holder for the running session
 let autoSession = null;
 
 function autoStart() {
-  const pkgId = $('#auto-package').value;
-  const pkg = AUTO_PACKAGES.find((p) => p.id === pkgId);
-  if (!pkg) return;
-  const allFromPkg = pkg.picker(state.data);
-  if (allFromPkg.length === 0) { toast('Tento balíček je prázdný.', 'error'); return; }
-  let count = Math.max(5, Math.min(allFromPkg.length, parseInt($('#auto-count').value || '20', 10)));
+  if (!state.autoSetup || state.autoSetup.selectedSubs.size === 0) {
+    toast('Vyber alespoň jednu skupinu sloves.', 'error');
+    return;
+  }
+  const allFromPkg = getAutoSelectedVerbs();
+  if (allFromPkg.length === 0) {
+    toast('Vybrané skupiny neobsahují žádná slovesa.', 'error');
+    return;
+  }
+  let count = Math.max(5, Math.min(allFromPkg.length, state.autoSetup.count || 20));
   if (!Number.isFinite(count)) count = Math.min(20, allFromPkg.length);
   // Default: in original group order (no shuffle).
   const verbs = allFromPkg.slice(0, count);
@@ -1559,6 +1718,8 @@ function autoStart() {
     shuffled: false,
     aborted: false,
     timers: [],
+    mode: state.autoSetup.mode,
+    tempo: AUTO_TEMPOS[state.autoSetup.tempo] || AUTO_TEMPOS.normal,
   };
   $('.auto-setup').classList.add('hidden');
   $('#auto-stage').classList.remove('hidden');
@@ -1569,7 +1730,7 @@ function autoStart() {
       navigator.wakeLock.request('screen').then((lock) => { autoSession.wakeLock = lock; }).catch(() => {});
     }
   } catch {}
-  track('auto_started', { pkg: pkgId, count });
+  track('auto_started', { subs: state.autoSetup.selectedSubs.size, count, mode: state.autoSetup.mode, tempo: state.autoSetup.tempo });
   autoTickNext();
 }
 
@@ -1616,7 +1777,7 @@ function speakCs(text) {
     try { window.speechSynthesis.cancel(); } catch {}
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'cs-CZ';
-    u.rate = 0.95;
+    u.rate = autoSession?.tempo?.rateCs || 0.95;
     u.onend = () => resolve();
     u.onerror = () => resolve();
     window.speechSynthesis.speak(u);
@@ -1628,7 +1789,7 @@ function speakEn(text) {
     if (!('speechSynthesis' in window) || autoSession?.aborted) return resolve();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = state.dialect === 'AmE' ? 'en-US' : 'en-GB';
-    u.rate = 0.85; // a touch slower so it's not rushed
+    u.rate = autoSession?.tempo?.rateEn || 0.85;
     u.onend = () => resolve();
     u.onerror = () => resolve();
     window.speechSynthesis.speak(u);
@@ -1648,8 +1809,9 @@ async function autoTickNext() {
   await renderAutoVerb(v);
   if (!autoSession || autoSession.aborted) return;
   autoSession.index++;
-  // Gap between verbs
-  scheduleAuto(() => autoTickNext(), 800);
+  // Gap between verbs (tempo-controlled)
+  const gap = autoSession.tempo?.gapBetweenVerbs ?? 800;
+  scheduleAuto(() => autoTickNext(), gap);
 }
 
 function updateAutoProgress() {
@@ -1665,17 +1827,24 @@ async function renderAutoVerb(verb) {
   cs.textContent = '';
   items.forEach((el) => { el.textContent = ''; el.classList.remove('visible'); });
 
+  const tempo = autoSession?.tempo || AUTO_TEMPOS.normal;
+
   // 1. Show + say Czech
   cs.textContent = verb.cs;
   cs.classList.add('visible');
   await speakCs(verb.cs);
   if (!autoSession || autoSession.aborted) return;
 
-  // 2. Pause for student to think
-  await new Promise((res) => scheduleAuto(res, 2500));
-  if (!autoSession || autoSession.aborted) return;
+  // 2. Pause for student to think (skip in listen-only mode)
+  if (autoSession.mode !== 'listen') {
+    await new Promise((res) => scheduleAuto(res, tempo.pauseAfterCs));
+    if (!autoSession || autoSession.aborted) return;
+  } else {
+    await new Promise((res) => scheduleAuto(res, 400));
+    if (!autoSession || autoSession.aborted) return;
+  }
 
-  // 3. Reveal + speak each of the three forms, with 1-sec gap between them
+  // 3. Reveal + speak each of the three forms, with tempo gap between them
   const past = pickForm(verb, 'past', state.dialect);
   const pp = pickForm(verb, 'pp', state.dialect);
   const forms = [verb.inf, past, pp];
@@ -1685,7 +1854,7 @@ async function renderAutoVerb(verb) {
     items[i].classList.add('visible');
     await speakEn(forms[i]);
     if (i < forms.length - 1) {
-      await new Promise((res) => scheduleAuto(res, 1000));
+      await new Promise((res) => scheduleAuto(res, tempo.gapBetweenForms));
     }
   }
 }
