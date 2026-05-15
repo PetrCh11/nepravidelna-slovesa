@@ -180,24 +180,73 @@ function pickForm(verb, which, dialect) {
   return verb[which];
 }
 
-function allAcceptableForms(verb, which, dialect) {
-  const set = new Set();
+// Normalize the student's input so common slips don't get penalized:
+//   - leading/trailing whitespace
+//   - leading/trailing punctuation (!? . , ; :)
+//   - any letter case
+//   - multiple/inconsistent internal whitespace
+function normalizeAnswerInput(s) {
+  return String(s || '')
+    .trim()
+    .replace(/^[\s.,;:!?'"()-]+|[\s.,;:!?'"()-]+$/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+// Break student's input into individual verb-form tokens, treating any of these
+// as separators between forms: whitespace, comma, semicolon, slash, ampersand, "and"
+function tokensFromAnswer(s, { stripInfinitiveTo = false } = {}) {
+  let norm = normalizeAnswerInput(s);
+  // Optionally drop leading "to " — only valid for infinitive forms ("to begin" → "begin")
+  if (stripInfinitiveTo) norm = norm.replace(/^to\s+/, '');
+  return norm.split(/[\s,;/&]+|\band\b/).filter(Boolean);
+}
+
+// Build the set of "acceptable form strings" for a given slot (inf/past/pp).
+// Each may itself contain "/" meaning a verb has multiple required forms
+// (e.g. be: past = "was/were" — student should write both).
+function acceptableFormsFor(verb, which, dialect) {
+  const forms = [];
   if (which === 'inf') {
-    verb.inf.split('/').forEach((f) => set.add(f.trim().toLowerCase()));
-    return set;
+    forms.push(verb.inf);
+    return forms;
   }
-  const preferred = pickForm(verb, which, dialect);
-  preferred.split('/').forEach((f) => set.add(f.trim().toLowerCase()));
+  forms.push(pickForm(verb, which, dialect));
   [verb.past, verb.pastAm, verb.pastAlt, verb.pp, verb.ppAm, verb.ppAlt]
     .filter(Boolean)
     .forEach((f) => {
-      if (which === 'past' && (f === verb.past || f === verb.pastAm || f === verb.pastAlt)) {
-        f.split('/').forEach((x) => set.add(x.trim().toLowerCase()));
-      }
-      if (which === 'pp' && (f === verb.pp || f === verb.ppAm || f === verb.ppAlt)) {
-        f.split('/').forEach((x) => set.add(x.trim().toLowerCase()));
-      }
+      if (which === 'past' && (f === verb.past || f === verb.pastAm || f === verb.pastAlt)) forms.push(f);
+      if (which === 'pp' && (f === verb.pp || f === verb.ppAm || f === verb.ppAlt)) forms.push(f);
     });
+  return forms;
+}
+
+// True when the student's typed answer matches one of the acceptable forms.
+// Multi-token forms (like "was/were"): student must include ALL tokens, but the
+// order and separators are free — "was/were", "were/was", "was, were",
+// "was were", "were,was", "was; were" all match.
+function isAnswerCorrect(input, verb, which, dialect) {
+  const inputTokens = tokensFromAnswer(input, { stripInfinitiveTo: which === 'inf' });
+  if (inputTokens.length === 0) return false;
+  const forms = acceptableFormsFor(verb, which, dialect);
+  for (const form of forms) {
+    const expected = form.split('/').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (inputTokens.length !== expected.length) continue;
+    const a = [...inputTokens].sort();
+    const b = [...expected].sort();
+    if (a.every((t, i) => t === b[i])) return true;
+  }
+  return false;
+}
+
+// Back-compat shim: some legacy spots still call allAcceptableForms().has(value).
+// Keep it returning a Set of the simple (single-token) acceptable forms so
+// callers that only check single-form correctness still work.
+function allAcceptableForms(verb, which, dialect) {
+  const set = new Set();
+  acceptableFormsFor(verb, which, dialect).forEach((f) => {
+    f.split('/').forEach((x) => set.add(x.trim().toLowerCase()));
+  });
   return set;
 }
 
@@ -1065,8 +1114,7 @@ function askStage2Verb(verb, step) {
   const markField = (inp) => {
     const key = inp.dataset.form;
     if (key in fieldResults) return;
-    const accepted = allAcceptableForms(verb, key, state.dialect);
-    const good = accepted.has(inp.value.trim().toLowerCase());
+    const good = isAnswerCorrect(inp.value, verb, key, state.dialect);
     fieldResults[key] = good;
     inp.classList.add(good ? 'correct' : 'wrong');
     inp.disabled = true;
@@ -1608,8 +1656,7 @@ function quizRender() {
       let ok = true;
       inputs.forEach((inp) => {
         const key = inp.dataset.form;
-        const accepted = allAcceptableForms(verb, key, state.dialect);
-        const good = accepted.has(inp.value.trim().toLowerCase());
+        const good = isAnswerCorrect(inp.value, verb, key, state.dialect);
         inp.classList.add(good ? 'correct' : 'wrong');
         inp.disabled = true;
         if (!good) ok = false;
