@@ -54,38 +54,41 @@ export function welcomeEmail({ plan, isPromo }) {
   }[plan] || 'premium';
 
   const trialNote = (plan === 'monthly' || plan === 'yearly')
-    ? `<p style="margin:0 0 16px;"><strong>7 dní zdarma:</strong> prvních 7 dní ti karta nic nestrhne. Pokud nebudeš chtít pokračovat, zruš to v Menu → 💳 Spravovat předplatné.</p>`
+    ? `<p style="margin:0 0 18px;font-size:17px;line-height:1.6;"><strong>7 dní zdarma:</strong> prvních 7 dní ti karta nic nestrhne. Pokud nebudeš chtít pokračovat, zruš to v Menu → 💳 Spravovat předplatné.</p>`
     : '';
 
   const html = `<!DOCTYPE html>
 <html lang="cs">
 <head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa;color:#1d2329;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fa;padding:24px 12px;">
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa;color:#1d2329;font-size:17px;line-height:1.6;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fa;padding:28px 12px;">
     <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,0.06);">
-        <tr><td style="padding:32px 32px 8px;">
-          <div style="font-size:0.72rem;font-weight:700;color:#5dc9bd;letter-spacing:0.04em;text-transform:uppercase;">Nepravidelná slovesa</div>
-          <div style="font-size:1.6rem;font-weight:800;line-height:1.2;margin:6px 0 0;color:#1d2329;">Vítej v Premium! 🎉</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,0.06);">
+        <tr><td align="center" style="padding:32px 32px 12px;">
+          <img src="${APP_URL}/icon-192.png" alt="UČ SE!" width="84" height="84" style="display:block;width:84px;height:84px;border-radius:18px;" />
         </td></tr>
-        <tr><td style="padding:16px 32px 24px;font-size:0.95rem;line-height:1.55;color:#3b454f;">
-          <p style="margin:0 0 16px;">Díky moc za podporu! Máš odemčených všech <strong>106 nepravidelných sloves</strong> ve 24 výslovnostních skupinách. Plán: <strong>${planLabel}</strong>.</p>
+        <tr><td align="center" style="padding:8px 32px 4px;">
+          <div style="font-size:13px;font-weight:700;color:#5dc9bd;letter-spacing:0.06em;text-transform:uppercase;">Nepravidelná slovesa</div>
+          <div style="font-size:28px;font-weight:800;line-height:1.2;margin:8px 0 0;color:#1d2329;">Vítej v Premium! 🎉</div>
+        </td></tr>
+        <tr><td style="padding:20px 36px 28px;font-size:17px;line-height:1.6;color:#3b454f;">
+          <p style="margin:0 0 18px;">Díky moc za podporu! Máš odemčených všech <strong>106 nepravidelných sloves</strong> ve 24 výslovnostních skupinách. Plán: <strong>${planLabel}</strong>.</p>
           ${trialNote}
-          <p style="margin:0 0 16px;"><strong>Jak začít:</strong></p>
-          <ol style="margin:0 0 18px;padding-left:20px;">
-            <li style="margin:0 0 6px;">Otevři appku a vyber si jakoukoli skupinu</li>
-            <li style="margin:0 0 6px;">Projdi si "studium" → uvidíš vzorec, jak se slovesa chovají</li>
-            <li style="margin:0 0 6px;">Pokračuj na "v pořadí" a "zamícháno" — píšeš tvary, dostáváš zpětnou vazbu</li>
-            <li style="margin:0 0 6px;">Cvič 5 minut denně, ne dlouhé maratony</li>
+          <p style="margin:0 0 12px;"><strong>Jak začít:</strong></p>
+          <ol style="margin:0 0 22px;padding-left:22px;">
+            <li style="margin:0 0 8px;">Otevři appku a vyber si jakoukoli skupinu</li>
+            <li style="margin:0 0 8px;">Projdi si <strong>studium</strong> → uvidíš vzorec, jak se slovesa chovají</li>
+            <li style="margin:0 0 8px;">Pokračuj na <strong>v pořadí</strong> a <strong>zamícháno</strong> — píšeš tvary, dostáváš zpětnou vazbu</li>
+            <li style="margin:0 0 8px;">Cvič 5 minut denně, ne dlouhé maratony</li>
           </ol>
-          <p style="margin:0 0 20px;text-align:center;">
-            <a href="${APP_URL}" style="display:inline-block;background:linear-gradient(135deg,#5dc9bd,#7c6ff5);color:#fff;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:700;font-size:0.95rem;">Otevřít appku →</a>
+          <p style="margin:0 0 24px;text-align:center;">
+            <a href="${APP_URL}" style="display:inline-block;background:linear-gradient(135deg,#5dc9bd,#7c6ff5);color:#fff;text-decoration:none;padding:14px 32px;border-radius:999px;font-weight:700;font-size:17px;">Otevřít appku →</a>
           </p>
-          ${isPromo ? '' : `<p style="margin:0 0 8px;font-size:0.86rem;color:#6b7280;"><strong>Spravovat předplatné:</strong> v appce klikni na ☰ Menu → 💳 Spravovat předplatné. Můžeš tam změnit kartu, stáhnout faktury nebo kdykoli zrušit.</p>`}
-          <p style="margin:0;font-size:0.86rem;color:#6b7280;">Pokud máš jakýkoli dotaz, odpověz na tento e-mail.</p>
+          ${isPromo ? '' : `<p style="margin:0 0 10px;font-size:15px;color:#6b7280;line-height:1.55;"><strong>Spravovat předplatné:</strong> v appce klikni na ☰ Menu → 💳 Spravovat předplatné. Můžeš tam změnit kartu, stáhnout faktury nebo kdykoli zrušit.</p>`}
+          <p style="margin:0;font-size:15px;color:#6b7280;line-height:1.55;">Pokud máš jakýkoli dotaz, odpověz na tento e-mail.</p>
         </td></tr>
-        <tr><td style="padding:18px 32px;border-top:1px solid #eef0f3;background:#fafbfc;font-size:0.78rem;color:#8a92a0;">
-          ucseslovesa.cz · <a href="${APP_URL}/seznam/" style="color:#8a92a0;">Kompletní seznam sloves</a>
+        <tr><td align="center" style="padding:20px 32px;border-top:1px solid #eef0f3;background:#fafbfc;font-size:14px;color:#8a92a0;">
+          <a href="${APP_URL}" style="color:#8a92a0;text-decoration:none;">ucseslovesa.cz</a> · <a href="${APP_URL}/seznam/" style="color:#8a92a0;">Kompletní seznam sloves</a>
         </td></tr>
       </table>
     </td></tr>
