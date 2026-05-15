@@ -1704,7 +1704,45 @@ function autoStart() {
   autoTickNext();
 }
 
-function autoStop() {
+// Pause the session — stops speech + timers but keeps the stage and state.
+// First press of Stop calls this; the button morphs into "Exit" + a Play
+// button is revealed.
+function autoPause() {
+  if (!autoSession || autoSession.paused || autoSession.aborted) return;
+  autoSession.paused = true;
+  (autoSession.timers || []).forEach(clearTimeout);
+  autoSession.timers = [];
+  try { window.speechSynthesis.cancel(); } catch {}
+  // Morph buttons
+  const stopBtn = $('#auto-stop');
+  const playBtn = $('#auto-play');
+  if (stopBtn) {
+    stopBtn.textContent = '⏏️ Exit';
+    stopBtn.setAttribute('aria-label', 'Ukončit audio jízdu');
+    stopBtn.classList.add('is-exit');
+  }
+  if (playBtn) playBtn.classList.remove('hidden');
+}
+
+// Resume from the current verb (replays from the Czech word).
+function autoResume() {
+  if (!autoSession || !autoSession.paused || autoSession.aborted) return;
+  autoSession.paused = false;
+  // Restore buttons
+  const stopBtn = $('#auto-stop');
+  const playBtn = $('#auto-play');
+  if (stopBtn) {
+    stopBtn.textContent = '⏸ Stop';
+    stopBtn.setAttribute('aria-label', 'Pozastavit audio jízdu');
+    stopBtn.classList.remove('is-exit');
+  }
+  if (playBtn) playBtn.classList.add('hidden');
+  // Restart playback from current verb
+  autoTickNext();
+}
+
+// Fully exit the session — destroys state and returns to setup.
+function autoExit() {
   if (autoSession) {
     autoSession.aborted = true;
     (autoSession.timers || []).forEach(clearTimeout);
@@ -1715,10 +1753,29 @@ function autoStop() {
   $('#auto-stage').classList.add('hidden');
   $('.auto-setup').classList.remove('hidden');
   document.body.classList.remove('auto-driving');
+  // Reset button visuals back to default state
+  const stopBtn = $('#auto-stop');
+  const playBtn = $('#auto-play');
+  if (stopBtn) {
+    stopBtn.textContent = '⏸ Stop';
+    stopBtn.setAttribute('aria-label', 'Pozastavit audio jízdu');
+    stopBtn.classList.remove('is-exit');
+  }
+  if (playBtn) playBtn.classList.add('hidden');
   // Clear visuals
   $('#auto-cs').textContent = '';
   $('#auto-forms').querySelectorAll('.auto-form-item').forEach((el) => { el.textContent = ''; el.classList.remove('visible'); });
 }
+
+// Single handler for the bottom button — pauses first, exits on second press.
+function autoStopOrExit() {
+  if (!autoSession) { autoExit(); return; }
+  if (autoSession.paused) autoExit();
+  else autoPause();
+}
+
+// Kept for backwards-compat with existing callers (logo home, menu switch).
+function autoStop() { autoExit(); }
 
 function autoShuffleRemaining() {
   if (!autoSession) return;
@@ -1742,16 +1799,16 @@ function autoShuffleRemaining() {
 }
 
 function scheduleAuto(fn, ms) {
-  if (!autoSession || autoSession.aborted) return;
+  if (!autoSession || autoSession.aborted || autoSession.paused) return;
   const id = setTimeout(() => {
-    if (autoSession && !autoSession.aborted) fn();
+    if (autoSession && !autoSession.aborted && !autoSession.paused) fn();
   }, ms);
   autoSession.timers.push(id);
 }
 
 function speakCs(text) {
   return new Promise((resolve) => {
-    if (!('speechSynthesis' in window) || autoSession?.aborted) return resolve();
+    if (!('speechSynthesis' in window) || autoSession?.aborted || autoSession?.paused) return resolve();
     try { window.speechSynthesis.cancel(); } catch {}
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'cs-CZ';
@@ -1764,7 +1821,7 @@ function speakCs(text) {
 
 function speakEn(text) {
   return new Promise((resolve) => {
-    if (!('speechSynthesis' in window) || autoSession?.aborted) return resolve();
+    if (!('speechSynthesis' in window) || autoSession?.aborted || autoSession?.paused) return resolve();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = state.dialect === 'AmE' ? 'en-US' : 'en-GB';
     u.rate = autoSession?.tempo?.rateEn || 0.85;
@@ -1775,7 +1832,7 @@ function speakEn(text) {
 }
 
 async function autoTickNext() {
-  if (!autoSession || autoSession.aborted) return;
+  if (!autoSession || autoSession.aborted || autoSession.paused) return;
   if (autoSession.index >= autoSession.verbs.length) {
     // Round finished. Move to next round, or finish if 3 done.
     if (autoSession.round >= autoSession.totalRounds) {
@@ -1794,7 +1851,7 @@ async function autoTickNext() {
   const v = autoSession.verbs[autoSession.index];
   updateAutoProgress();
   await renderAutoVerb(v);
-  if (!autoSession || autoSession.aborted) return;
+  if (!autoSession || autoSession.aborted || autoSession.paused) return;
   autoSession.index++;
   // Gap between verbs (tempo-controlled)
   const gap = autoSession.tempo?.gapBetweenVerbs ?? 800;
@@ -1821,15 +1878,15 @@ async function renderAutoVerb(verb) {
   cs.textContent = verb.cs;
   cs.classList.add('visible');
   await speakCs(verb.cs);
-  if (!autoSession || autoSession.aborted) return;
+  if (!autoSession || autoSession.aborted || autoSession.paused) return;
 
   // 2. Pause for student to think (skip in listen-only mode)
   if (autoSession.mode !== 'listen') {
     await new Promise((res) => scheduleAuto(res, tempo.pauseAfterCs));
-    if (!autoSession || autoSession.aborted) return;
+    if (!autoSession || autoSession.aborted || autoSession.paused) return;
   } else {
     await new Promise((res) => scheduleAuto(res, 400));
-    if (!autoSession || autoSession.aborted) return;
+    if (!autoSession || autoSession.aborted || autoSession.paused) return;
   }
 
   // 3. Reveal + speak each of the three forms, with tempo gap between them
@@ -1837,7 +1894,7 @@ async function renderAutoVerb(verb) {
   const pp = pickForm(verb, 'pp', state.dialect);
   const forms = [verb.inf, past, pp];
   for (let i = 0; i < forms.length; i++) {
-    if (!autoSession || autoSession.aborted) return;
+    if (!autoSession || autoSession.aborted || autoSession.paused) return;
     items[i].textContent = forms[i];
     items[i].classList.add('visible');
     await speakEn(forms[i]);
@@ -2412,7 +2469,8 @@ async function init() {
     if (b.dataset.view === 'auto') renderAutoSetup();
   }));
   $('#auto-start')?.addEventListener('click', autoStart);
-  $('#auto-stop')?.addEventListener('click', autoStop);
+  $('#auto-stop')?.addEventListener('click', autoStopOrExit);
+  $('#auto-play')?.addEventListener('click', autoResume);
   $('#auto-shuffle')?.addEventListener('click', autoShuffleRemaining);
   // Style toggle (Pracující / Student)
   const reflectStyleBtns = () => {
