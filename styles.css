@@ -2481,25 +2481,24 @@ body {
 .next-btn-corner:hover { box-shadow: 0 6px 18px rgba(255, 90, 60, 0.36); }
 .next-btn-corner:active { transform: scale(0.97); }
 
-/* ----- Browse preview (non-premium) ----- */
-.browse-preview .subsection-faded {
+/* ----- Premium preview fade (browse + flashcards) ----- */
+.browse-preview .subsection-faded,
+.fc-preview .fc-sub-faded {
   cursor: pointer;
-  transition: opacity 0.18s ease, filter 0.18s ease;
   position: relative;
   user-select: none;
 }
-.browse-preview .subsection-faded:hover {
-  opacity: 0.85 !important;
-  filter: blur(0.5px) !important;
-}
-.browse-preview .subsection-faded::after {
+.browse-preview .subsection-faded::after,
+.fc-preview .fc-sub-faded::after {
   content: "🔒";
   position: absolute;
   top: 12px;
   right: 14px;
   font-size: 1.3rem;
-  opacity: 0.7;
+  opacity: 0.65;
   pointer-events: none;
+  z-index: 2;
+  filter: none;
 }
 
 .browse-unlock-cta {
