@@ -1416,7 +1416,11 @@ function againOnlyProblem() {
 function renderBrowse() {
   const container = $('#sections-list');
   container.innerHTML = '';
+  const PREVIEW_FREE_COUNT = 3; // first N subsections shown unfaded for non-premium
+  const isLocked = !state.premium;
+  container.classList.toggle('browse-preview', isLocked);
   let subIdx = 0;
+  let lockedRank = 0;
   const totalSubs = state.data.sections.reduce((n, s) => n + s.subsections.length, 0);
   state.data.sections.forEach((sec) => {
     const details = document.createElement('details');
@@ -1427,7 +1431,6 @@ function renderBrowse() {
     details.appendChild(summary);
     sec.subsections.forEach((sub) => {
       const hue = Math.round((subIdx / totalSubs) * 360);
-      subIdx++;
       const div = document.createElement('div');
       div.className = 'subsection';
       div.style.setProperty('--sub-hue', hue);
@@ -1441,10 +1444,34 @@ function renderBrowse() {
       `;
       const grid = div.querySelector('.verb-grid');
       sub.verbs.forEach((v) => grid.appendChild(renderVerbCard(v)));
+      // Premium gate: first N subsections free preview, rest faded
+      if (isLocked && subIdx >= PREVIEW_FREE_COUNT) {
+        div.classList.add('subsection-faded');
+        const opacity = Math.max(0.18, 0.62 - lockedRank * 0.05);
+        const blur = Math.min(4.5, 1.2 + lockedRank * 0.25);
+        div.style.opacity = String(opacity);
+        div.style.filter = `blur(${blur}px)`;
+        div.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); showPaywall(); }, true);
+        lockedRank++;
+      }
       details.appendChild(div);
+      subIdx++;
     });
     container.appendChild(details);
   });
+  // Unlock CTA banner at the bottom (only when locked)
+  if (isLocked) {
+    const cta = document.createElement('div');
+    cta.className = 'browse-unlock-cta';
+    cta.innerHTML = `
+      <div class="browse-unlock-icon">🔒</div>
+      <h3>Odemkni všech ${totalSubs} skupin</h3>
+      <p>Premium ti otevře všech 106 sloves, plně strukturovanou lekci a <strong>🚗 Car mode</strong> na cesty autem.</p>
+      <button class="btn btn-primary browse-unlock-btn" type="button">Vyzkoušet Premium →</button>
+    `;
+    container.appendChild(cta);
+    cta.querySelector('.browse-unlock-btn').addEventListener('click', () => showPaywall());
+  }
 }
 
 function renderVerbCard(verb) {
@@ -2324,6 +2351,7 @@ async function redeemPromo(rawCode, ctx) {
     setTimeout(() => {
       ctx.modal.classList.add('hidden');
       renderLessonPicker();
+      renderBrowse();
     }, 1200);
   } catch (e) {
     ctx.setMsg(PROMO_ERRORS.network, 'error');
@@ -2448,6 +2476,7 @@ async function init() {
     state.premium = localStorage.getItem('premium') === 'true';
     renderLessonPicker();
     renderStatsStrip();
+    renderBrowse();
   });
   $('#portal-btn')?.addEventListener('click', openCustomerPortal);
   $('#google-btn')?.addEventListener('click', () => {
