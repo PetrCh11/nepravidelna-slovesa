@@ -104,8 +104,8 @@ const TEXTS = {
                    student: 'Celá sekce v kapse! Žádný problémové, můžeš si všechno dát ještě jednou pro frajeřinu.' },
   // Paywall
   pw_title:      { pro: 'Odemkni všechna slovesa 🔓', student: 'Odemkni všechno 🔓' },
-  pw_sub:        { pro: 'Zdarma máš 3 skupiny (15 sloves). Premium ti otevře všech <strong>106 sloves</strong> ve 24 skupinách.',
-                   student: 'Zdarma máš 3 skupiny (15 sloves). Premium ti otevře všechny — všech <strong>106 sloves</strong> ve 24 skupinách.' },
+  pw_sub:        { pro: 'Zdarma máš 3 skupiny (15 sloves). Premium ti otevře všech <strong>106 sloves</strong> ve 24 skupinách a <strong>🚗 Car mode</strong> pro procvičování v autě.',
+                   student: 'Zdarma máš 3 skupiny (15 sloves). Premium ti otevře všech <strong>106 sloves</strong> ve 24 skupinách + <strong>🚗 Car mode</strong> na cesty autem.' },
   pw_plan1_note: { pro: 'jednorázově, bez obnovování', student: 'jednorázově, klid navždy' },
   pw_plan2_note: { pro: '7 dní zdarma · pak 49 Kč/měs · kdykoli zrušíš',
                    student: '7 dní zdarma · pak 49 Kč/měs · kdykoli stopneš' },
@@ -1661,6 +1661,11 @@ const AUTO_ROUNDS = 3;
 
 function autoStart() {
   if (!state.autoSetup) return;
+  // Defensive: Car mode is Premium-only
+  if (!state.premium) {
+    showPaywall();
+    return;
+  }
   if (state.autoSetup.scope === 'groups' && state.autoSetup.selectedSubs.size === 0) {
     toast('Vyber alespoň jednu skupinu sloves.', 'error');
     return;
@@ -2465,6 +2470,11 @@ async function init() {
   $$('.menu-item').forEach((b) => b.addEventListener('click', () => {
     // If audio session running, stop it before switching views
     if (autoSession && b.dataset.view !== 'auto') autoStop();
+    // Premium gate: Car mode is Premium-only
+    if (b.dataset.view === 'auto' && !state.premium) {
+      showPaywall();
+      return;
+    }
     setView(b.dataset.view);
     if (b.dataset.view === 'auto') renderAutoSetup();
   }));
