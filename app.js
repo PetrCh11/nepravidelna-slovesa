@@ -1416,11 +1416,8 @@ function againOnlyProblem() {
 function renderBrowse() {
   const container = $('#sections-list');
   container.innerHTML = '';
-  const PREVIEW_FREE_COUNT = 3; // first N subsections shown unfaded for non-premium
-  const isLocked = !state.premium;
-  container.classList.toggle('browse-preview', isLocked);
+  container.classList.remove('browse-preview');
   let subIdx = 0;
-  let lockedRank = 0;
   const totalSubs = state.data.sections.reduce((n, s) => n + s.subsections.length, 0);
   state.data.sections.forEach((sec) => {
     const details = document.createElement('details');
@@ -1431,6 +1428,7 @@ function renderBrowse() {
     details.appendChild(summary);
     sec.subsections.forEach((sub) => {
       const hue = Math.round((subIdx / totalSubs) * 360);
+      subIdx++;
       const div = document.createElement('div');
       div.className = 'subsection';
       div.style.setProperty('--sub-hue', hue);
@@ -1444,35 +1442,10 @@ function renderBrowse() {
       `;
       const grid = div.querySelector('.verb-grid');
       sub.verbs.forEach((v) => grid.appendChild(renderVerbCard(v)));
-      // Premium gate: first N subsections free preview, rest faded
-      if (isLocked && subIdx >= PREVIEW_FREE_COUNT) {
-        div.classList.add('subsection-faded');
-        // Steeper fade — locked in by the 2nd item
-        const opacity = Math.max(0.12, 0.45 - lockedRank * 0.12);
-        const blur = Math.min(6, 2.4 + lockedRank * 0.6);
-        div.style.opacity = String(opacity);
-        div.style.filter = `blur(${blur}px)`;
-        div.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); showPaywall(); }, true);
-        lockedRank++;
-      }
       details.appendChild(div);
-      subIdx++;
     });
     container.appendChild(details);
   });
-  // Unlock CTA banner at the bottom (only when locked)
-  if (isLocked) {
-    const cta = document.createElement('div');
-    cta.className = 'browse-unlock-cta';
-    cta.innerHTML = `
-      <div class="browse-unlock-icon">🔒</div>
-      <h3>Odemkni všech ${totalSubs} skupin</h3>
-      <p>Premium ti otevře všech 106 sloves, plně strukturovanou lekci a <strong>🚗 Car mode</strong> na cesty autem.</p>
-      <button class="btn btn-primary browse-unlock-btn" type="button">Vyzkoušet Premium →</button>
-    `;
-    container.appendChild(cta);
-    cta.querySelector('.browse-unlock-btn').addEventListener('click', () => showPaywall());
-  }
 }
 
 function renderVerbCard(verb) {
@@ -1507,12 +1480,9 @@ function renderVerbCard(verb) {
 function renderFlashcards() {
   const container = $('#fc-sections');
   container.innerHTML = '';
+  container.classList.remove('fc-preview');
   const side = $('#fc-side').value;
-  const PREVIEW_FREE_COUNT = 3;
-  const isLocked = !state.premium;
-  container.classList.toggle('fc-preview', isLocked);
   let subIdx = 0;
-  let lockedRank = 0;
   const totalSubs = state.data.sections.reduce((n, s) => n + s.subsections.length, 0);
   state.data.sections.forEach((sec) => {
     const secWrap = document.createElement('div');
@@ -1520,6 +1490,7 @@ function renderFlashcards() {
     secWrap.innerHTML = `<h3 class="fc-section-title">${sec.id} — ${sec.title}</h3>`;
     sec.subsections.forEach((sub) => {
       const hue = Math.round((subIdx / totalSubs) * 360);
+      subIdx++;
       const subWrap = document.createElement('div');
       subWrap.className = 'fc-sub';
       subWrap.style.setProperty('--sub-hue', hue);
@@ -1533,32 +1504,10 @@ function renderFlashcards() {
       `;
       const grid = subWrap.querySelector('.fc-grid');
       sub.verbs.forEach((v) => grid.appendChild(renderFlashCard(v, side)));
-      if (isLocked && subIdx >= PREVIEW_FREE_COUNT) {
-        subWrap.classList.add('fc-sub-faded');
-        const opacity = Math.max(0.12, 0.45 - lockedRank * 0.12);
-        const blur = Math.min(6, 2.4 + lockedRank * 0.6);
-        subWrap.style.opacity = String(opacity);
-        subWrap.style.filter = `blur(${blur}px)`;
-        subWrap.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); showPaywall(); }, true);
-        lockedRank++;
-      }
       secWrap.appendChild(subWrap);
-      subIdx++;
     });
     container.appendChild(secWrap);
   });
-  if (isLocked) {
-    const cta = document.createElement('div');
-    cta.className = 'browse-unlock-cta';
-    cta.innerHTML = `
-      <div class="browse-unlock-icon">🔒</div>
-      <h3>Odemkni všechny flashcards</h3>
-      <p>Premium ti otevře všech 106 sloves, plně strukturovanou lekci a <strong>🚗 Car mode</strong> na cesty autem.</p>
-      <button class="btn btn-primary browse-unlock-btn" type="button">Vyzkoušet Premium →</button>
-    `;
-    container.appendChild(cta);
-    cta.querySelector('.browse-unlock-btn').addEventListener('click', () => showPaywall());
-  }
 }
 
 // ============================================================
