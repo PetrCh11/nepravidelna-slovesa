@@ -2656,10 +2656,13 @@ body.theme-dark .menu-style-btn.active,
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.55);
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   z-index: 100;
   padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   animation: paywall-fade 0.2s ease-out;
@@ -2672,6 +2675,7 @@ body.theme-dark .menu-style-btn.active,
   padding: 28px 24px 22px;
   max-width: 420px;
   width: 100%;
+  margin: auto;
   box-shadow: 0 20px 60px rgba(0,0,0,0.35);
   text-align: center;
   position: relative;
