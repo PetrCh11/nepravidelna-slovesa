@@ -32,12 +32,10 @@ const state = {
 // ============================================================
 const TEXTS = {
   // Hero
-  hero_h2:       { pro: 'Konečně si je zapamatuješ. Jednou a provždy.',
-                   student: 'Nepravidelný slovesa? Easy.' },
-  hero_lead:     { pro: 'Žádné biflování — postupuješ podle výslovnostních vzorců. Když chytneš jeden, máš celou skupinu.',
-                   student: 'Žádný biflování. Žádný stres. Jen výslovnostní skupiny — jakmile chytneš vzorec, hotovka.' },
-  hero_foot:     { pro: 'Vyber si skupinu a začni. 3 máš zdarma na zkoušku.',
-                   student: 'Vyber skupinu a jedem. 3 máš zdarma na vyzkoušení.' },
+  hero_h2:       { pro: '106 sloves, 24 skupin podle logiky. Pochopíš změnu → zvládneš celou skupinu.',
+                   student: '106 sloves, 24 skupin podle logiky. Chytneš vzorec → máš celou skupinu.' },
+  hero_lead:     { pro: '', student: '' },
+  hero_foot:     { pro: '', student: '' },
   // Fáze 1 (study)
   s1_eyebrow:    { pro: 'Pohodová prohlídka', student: 'Mrk-mrk 👀' },
   s1_title:      { pro: 'Mrkni se na všechna slovesa ve skupině',
@@ -1083,7 +1081,7 @@ function askStage2Verb(verb, step) {
     const auraCls = auraSet.has(key) ? ' has-aura' : '';
     return `
       <div class="fill-row${auraCls}">
-        <input data-form="${key}" placeholder="${placeholder}" autocomplete="off" spellcheck="false" autocapitalize="none" />
+        <input data-form="${key}" placeholder="${placeholder}" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" enterkeyhint="next" inputmode="text" />
         <span class="field-indicator"></span>
       </div>`;
   };
@@ -1187,9 +1185,13 @@ function askStage2Verb(verb, step) {
   };
 
   inputs.forEach((inp, idx) => {
-    inp.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
+    // Poslední pole má "done" (✓) hint, ostatní "next" (➤). Android klávesnice
+    // podle toho zobrazí správné akční tlačítko místo defaultní "Next" šipky,
+    // která by jen přesunula focus bez vyvolání naší kontroly.
+    inp.setAttribute('enterkeyhint', idx === inputs.length - 1 ? 'done' : 'next');
+
+    const advance = (e) => {
+      if (e) e.preventDefault();
       if (!isAtomicCheck) {
         markField(inp);
         const nextEmpty = inputs.find((x) => !(x.dataset.form in fieldResults));
@@ -1199,6 +1201,20 @@ function askStage2Verb(verb, step) {
         if (idx < inputs.length - 1) inputs[idx + 1].focus();
         else finalize();
       }
+    };
+
+    // Touch zařízení (mobil/tablet) — některé Android klávesnice "Next" tlačítko
+    // emitují jako Tab. Na PC s hw klávesnicí má Tab klasicky přeskakovat focus.
+    const isTouchDevice = (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)
+      || (navigator.maxTouchPoints || 0) > 0;
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') advance(e);
+      else if (e.key === 'Tab' && isTouchDevice) advance(e);
+    });
+    // Fallback pro Android klávesnice, které "Next" emitují jako insertLineBreak
+    // přes beforeinput místo keydown (žádný Enter event neproběhne).
+    inp.addEventListener('beforeinput', (e) => {
+      if (e.inputType === 'insertLineBreak') advance(e);
     });
   });
 
@@ -2048,8 +2064,8 @@ function quizRender() {
       <div class="q-prompt">${verb.inf} <button class="speak-btn" data-speak="${verb.inf}">🔊</button></div>
       <div class="q-hint">Doplň past simple a past participle · <em>${verb.cs}</em></div>
       <div class="quiz-fill-inputs">
-        <input data-form="past" placeholder="past simple" autocomplete="off" spellcheck="false" autocapitalize="none" />
-        <input data-form="pp" placeholder="past participle" autocomplete="off" spellcheck="false" autocapitalize="none" />
+        <input data-form="past" placeholder="past simple" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" enterkeyhint="next" inputmode="text" />
+        <input data-form="pp" placeholder="past participle" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" enterkeyhint="done" inputmode="text" />
       </div>
       <div class="quiz-feedback"></div>
       <div class="quiz-next-row"><button class="btn btn-primary" id="quiz-check">Zkontrolovat</button><button class="btn btn-primary hidden" id="quiz-next">Další →</button></div>
@@ -2457,12 +2473,18 @@ async function init() {
   });
   $('#portal-btn')?.addEventListener('click', openCustomerPortal);
   $('#google-btn')?.addEventListener('click', () => {
-    if (cloud.getCurrentUser()) cloud.signOutNow();
-    else cloud.signIn().catch((e) => toast('Přihlášení selhalo: ' + (e?.message || e), 'error'));
+    if (cloud.getCurrentUser()) {
+      if (confirm('Opravdu se chceš odhlásit?')) cloud.signOutNow();
+    } else {
+      cloud.signIn().catch((e) => toast('Přihlášení selhalo: ' + (e?.message || e), 'error'));
+    }
   });
   $('#cloud-btn').addEventListener('click', () => {
-    if (cloud.getCurrentUser()) cloud.signOutNow();
-    else cloud.signIn();
+    if (cloud.getCurrentUser()) {
+      if (confirm('Opravdu se chceš odhlásit?')) cloud.signOutNow();
+    } else {
+      cloud.signIn();
+    }
   });
 
   // Menu

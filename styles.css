@@ -127,6 +127,11 @@ body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inse
   .logo-line2 { font-size: 0.65rem; }
   .logo-emoji { font-size: 1.2rem; }
 }
+/* Na mobilu/tabletu během aktivní lekce skryj textovou část loga,
+   nech jen ikonu — víc místa pro samotnou lekci. */
+@media (max-width: 600px) {
+  body:has(.lesson-active:not(.hidden)) .logo-text { display: none; }
+}
 .header-controls { display: flex; gap: 8px; align-items: center; margin-left: auto; }
 
 /* Google sign-in button in header */
