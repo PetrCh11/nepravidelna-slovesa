@@ -30,6 +30,102 @@ const state = {
 // ============================================================
 // Text presets: "pro" (default) vs "student" (slangy)
 // ============================================================
+
+// Feedback phrase pools — t() picks randomly when value is an array.
+// {name} → user's first name (Google account); lines with {name} are
+// skipped when no user is signed in.
+const POS_PRO = [
+  'Approved bez připomínek! ✅',
+  'Tohle mělo skvělý drive. 🚀',
+  'Čistej win-win. 🤝',
+  'Tenhle task máš splněnej na 110 %. 📈',
+  'Doručeno v termínu a v top kvalitě. 📦',
+  'Tady někdo aspiroval na povýšení. 💼',
+  'KPIs splněny pro dnešek. 📊',
+  'As per my previous email... tohle bylo bez chyby! 📩',
+  'Skvěle odřízený projekt. 🦾',
+  'Kdo neskáče není "{name}", HOP HOP HOP! 🏒',
+  'V příštím mailu zahraničním kolegům už neuděláš chybu. 👋',
+  'Dovolená v zahraničí se začíná vyplácet. ✈️',
+  'HR oddělení tleská. 👏',
+  'Rodilí mluvčí na callu nebudou chápat. 🎧',
+  'Lepší investice do sebe než do kryptoměn. 🪙',
+  'Tohle sloveso prošlo auditem bez ztráty kytičky. 🕵️‍♂️',
+  'Skoro tak dobrý pocit, jako když v pátek padne čtrnáctá hodina. 🍻',
+];
+const NEG_PRO = [
+  'Tenhle draft ještě potřebuje revizi. 📝',
+  'Chybička v matrixu. Pojďme na re-work. 🔄',
+  'Tady nám to trochu uletělo z rozpočtu. 📉',
+  'Zamítnuto finančním ředitelem. Zkus to znovu a lépe. 🏦',
+  'Někde se nám zasekl workflow. 🚧',
+  'Tohle na prezentaci před boardem radši nedávej. 🤫',
+  'Asi špatný signál na callu. Zkusíme to znovu? 📞',
+  'Tenhle task neprošel přes QA (kontrolu kvality). 🛠️',
+  'Chce to ještě jeden lok kafe. ☕',
+  'Mozek už přepnul do offline režimu? 🧠💤',
+  'Tohle byl vyloženě překlep z únavy. 🥱',
+  'Kofeinový deficit se projevil. 📉☕',
+  'Prsty byly rychlejší než myšlenka. 🏎️',
+  'Nevadí, po celém dni v práci máš právo na jeden fail. 🤝',
+];
+const POS_STUDENT = [
+  'Clean! ✨',
+  'Pure skill! 🧠',
+  'Flexíš solidně! 💪',
+  'Certified pro. 🤝',
+  'Ona tam ta slovesa prostě padají. 🔥',
+  'Ez pz lemon squeezy. 🍋',
+  'Big brain energy! ⚡',
+  'Trefa do černýho. 🎯',
+  'No cap, tohle bylo perfektní. 🙌',
+  'Slay! 💅',
+  'Kdo neskáče není "{name}", HOP HOP HOP! 🏒',
+];
+const STREAK_STUDENT = [
+  'Tak to je streak jako býk! 🐂',
+  'Ty seš mašina! 🚂',
+  'Někdo to zastavte, hoříš! ☄️',
+  'God mode aktivován. 👑',
+  'Ty ten algoritmus úplně ničíš. 💥',
+  'Unstoppable! 🌪️',
+  'Čistá práce, tleskám ve stoje. 👏',
+  'Irregular verbs masterclass. 🎓',
+  'Rodilí mluvčí ti právě závidí. 🇬🇧',
+  'Shakespearovi ukápla slza štěstí. 🥲',
+  'Tvoje angličtinářka is proud of you. 👩‍🏫',
+  'Tohle sloveso si tě podvolilo. 😎',
+  'Už i tvůj telefon uznává tvou dominanci. 📱',
+  'S takovou můžeš jít rovnou do Hollywoodu. 🎬',
+  'Moje databáze přímo přede blahem. 🤖',
+];
+const NEG_STUDENT = [
+  'Auuu, tak tohle docela bolelo. 💀',
+  'Tohle sloveso tě totálně vyoutovalo. ❌',
+  'Trochu missclick, ne? 🎯',
+  'Tady ti ujel vlak i s gramatikou. 🚂💨',
+  'Nekecej, že tomuhle tvaru věříš. 🤨',
+  'Tohle neprošlo ani u tvojí lavice. 🎒',
+  'Tvoje angličtinářka právě ucítila podivné chvění v síle. 👵⚡',
+  'Tohle sloveso si tě dalo k snídani. 🥣',
+  'Wasted. 🎮',
+  'Tohle nebyl úplně pro-move. 📉',
+  'Chyba v kódu, restartuj prsty. ⌨️',
+  'Tady ti spadlo FPS na nulu. 📉',
+  'Laglo se ti to, zkus to znova. 🌐',
+  'Tohle sloveso tě zaspamovalo chybou. 👾',
+  'Skill issue. Ale dá se to natrénovat! 🛠️',
+  'Tenhle tvar dostal instantní ban. 🚫',
+  'Mission failed, we\'ll get \'em next time. 🎖️',
+  'Nope. 🛑',
+  'Bruh... fakt? 💀',
+  'Těsně vedle, jako tvůj odhad na testu. 📉',
+  'Zkus to vymyslet znovu a lépe. 🧠',
+  'Tudy ne, kámo. 🚷',
+  'Fake news. 📰',
+  'Eeeej, vedle. 🥶',
+];
+
 const TEXTS = {
   // Hero
   hero_h2:       { pro: '106 sloves, 24 skupin podle logiky. Pochopíš změnu → zvládneš celou skupinu.',
@@ -67,18 +163,15 @@ const TEXTS = {
                    student: 'Po každym tvaru <kbd>Enter</kbd>' },
   giveup_btn:    { pro: 'Nevím 😭', student: 'Vzdávám 🏳️' },
   giveup_confirm:{ pro: 'Vážně? Klikni znovu 😭', student: 'Fakt? Klikni ještě jednou 😭' },
-  // Feedback — combined pass
-  fb_pass_ok:    { pro: 'Bezvadně. Hotovo!',
-                   student: 'Trefa! Hotovo. 🔥' },
-  fb_pass_redo_ok:{ pro: 'Tentokrát už trefa. Sloveso máš.',
-                   student: 'Boom, tentokrát trefa! 🔥' },
-  fb_pass_wrong: { pro: 'Mimo. Pošleme tohle sloveso na konec fronty a vrátíme se k němu.',
-                   student: 'Sejf. Pošleme tě na konec fronty, dáme to později znova. 🙃' },
+  // Feedback — combined pass (random pick from phrase pools above)
+  fb_pass_ok:     { pro: POS_PRO, student: POS_STUDENT },
+  fb_pass_redo_ok:{ pro: POS_PRO, student: POS_STUDENT },
+  fb_pass_wrong:  { pro: NEG_PRO, student: NEG_STUDENT },
   // Feedback — finále
-  fb_finale_ok:  { pro: 'Sedí. Sloveso máš v kapse.',
-                   student: 'Trefa! Máš to. 🔥' },
-  fb_finale_wrong:{ pro: 'Mimo. Sloveso se vrátí na konec fronty.',
-                   student: 'Mimo. Sloveso poletí na konec, ještě se uvidíme. 🙃' },
+  fb_finale_ok:   { pro: POS_PRO, student: POS_STUDENT },
+  fb_finale_wrong:{ pro: NEG_PRO, student: NEG_STUDENT },
+  // Streak — 3+ correct in a row (student only; pro reuses positive pool)
+  fb_streak:      { pro: POS_PRO, student: STREAK_STUDENT },
   // Results
   results_h2:    { pro: 'Hotovo! 🎉', student: 'Hotovo, válíš! 🎉' },
   stat_green:    { pro: 'zvládnuto', student: 'v kapse' },
@@ -141,8 +234,20 @@ function track(eventName, props) {
 function t(key, ...args) {
   const entry = TEXTS[key];
   if (!entry) return key;
-  const v = entry[state.style] ?? entry.pro;
-  return typeof v === 'function' ? v(...args) : v;
+  let v = entry[state.style] ?? entry.pro;
+  if (typeof v === 'function') return v(...args);
+  if (Array.isArray(v)) {
+    // Phrase pool — pick random. Filter out {name}-templated lines if no signed-in user.
+    const firstName = (state.user && state.user.displayName)
+      ? state.user.displayName.split(' ')[0]
+      : null;
+    const usable = firstName ? v : v.filter((s) => !/\{name\}/.test(s));
+    const pool = usable.length ? usable : v;
+    let picked = pool[Math.floor(Math.random() * pool.length)];
+    if (firstName) picked = picked.replace(/\{name\}/g, firstName);
+    return picked;
+  }
+  return v;
 }
 
 function applyStyleTexts() {
@@ -1188,10 +1293,14 @@ function askStage2Verb(verb, step) {
         L.stage2Q.shift();
         p.passCleared = true;
         L.lastCleared = verb.inf;
-        msg = (p.passWrong || 0) > 0 ? '✅ ' + t('fb_pass_redo_ok') : '✅ ' + t('fb_pass_ok');
+        L.streak = (L.streak || 0) + 1;
+        const streakKey = (state.style === 'student' && L.streak >= 3) ? 'fb_streak'
+          : ((p.passWrong || 0) > 0 ? 'fb_pass_redo_ok' : 'fb_pass_ok');
+        msg = '✅ ' + t(streakKey);
       } else {
         p.passWrong = (p.passWrong || 0) + 1;
         L.stage2Q.push(L.stage2Q.shift());
+        L.streak = 0;
         msg = '🔍 ' + t('fb_pass_wrong');
       }
     } else if (step === 2) {
@@ -1200,11 +1309,14 @@ function askStage2Verb(verb, step) {
         L.stage2Q.shift();
         p.finalCleared = true;
         L.lastCleared = verb.inf;
-        msg = '✅ ' + t('fb_finale_ok');
+        L.streak = (L.streak || 0) + 1;
+        const streakKey = (state.style === 'student' && L.streak >= 3) ? 'fb_streak' : 'fb_finale_ok';
+        msg = '✅ ' + t(streakKey);
       } else {
         p.finalWrong = (p.finalWrong || 0) + 1;
         p.finalHadError = true;
         L.stage2Q.push(L.stage2Q.shift());
+        L.streak = 0;
         msg = '❌ ' + t('fb_finale_wrong');
       }
     }
@@ -2167,10 +2279,13 @@ function handleQuizAnswer(ok, verb, qText, aText) {
   const pp = pickForm(verb, 'pp', state.dialect);
   if (ok) {
     state.quiz.score++;
-    fb.textContent = '✅ Správně!';
+    state.quiz.streak = (state.quiz.streak || 0) + 1;
+    const key = (state.style === 'student' && state.quiz.streak >= 3) ? 'fb_streak' : 'fb_pass_ok';
+    fb.textContent = '✅ ' + t(key);
     fb.className = 'quiz-feedback correct';
   } else {
-    fb.innerHTML = `❌ Správně: <strong>${verb.inf} – ${past} – ${pp}</strong>`;
+    state.quiz.streak = 0;
+    fb.innerHTML = `❌ ${t('fb_pass_wrong')}<br><span style="font-size:0.9em;opacity:0.85">Správně: <strong>${verb.inf} – ${past} – ${pp}</strong></span>`;
     fb.className = 'quiz-feedback wrong';
   }
   state.quiz.review.push({ ok, q: qText, a: aText, verb });
@@ -2531,7 +2646,7 @@ async function init() {
 
   // Cloud sync wiring
   cloud.setListeners({
-    onUser: (user) => updateCloudUI(user),
+    onUser: (user) => { state.user = user || null; updateCloudUI(user); },
     onSync: (status) => updateSyncStatus(status),
   });
   document.addEventListener('cloud-merged', () => {
