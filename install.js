@@ -5,19 +5,11 @@
 
   const DISMISS_KEY = 'installBannerDismissedAt';
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-  const SHOW_DELAY_MS = 30 * 1000; // wait 30s before first appearance
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
-
-  // Already installed → never show
-  if (isStandalone) return;
-
-  // Dismissed in the last 7 days → skip this session
-  const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
-  if (dismissedAt && Date.now() - dismissedAt < SEVEN_DAYS) return;
 
   let deferredPrompt = null;
   let bannerShown = false;
@@ -28,11 +20,10 @@
     } catch (_) {}
   }
 
-  // Capture install prompt on Android/desktop Chromium
+  // Capture install prompt on Android/desktop Chromium (stash it for later trigger)
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    maybeShowBanner();
   });
 
   // After install, hide banner forever-ish
@@ -42,15 +33,25 @@
     track('pwa_installed');
   });
 
-  function maybeShowBanner() {
-    if (bannerShown) return;
-    // For Android we need deferredPrompt; for iOS we just show our own modal
-    if (!deferredPrompt && !isIOS) return;
-    setTimeout(showBanner, SHOW_DELAY_MS);
+  function canShowNow() {
+    // Already installed → never show
+    if (isStandalone) return false;
+    // Already showing this session → don't double-show
+    if (bannerShown) return false;
+    // Dismissed in the last 7 days → skip
+    const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
+    if (dismissedAt && Date.now() - dismissedAt < SEVEN_DAYS) return false;
+    // Need either a captured prompt (Android) or iOS Safari
+    if (!deferredPrompt && !isIOS) return false;
+    return true;
   }
 
-  // iOS doesn't fire beforeinstallprompt — try to show banner anyway after delay
-  if (isIOS) maybeShowBanner();
+  // Public trigger — call after a meaningful success moment (e.g. end of lesson)
+  window.showInstallBanner = function () {
+    if (!canShowNow()) return false;
+    showBanner();
+    return true;
+  };
 
   function showBanner() {
     const banner = document.getElementById('install-banner');

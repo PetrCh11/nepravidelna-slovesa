@@ -1327,6 +1327,9 @@ function finishLesson() {
     <div class="stat stat-yellow"><div class="stat-num">${counts.yellow || 0}</div><div class="stat-label">${t('stat_yellow')}</div></div>
     <div class="stat stat-red"><div class="stat-num">${counts.red || 0}</div><div class="stat-label">${t('stat_red')}</div></div>
   `;
+  // Offer "Install app" after the success moment — short delay so the user
+  // first sees their result. Throttled to once per 7 days via install.js.
+  setTimeout(() => { try { window.showInstallBanner && window.showInstallBanner(); } catch (_) {} }, 1200);
   const list = $('#results-list');
   list.innerHTML = '';
   L.verbs.forEach((v) => {
