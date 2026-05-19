@@ -113,6 +113,7 @@ for sec in DATA['sections']:
             </h3>
             <div class="verb-table-wrap">
               <table class="verb-table">
+                <caption class="sr-only">Tabulka nepravidelných sloves – skupina {esc(sub['id'])} ({esc(clean_pattern(sub['pattern']))})</caption>
                 <thead>
                   <tr>
                     <th class="emoji" aria-hidden="true"></th>
@@ -225,17 +226,17 @@ jumbo = f'''<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Anglická nepravidelná slovesa – kompletní seznam {TOTAL} sloves po skupinách | ucseslovesa.cz</title>
-  <meta name="description" content="Kompletní přehled {TOTAL} anglických nepravidelných sloves rozdělených do 24 výslovnostních skupin. Past simple, past participle, český překlad. Naučte se je systematicky, ne biflováním." />
-  <meta name="keywords" content="nepravidelná slovesa, anglická nepravidelná slovesa, past simple, past participle, seznam nepravidelných sloves, irregular verbs česky, slovesa angličtina" />
+  <title>Nepravidelná slovesa – tabulka a kompletní seznam {TOTAL} sloves | ucseslovesa.cz</title>
+  <meta name="description" content="Kompletní tabulka {TOTAL} anglických nepravidelných sloves s českým překladem, rozdělená do 24 výslovnostních skupin. Past simple, past participle. Nauč se je systematicky, ne biflováním." />
+  <meta name="keywords" content="tabulka nepravidelných sloves, nepravidelná slovesa tabulka, anglická nepravidelná slovesa, nepravidelná slovesa, seznam nepravidelných sloves, past simple, past participle, irregular verbs česky, slovesa angličtina tabulka" />
   <link rel="canonical" href="{SITE}/seznam/" />
   <link rel="alternate" hreflang="cs" href="{SITE}/seznam/" />
   <meta name="theme-color" content="#5dc9bd" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="article" />
-  <meta property="og:title" content="Anglická nepravidelná slovesa – kompletní seznam {TOTAL} sloves" />
-  <meta property="og:description" content="{TOTAL} sloves ve 24 výslovnostních skupinách. Past simple, past participle, český překlad." />
+  <meta property="og:title" content="Nepravidelná slovesa – tabulka a kompletní seznam {TOTAL} sloves" />
+  <meta property="og:description" content="Tabulka {TOTAL} sloves ve 24 výslovnostních skupinách. Past simple, past participle, český překlad." />
   <meta property="og:url" content="{SITE}/seznam/" />
   <meta property="og:locale" content="cs_CZ" />
   <meta property="og:site_name" content="Nepravidelná slovesa – jednou a provždy" />
@@ -243,8 +244,8 @@ jumbo = f'''<!DOCTYPE html>
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Anglická nepravidelná slovesa – kompletní seznam" />
-  <meta name="twitter:description" content="{TOTAL} sloves ve 24 výslovnostních skupinách." />
+  <meta name="twitter:title" content="Nepravidelná slovesa – tabulka a kompletní seznam" />
+  <meta name="twitter:description" content="Tabulka {TOTAL} sloves ve 24 výslovnostních skupinách." />
 
   <!-- Icons / PWA -->
   <link rel="icon" type="image/png" href="../icon-192.png" />
@@ -273,10 +274,10 @@ jumbo = f'''<!DOCTYPE html>
 
   <main class="container">
     <article>
-      <h1>Anglická nepravidelná slovesa – kompletní seznam</h1>
+      <h1>Anglická nepravidelná slovesa – tabulka a kompletní seznam</h1>
       <p class="lede">
-        Tady najdeš všech <strong>{TOTAL} nejpoužívanějších nepravidelných sloves</strong>
-        v angličtině — přehledně rozdělených do <strong>24 výslovnostních skupin</strong>,
+        Přehledná <strong>tabulka {TOTAL} nejpoužívanějších nepravidelných sloves</strong>
+        v angličtině — rozdělených do <strong>24 výslovnostních skupin</strong>,
         ve kterých se slovesa chovají stejně. U každého slovesa najdeš
         <em>infinitiv</em>, <em>past simple</em>, <em>past participle</em> a <em>český překlad</em>.
       </p>
@@ -390,11 +391,11 @@ def build_group_page(sub_idx, sub, parent_sec):
         )
 
     # Title (≤ ~60 chars target, but Czech is longer; aim for ≤ 70)
-    title = f'{pattern_clean} – nepravidelná slovesa ({n_verbs}) | ucseslovesa.cz'
+    title = f'{pattern_clean} – nepravidelná slovesa: tabulka ({n_verbs}) | ucseslovesa.cz'
     # Meta description (target ~155 chars)
     meta_desc = (
-        f'{n_verbs} anglických nepravidelných sloves se vzorcem {pattern_clean}: '
-        f'{sample_str}. Pravidlo, tabulka, výslovnost, český překlad. '
+        f'Tabulka {n_verbs} anglických nepravidelných sloves se vzorcem {pattern_clean}: '
+        f'{sample_str}. Pravidlo, výslovnost, český překlad. '
         f'Nauč se celou skupinu za 5 minut.'
     )[:300]
 
@@ -511,9 +512,10 @@ def build_group_page(sub_idx, sub, parent_sec):
       </div>
 
       <section class="verb-sub" id="verbs">
-        <h2>Slovesa v této skupině ({n_verbs})</h2>
+        <h2>Tabulka sloves v této skupině ({n_verbs})</h2>
         <div class="verb-table-wrap">
           <table class="verb-table">
+            <caption class="sr-only">Tabulka nepravidelných sloves se vzorcem {esc(pattern_clean)}</caption>
             <thead>
               <tr>
                 <th class="emoji" aria-hidden="true"></th>

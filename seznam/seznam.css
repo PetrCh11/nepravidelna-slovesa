@@ -343,6 +343,19 @@ h3 {
 }
 .sub-deep:hover { text-decoration: underline; }
 
+/* Screen-reader-only utility (used for <caption> in tables — invisible to sighted users, readable by Google/screen readers) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Print-friendly */
 @media print {
   .seo-header, .seo-cta-banner, .seo-footer { display: none; }
