@@ -1170,26 +1170,9 @@ main { flex: 1; padding: 28px 0 48px; }
 }
 .verb-chip.pending { opacity: 0.45; background: var(--bg-soft, var(--border)); }
 .verb-chip.warn {
-  opacity: 0.95;
-  background: rgba(220, 38, 38, 0.14);
-  border-color: rgba(220, 38, 38, 0.45);
-}
-.verb-chip.warn::after {
-  content: '✗';
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: rgb(220, 38, 38);
-  color: white;
-  border-radius: 50%;
-  width: 14px;
-  height: 14px;
-  font-size: 0.72rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  line-height: 1;
+  opacity: 1;
+  background: rgba(245, 166, 35, 0.16);
+  border-color: rgba(245, 166, 35, 0.5);
 }
 .verb-chip.good {
   opacity: 1;
