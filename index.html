@@ -35,6 +35,37 @@
     </div>
   </div>
 
+  <!-- "Proč je tento způsob nejlepší?" — science explainer modal -->
+  <div id="why-modal" class="why-modal hidden" role="dialog" aria-modal="true" aria-labelledby="why-title">
+    <div class="why-backdrop"></div>
+    <div class="why-card">
+      <button id="why-close" class="why-close" type="button" aria-label="Zavřít">✕</button>
+      <h2 id="why-title">Proč je tento způsob nejlepší?</h2>
+      <p class="why-lede">Tato appka používá rozdělení sloves do skupin podle změny, která se v nich odehrává. Kognitivní psychologie a neurolingvistika mají neochvějné důkazy o tom, že tento způsob je <strong>dramaticky efektivnější</strong> než klasické biflování podle abecedy.</p>
+      <p class="why-sub">Tady jsou 3 hlavní vědecké pilíře aplikace:</p>
+
+      <h3>1. Princip „Chunkingu" (kognitivní shlukování)</h3>
+      <p>Zakladatel kognitivní psychologie <strong>George Miller</strong> dokázal, že lidská krátkodobá paměť dokáže naráz udržet jen omezené množství informací (tzv. Millerovo číslo <em>7 ± 2 jednotek</em>).</p>
+      <p>Abecední seznam nutí mozek vnímat každé sloveso jako samostatnou, izolovanou informaci. Když se student učí <em>bring, buy, catch</em>, jsou to pro něj 3 různé úkoly.</p>
+      <p>Vzorcové učení spojuje slovesa do jednoho „shluku" (chunku). Mozek si neukládá 5 různých slov, ale <strong>jeden zvukový vzorec</strong> (např. <em>-ought / -ought</em>). Kapacita paměti se okamžitě uvolní a mozek pojme násobně víc slov za kratší čas.</p>
+
+      <h3>2. Mozek miluje „fonologické rodiny" (sound families)</h3>
+      <p>Moderní lingvistické výzkumy (tzv. <em>connectionist models</em>, např. Joan Bybee nebo Rumelhart & McClelland) ukazují, že náš mozek si nepravidelná slovesa v paměti neřadí jako slovník, ale <strong>podle zvuku a rýmu</strong>.</p>
+      <p>Když se učíme schéma <em>sing – sang – sung</em>, mozek si vytvoří silnou neuronovou cestu. Když pak dostane slovo <em>ring</em>, podvědomě „naskočí" na stejnou kolej a správně odvodí <em>rang – rung</em>.</p>
+      <p>Aplikace vlastně nedělá nic jiného, než že servíruje data přesně v tom formátu, v jakém je mozek přirozeně naprogramován je ukládat. Jde se „po srsti" neurologie.</p>
+
+      <h3>3. Eliminace paměťové interference (učebnicová past)</h3>
+      <p>Když se student učí slova podle abecedy (<em>bear, beat, become, begin, bend</em>), dochází v mozku k tzv. <strong>proaktivní interferenci</strong> — předchozí informace plete tu následující. Slova sice začínají na stejné písmeno, ale mění se úplně jinak. Výsledkem je vnitřní chaos: student u testu váhá, jestli je minulý čas od <em>swim</em> „swam" nebo „swimmed".</p>
+      <p>Rozdělení podle změn (<em>cut – cut – cut</em>, <em>hurt – hurt – hurt</em>) tento chaos zcela maže. Mozek přepne do režimu <strong>rozpoznávání vzorců</strong> (pattern recognition) — evolučně naše nejsilnější zbraň pro učení.</p>
+
+      <h3>Bonus: A co víc?</h3>
+      <p>Navíc jsme to všechno rozdělili do <strong>barevně odlišených skupin</strong>, abychom podpořili studenty s fotografickou pamětí. Doplnili jsme <strong>audio</strong>, aby studenti nechybovali ve výslovnosti. Přidali jsme i <strong>Car Mode</strong>, který je skvělým pomocníkem pro pracující lid na cestách. A spoustu dalších věcí.</p>
+
+      <h3>A co bude dál?</h3>
+      <p>Pracujeme na opakování sloves podle <strong>Ebbinghausovy křivky zapomínání</strong> a dalších skvělých fíčurách. Takže… <em>stay tuned!</em> 🎧</p>
+    </div>
+  </div>
+
   <!-- iOS install instructions modal -->
   <div id="ios-install-modal" class="ios-install-modal hidden" role="dialog" aria-modal="true" aria-labelledby="ios-install-title">
     <div class="ios-install-backdrop"></div>
@@ -113,6 +144,7 @@
     <section id="view-lesson" class="view active">
       <!-- Step 0: pick group -->
       <div class="lesson-picker">
+        <button id="why-btn" class="why-link" type="button" aria-haspopup="dialog">Proč je tento způsob nejlepší?</button>
         <div class="intro intro-hero">
           <h2 data-tone-html="hero_h2_html"><span class="hero-facts">106 sloves, 24 skupin podle logiky.</span><span class="hero-slogan">Pochopíš změnu <span class="hero-arrow">→</span> zvládneš celou skupinu.</span></h2>
         </div>
@@ -396,5 +428,30 @@
   <script src="app.js" type="module"></script>
   <script src="celebrate.js" defer></script>
   <script src="install.js" defer></script>
+  <script>
+    // "Proč je tento způsob nejlepší?" modal
+    (function () {
+      var modal = document.getElementById('why-modal');
+      var openBtn = document.getElementById('why-btn');
+      var closeBtn = document.getElementById('why-close');
+      var backdrop = modal && modal.querySelector('.why-backdrop');
+      if (!modal || !openBtn) return;
+      function open() {
+        modal.classList.remove('hidden');
+        requestAnimationFrame(function () { modal.classList.add('visible'); });
+        try { if (typeof window.plausible === 'function') window.plausible('why_modal_opened'); } catch (_) {}
+      }
+      function close() {
+        modal.classList.remove('visible');
+        setTimeout(function () { modal.classList.add('hidden'); }, 200);
+      }
+      openBtn.addEventListener('click', open);
+      if (closeBtn) closeBtn.addEventListener('click', close);
+      if (backdrop) backdrop.addEventListener('click', close);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.classList.contains('visible')) close();
+      });
+    })();
+  </script>
 </body>
 </html>

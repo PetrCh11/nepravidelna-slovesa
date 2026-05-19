@@ -4313,3 +4313,141 @@ body.dark .ios-share-glyph {
   .celebrate-pulse { animation: none; }
   .confetti-piece { display: none; }
 }
+
+/* ===== "Proč je tento způsob nejlepší?" link + modal ===== */
+.lesson-picker { position: relative; }
+.why-link {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent;
+  border: 0;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  color: #5b59d9;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(91, 89, 217, 0.4);
+  text-underline-offset: 3px;
+  font-family: inherit;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+.why-link:hover {
+  color: #5dc9bd;
+  text-decoration-color: #5dc9bd;
+}
+body.dark .why-link { color: #b8b1fa; text-decoration-color: rgba(184, 177, 250, 0.4); }
+body.dark .why-link:hover { color: #5dc9bd; text-decoration-color: #5dc9bd; }
+@media (max-width: 560px) {
+  .why-link {
+    position: static;
+    display: block;
+    margin: 0 0 8px;
+    text-align: right;
+    padding: 4px 0;
+  }
+}
+
+.why-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 320;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.why-modal.visible { opacity: 1; }
+.why-modal.hidden { display: none; }
+.why-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 20, 28, 0.6);
+  backdrop-filter: blur(3px);
+  cursor: pointer;
+}
+.why-card {
+  position: relative;
+  background: #fff;
+  color: #1d2329;
+  max-width: 640px;
+  width: calc(100% - 24px);
+  max-height: 88vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  padding: 26px 28px 24px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.4);
+  transform: scale(0.96);
+  transition: transform 0.2s ease;
+  -webkit-overflow-scrolling: touch;
+}
+.why-modal.visible .why-card { transform: scale(1); }
+.why-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: transparent;
+  border: 0;
+  font-size: 1.3rem;
+  color: #8a92a0;
+  cursor: pointer;
+  padding: 6px 10px;
+  line-height: 1;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+.why-close:hover { background: rgba(0,0,0,0.06); color: #1d2329; }
+.why-card h2 {
+  margin: 0 0 14px;
+  padding-right: 28px;
+  font-size: 1.4rem;
+  line-height: 1.25;
+  background: linear-gradient(135deg, #5dc9bd, #7c6ff5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.why-card h3 {
+  margin: 22px 0 8px;
+  font-size: 1.05rem;
+  color: #1d2329;
+  line-height: 1.3;
+}
+.why-card p {
+  margin: 8px 0;
+  line-height: 1.6;
+  color: #3b454f;
+  font-size: 0.96rem;
+}
+.why-card .why-lede {
+  font-size: 1rem;
+  color: #1d2329;
+}
+.why-card .why-sub {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+.why-card strong { color: #1d2329; }
+.why-card em { color: #5b59d9; font-style: normal; font-weight: 600; }
+
+body.dark .why-card {
+  background: #1f2630;
+  color: #e8ecf1;
+}
+body.dark .why-card h3,
+body.dark .why-card .why-lede { color: #e8ecf1; }
+body.dark .why-card p { color: #c5cbd3; }
+body.dark .why-card strong { color: #fff; }
+body.dark .why-card em { color: #b8b1fa; }
+body.dark .why-card .why-sub { color: #9ba3af; }
+body.dark .why-close { color: #9ba3af; }
+body.dark .why-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+@media (max-width: 560px) {
+  .why-card { padding: 22px 18px 18px; max-height: 92vh; }
+  .why-card h2 { font-size: 1.2rem; }
+  .why-card h3 { font-size: 1rem; margin: 18px 0 6px; }
+  .why-card p { font-size: 0.92rem; }
+}
