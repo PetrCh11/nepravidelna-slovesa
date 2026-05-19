@@ -3099,10 +3099,32 @@ body, .text { color: var(--text); }
   font-size: 1.85rem;
   line-height: 1.2;
   margin: 0 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.intro-hero .hero-facts {
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.2px;
   background: linear-gradient(135deg, #5dc9bd, #7c6ff5);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+.intro-hero .hero-slogan {
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  background: linear-gradient(135deg, #ff7a59 0%, #ff4f8b 50%, #a855f7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.intro-hero .hero-arrow {
+  -webkit-text-fill-color: #f59e0b;
+  color: #f59e0b;
+  font-weight: 900;
+  padding: 0 2px;
 }
 .hero-lead {
   font-size: 1.02rem;
