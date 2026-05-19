@@ -1327,9 +1327,17 @@ function finishLesson() {
     <div class="stat stat-yellow"><div class="stat-num">${counts.yellow || 0}</div><div class="stat-label">${t('stat_yellow')}</div></div>
     <div class="stat stat-red"><div class="stat-num">${counts.red || 0}</div><div class="stat-label">${t('stat_red')}</div></div>
   `;
+  // Celebration confetti — intensity scales with success rate
+  try {
+    const total = (counts.green || 0) + (counts.yellow || 0) + (counts.red || 0);
+    const successRate = total ? ((counts.green || 0) + 0.4 * (counts.yellow || 0)) / total : 1;
+    // Map 0..1 success rate → 0.55..1.6 intensity (always some celebration)
+    const intensity = 0.55 + successRate * 1.05;
+    window.celebrate && window.celebrate({ intensity });
+  } catch (_) {}
   // Offer "Install app" after the success moment — short delay so the user
   // first sees their result. Throttled to once per 7 days via install.js.
-  setTimeout(() => { try { window.showInstallBanner && window.showInstallBanner(); } catch (_) {} }, 1200);
+  setTimeout(() => { try { window.showInstallBanner && window.showInstallBanner(); } catch (_) {} }, 1800);
   const list = $('#results-list');
   list.innerHTML = '';
   L.verbs.forEach((v) => {

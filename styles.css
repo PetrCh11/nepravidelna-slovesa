@@ -4265,3 +4265,51 @@ body.dark .ios-share-glyph {
   background: rgba(124, 111, 245, 0.22);
   color: #b8b1fa;
 }
+
+/* ===== Celebration confetti ===== */
+.celebrate-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 250;
+}
+.confetti-piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 2px;
+  transform: translate(var(--start-x), var(--start-y)) rotate(var(--rot-start));
+  animation: confetti-fall var(--fall-dur) cubic-bezier(0.22, 0.61, 0.36, 1) var(--fall-delay) forwards;
+  will-change: transform, opacity;
+}
+.confetti-piece.circle { border-radius: 50%; }
+.confetti-piece.square { border-radius: 1px; }
+
+@keyframes confetti-fall {
+  0% {
+    transform: translate(var(--start-x), var(--start-y)) rotate(var(--rot-start));
+    opacity: 1;
+  }
+  85% { opacity: 1; }
+  100% {
+    transform: translate(calc(var(--start-x) + var(--drift-x)), 108vh) rotate(var(--rot-end));
+    opacity: 0;
+  }
+}
+
+/* Headline pulse on results screen */
+.celebrate-pulse {
+  animation: celebrate-pulse 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes celebrate-pulse {
+  0%   { transform: scale(0.85); opacity: 0.4; }
+  40%  { transform: scale(1.12); opacity: 1; }
+  70%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celebrate-pulse { animation: none; }
+  .confetti-piece { display: none; }
+}
