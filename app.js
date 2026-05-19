@@ -82,6 +82,16 @@ const POS_STUDENT = [
   'Slay! 💅',
   'Kdo neskáče není "{name}", HOP HOP HOP! 🏒',
 ];
+const STREAK_PRO = [
+  'Tohle je na povýšení ještě před kvartálním hodnocením! 📈',
+  'Ty ten test drtíš jako senior manažer. 👑',
+  'S takovou ti za chvíli dají na starosti celou zahraniční pobočku. 🌍',
+  'Employee of the month! 🏆',
+  'Tenhle výkon chci vidět ve tvém týdenním reportu. 📑',
+  'Drtíš to jako prezentaci před investory. 💸',
+  'Tvůj profesní růst právě nabral raketové tempo. 🚀',
+  'S takovou slovní zásobou můžeš na příštím mezinárodním callu rovnou diktovat podmínky. 🗣️',
+];
 const STREAK_STUDENT = [
   'Tak to je streak jako býk! 🐂',
   'Ty seš mašina! 🚂',
@@ -171,7 +181,7 @@ const TEXTS = {
   fb_finale_ok:   { pro: POS_PRO, student: POS_STUDENT },
   fb_finale_wrong:{ pro: NEG_PRO, student: NEG_STUDENT },
   // Streak — 3+ correct in a row (student only; pro reuses positive pool)
-  fb_streak:      { pro: POS_PRO, student: STREAK_STUDENT },
+  fb_streak:      { pro: STREAK_PRO, student: STREAK_STUDENT },
   // Results
   results_h2:    { pro: 'Hotovo! 🎉', student: 'Hotovo, válíš! 🎉' },
   stat_green:    { pro: 'zvládnuto', student: 'v kapse' },
@@ -1294,7 +1304,7 @@ function askStage2Verb(verb, step) {
         p.passCleared = true;
         L.lastCleared = verb.inf;
         L.streak = (L.streak || 0) + 1;
-        const streakKey = (state.style === 'student' && L.streak >= 3) ? 'fb_streak'
+        const streakKey = (L.streak >= 3) ? 'fb_streak'
           : ((p.passWrong || 0) > 0 ? 'fb_pass_redo_ok' : 'fb_pass_ok');
         msg = '✅ ' + t(streakKey);
       } else {
@@ -1310,7 +1320,7 @@ function askStage2Verb(verb, step) {
         p.finalCleared = true;
         L.lastCleared = verb.inf;
         L.streak = (L.streak || 0) + 1;
-        const streakKey = (state.style === 'student' && L.streak >= 3) ? 'fb_streak' : 'fb_finale_ok';
+        const streakKey = (L.streak >= 3) ? 'fb_streak' : 'fb_finale_ok';
         msg = '✅ ' + t(streakKey);
       } else {
         p.finalWrong = (p.finalWrong || 0) + 1;
@@ -2280,7 +2290,7 @@ function handleQuizAnswer(ok, verb, qText, aText) {
   if (ok) {
     state.quiz.score++;
     state.quiz.streak = (state.quiz.streak || 0) + 1;
-    const key = (state.style === 'student' && state.quiz.streak >= 3) ? 'fb_streak' : 'fb_pass_ok';
+    const key = (state.quiz.streak >= 3) ? 'fb_streak' : 'fb_pass_ok';
     fb.textContent = '✅ ' + t(key);
     fb.className = 'quiz-feedback correct';
   } else {
