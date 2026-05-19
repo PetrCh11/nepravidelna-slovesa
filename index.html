@@ -22,6 +22,34 @@
   </script>
 </head>
 <body>
+  <!-- PWA install banner (Android: native prompt, iOS: instructions modal) -->
+  <div id="install-banner" class="install-banner hidden" role="region" aria-label="Nainstalovat aplikaci">
+    <div class="install-banner-inner">
+      <span class="install-banner-icon" aria-hidden="true">📲</span>
+      <div class="install-banner-text">
+        <strong>Stáhni si appku</strong>
+        <span>Přidej UČ SE! na plochu — funguje i offline.</span>
+      </div>
+      <button id="install-btn" class="install-banner-cta" type="button">Nainstalovat</button>
+      <button id="install-dismiss" class="install-banner-close" type="button" aria-label="Zavřít na týden">✕</button>
+    </div>
+  </div>
+
+  <!-- iOS install instructions modal -->
+  <div id="ios-install-modal" class="ios-install-modal hidden" role="dialog" aria-modal="true" aria-labelledby="ios-install-title">
+    <div class="ios-install-backdrop"></div>
+    <div class="ios-install-card">
+      <button id="ios-install-close" class="ios-install-close" type="button" aria-label="Zavřít">✕</button>
+      <h3 id="ios-install-title">Přidat na plochu</h3>
+      <ol class="ios-install-steps">
+        <li>Klepni dole na ikonu <strong>Sdílet</strong> <span class="ios-share-glyph" aria-hidden="true">⎘</span></li>
+        <li>V seznamu najdi <strong>Přidat na plochu</strong></li>
+        <li>Vpravo nahoře potvrď <strong>Přidat</strong></li>
+      </ol>
+      <p class="ios-install-hint">Aplikace pak funguje i bez internetu a vypadá jako nativní app.</p>
+    </div>
+  </div>
+
   <header class="app-header">
     <div class="container header-inner">
       <h1 class="logo"><button id="logo-home" class="logo-btn" type="button" aria-label="Na úvodní stránku"><img class="logo-img" src="icon-192.png" alt="" /><span class="logo-text"><span class="logo-line1">Nepravidelná slovesa</span><span class="logo-line2">... jednou a provždy.</span></span></button></h1>
@@ -366,5 +394,6 @@
   </footer>
 
   <script src="app.js" type="module"></script>
+  <script src="install.js" defer></script>
 </body>
 </html>

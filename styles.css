@@ -4094,3 +4094,174 @@ body.auto-driving { overflow: hidden; }
 .toast-success { background: rgba(34, 139, 96, 0.95); }
 .toast-error { background: rgba(190, 60, 60, 0.95); }
 .toast-info { background: rgba(50, 90, 160, 0.95); }
+
+/* ===== PWA install banner ===== */
+.install-banner {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: linear-gradient(135deg, #5dc9bd, #7c6ff5);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  transform: translateY(-100%);
+  transition: transform 0.28s ease;
+}
+.install-banner.visible { transform: translateY(0); }
+.install-banner.hidden { display: none; }
+.install-banner-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+}
+.install-banner-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+.install-banner-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  flex: 1;
+  min-width: 0;
+}
+.install-banner-text strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+.install-banner-text span {
+  font-size: 0.82rem;
+  opacity: 0.92;
+}
+.install-banner-cta {
+  background: #fff;
+  color: #5b59d9;
+  border: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.12s, box-shadow 0.2s;
+}
+.install-banner-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+.install-banner-close {
+  background: transparent;
+  color: #fff;
+  border: 0;
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 50%;
+  opacity: 0.85;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.install-banner-close:hover {
+  opacity: 1;
+  background: rgba(255,255,255,0.15);
+}
+@media (max-width: 480px) {
+  .install-banner-inner { gap: 8px; padding: 9px 10px; }
+  .install-banner-icon { font-size: 1.35rem; }
+  .install-banner-text strong { font-size: 0.92rem; }
+  .install-banner-text span { font-size: 0.76rem; }
+  .install-banner-cta { padding: 7px 12px; font-size: 0.82rem; }
+}
+
+/* ===== iOS install instructions modal ===== */
+.ios-install-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.ios-install-modal.visible { opacity: 1; }
+.ios-install-modal.hidden { display: none; }
+.ios-install-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 20, 28, 0.55);
+  backdrop-filter: blur(2px);
+}
+.ios-install-card {
+  position: relative;
+  background: #fff;
+  color: #1d2329;
+  max-width: 380px;
+  width: calc(100% - 32px);
+  border-radius: 16px;
+  padding: 24px 22px 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  transform: scale(0.96);
+  transition: transform 0.2s ease;
+}
+.ios-install-modal.visible .ios-install-card { transform: scale(1); }
+.ios-install-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: transparent;
+  border: 0;
+  font-size: 1.2rem;
+  color: #8a92a0;
+  cursor: pointer;
+  padding: 6px 10px;
+  line-height: 1;
+}
+.ios-install-close:hover { color: #1d2329; }
+.ios-install-card h3 {
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+  background: linear-gradient(135deg, #5dc9bd, #7c6ff5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.ios-install-steps {
+  margin: 0 0 12px;
+  padding: 0 0 0 22px;
+  line-height: 1.7;
+  font-size: 0.96rem;
+}
+.ios-install-steps li {
+  margin-bottom: 6px;
+}
+.ios-share-glyph {
+  display: inline-block;
+  background: #ede9fe;
+  color: #5b59d9;
+  border-radius: 6px;
+  padding: 1px 7px;
+  font-size: 0.95rem;
+  margin-left: 2px;
+}
+.ios-install-hint {
+  margin: 14px 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* Dark mode adjustments */
+body.dark .ios-install-card {
+  background: #1f2630;
+  color: #e8ecf1;
+}
+body.dark .ios-install-close { color: #8a92a0; }
+body.dark .ios-install-close:hover { color: #fff; }
+body.dark .ios-install-hint { color: #9ba3af; }
+body.dark .ios-share-glyph {
+  background: rgba(124, 111, 245, 0.22);
+  color: #b8b1fa;
+}
