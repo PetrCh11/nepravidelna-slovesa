@@ -445,6 +445,15 @@ function handleDeepLink() {
   openGroupStartChoice(found);
 }
 
+// Shared entry point for "Procvič si to!" CTA buttons in Browse + Flashcards views.
+function practiceSubFromCTA(sub) {
+  track('practice_cta_clicked', { sub: sub.id });
+  setView('lesson');
+  const isLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
+  if (isLocked) { showPaywall(sub); return; }
+  openGroupStartChoice(sub);
+}
+
 function startLesson(sub) {
   track('lesson_started', { sub: sub.id });
   const verbs = sub.verbs.map((v) => ({ ...v, subId: sub.id }));
@@ -1482,6 +1491,7 @@ function renderBrowse() {
       const div = document.createElement('div');
       div.className = 'subsection';
       div.style.setProperty('--sub-hue', hue);
+      const subLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
       div.innerHTML = `
         <div class="subsection-head">
           <span class="subsection-id">${sub.id}</span>
@@ -1489,9 +1499,17 @@ function renderBrowse() {
         </div>
         <p class="subsection-rule">${sub.rule}</p>
         <div class="verb-grid"></div>
+        <button type="button" class="practice-cta${subLocked ? ' locked' : ''}" data-sub="${sub.id}">
+          ${subLocked ? '🔒 ' : '🎯 '}Procvič si to!
+        </button>
       `;
       const grid = div.querySelector('.verb-grid');
       sub.verbs.forEach((v) => grid.appendChild(renderVerbCard(v)));
+      const cta = div.querySelector('.practice-cta');
+      cta.addEventListener('click', (e) => {
+        e.stopPropagation();
+        practiceSubFromCTA(sub);
+      });
       details.appendChild(div);
     });
     container.appendChild(details);
@@ -1544,6 +1562,7 @@ function renderFlashcards() {
       const subWrap = document.createElement('div');
       subWrap.className = 'fc-sub';
       subWrap.style.setProperty('--sub-hue', hue);
+      const subLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
       subWrap.innerHTML = `
         <div class="fc-sub-head">
           <span class="subsection-id">${sub.id}</span>
@@ -1551,9 +1570,16 @@ function renderFlashcards() {
           <span class="fc-sub-rule">${sub.rule}</span>
         </div>
         <div class="fc-grid"></div>
+        <button type="button" class="practice-cta${subLocked ? ' locked' : ''}" data-sub="${sub.id}">
+          ${subLocked ? '🔒 ' : '🎯 '}Procvič si to!
+        </button>
       `;
       const grid = subWrap.querySelector('.fc-grid');
       sub.verbs.forEach((v) => grid.appendChild(renderFlashCard(v, side)));
+      subWrap.querySelector('.practice-cta').addEventListener('click', (e) => {
+        e.stopPropagation();
+        practiceSubFromCTA(sub);
+      });
       secWrap.appendChild(subWrap);
     });
     container.appendChild(secWrap);
