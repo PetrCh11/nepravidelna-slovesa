@@ -415,6 +415,36 @@ function subProgress(sub) {
   return g;
 }
 
+// Deep link entry point used by SEO landing pages.
+// URL convention: https://ucseslovesa.cz/#/skupina/1-1-0  (dashes ↔ dots)
+// Also accepts ?skupina=1.1.0 in the query string for share/paste-friendly links.
+function handleDeepLink() {
+  let target = null;
+  const hashMatch = (window.location.hash || '').match(/^#\/skupina\/([\w.\-]+)/);
+  if (hashMatch) target = hashMatch[1];
+  if (!target) {
+    const params = new URLSearchParams(window.location.search);
+    target = params.get('skupina');
+  }
+  if (!target) return;
+  const id = target.replace(/-/g, '.');
+  let found = null;
+  for (const sec of state.data.sections) {
+    for (const sub of sec.subsections) {
+      if (sub.id === id) { found = sub; break; }
+    }
+    if (found) break;
+  }
+  // Clean URL regardless — avoid replay on reload
+  history.replaceState(null, '', window.location.pathname);
+  if (!found) return;
+  track('deeplink_skupina', { sub: found.id });
+  setView('lesson');
+  const isLocked = !state.premium && !FREE_SUB_IDS.has(found.id);
+  if (isLocked) { showPaywall(found); return; }
+  openGroupStartChoice(found);
+}
+
 function startLesson(sub) {
   track('lesson_started', { sub: sub.id });
   const verbs = sub.verbs.map((v) => ({ ...v, subId: sub.id }));
@@ -2580,6 +2610,9 @@ async function init() {
 
   // Handle Stripe Checkout return (?premium=success|cancel)
   handlePaymentReturn();
+
+  // Deep link from SEO landing pages (/skupina/<id>/) into a specific lesson
+  handleDeepLink();
 
   // Register service worker for PWA (offline)
   if ('serviceWorker' in navigator) {

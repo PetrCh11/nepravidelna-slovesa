@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Generate seznam/index.html — a fully static, SEO-optimized landing page
-listing all 106 irregular verbs grouped by pronunciation pattern.
+Generate SEO landing pages for ucseslovesa.cz.
+
+Outputs:
+    seznam/index.html              — full 106-verb table (jumbo page)
+    skupina/<slug>/index.html      — 24 per-group landing pages
+    sitemap.xml                    — sitemap with all URLs
+    robots.txt                     — robots policy
 
 Run after any changes to data/verbs.json:
     python3 tools/build-seo.py
-
-Outputs:
-    seznam/index.html  — the landing page
-    sitemap.xml        — updated sitemap
-    robots.txt         — robots policy
 """
 
 import json
@@ -21,14 +21,66 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = json.load(open(os.path.join(ROOT, 'data', 'verbs.json'), encoding='utf-8'))
 
 SITE = 'https://ucseslovesa.cz'
+TODAY = date.today().isoformat()
 
 TOTAL = sum(len(sub['verbs']) for sec in DATA['sections'] for sub in sec['subsections'])
+SUB_COUNT = sum(len(s['subsections']) for s in DATA['sections'])
+
+# ---------- Slug map ----------
+# Stable, human-readable slugs for each subsection. The key is the verbs.json id.
+SLUGS = {
+    '1.1.0':  'i-a-u',
+    '1.2.1':  'ow-ew-own',
+    '1.2.3':  'i-o-i-en',
+    '1.2.4a': 'samohlaska-en',
+    '1.2.4b': 'silne-zmeny-en',
+    '1.2.5':  'ake-ook-aken',
+    '1.2.6':  'e-o-o-en',
+    '1.2.7':  'o-uprostred',
+    '1.2.8':  'i-e-i-en',
+    '1.2.9':  'ear-ore-orn',
+    '1.2.10': 'bez-pravidla-tri-tvary',
+    '2.1.1':  'ee-ea-e-t',
+    '2.1.2':  'ea-kratke-t',
+    '2.1.3':  'ought-aught',
+    '2.1.4':  'd-na-t',
+    '2.1.5':  'casto-pravidelne-t',
+    '2.2.1':  'eed-ed',
+    '2.2.2':  'ay-aid',
+    '2.2.3':  'ell-old',
+    '2.2.4':  'koncovka-d-bez-pravidla',
+    '2.3.1':  'i-u',
+    '2.3.2':  'zmena-samohlasky',
+    '2.4.0':  'inf-rovna-pp',
+    '3.0.0':  'vsechny-tri-stejne',
+}
+
+def slug_for(sub_id):
+    if sub_id not in SLUGS:
+        raise KeyError(f'No slug defined for subsection {sub_id} — update SLUGS dict')
+    return SLUGS[sub_id]
+
+# Flatten the subsections in order for prev/next navigation.
+ORDERED_SUBS = [sub for sec in DATA['sections'] for sub in sec['subsections']]
 
 # ---------- HTML escaping helpers ----------
 def esc(s):
     return html.escape(str(s or ''), quote=True)
 
-# ---------- Build the verb table rows by section ----------
+def clean_pattern(p):
+    """Strip HTML tags from pattern for use in title/meta."""
+    return p.replace('<s>', '').replace('</s>', '').replace('<strong>', '').replace('</strong>', '')
+
+# ---------- Reusable bits ----------
+PLAUSIBLE_SNIPPET = '''
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>'''
+
+# ---------- Build the verb table rows by section (used by jumbo page) ----------
 section_blocks = []
 flat_items_for_schema = []
 for sec in DATA['sections']:
@@ -50,12 +102,14 @@ for sec in DATA['sections']:
                 <td class="cs">{esc(cs)}</td>
               </tr>''')
             flat_items_for_schema.append(f'{inf} – {past} – {pp} ({cs})')
+        sub_slug = slug_for(sub['id'])
         sub_blocks.append(f'''
           <section class="verb-sub" id="sub-{esc(sub['id'])}">
             <h3>
               <span class="sub-id">{esc(sub['id'])}</span>
               <span class="sub-pattern">{esc(sub['pattern'])}</span>
               <span class="sub-count">{len(sub['verbs'])} sloves</span>
+              <a class="sub-deep" href="/skupina/{sub_slug}/">Detail skupiny →</a>
             </h3>
             <div class="verb-table-wrap">
               <table class="verb-table">
@@ -84,7 +138,7 @@ for sec in DATA['sections']:
         {''.join(sub_blocks)}
       </section>''')
 
-# ---------- Schema.org markup (FAQ + ItemList) ----------
+# ---------- Schema.org markup (FAQ + ItemList) for jumbo ----------
 faqs = [
     ("Co jsou nepravidelná slovesa v angličtině?",
      "Nepravidelná slovesa jsou ta, jejichž tvary minulého času (past simple) a "
@@ -146,20 +200,27 @@ faq_html = ''.join(
     for q, a in faqs
 )
 
-# ---------- TOC (anchor links to each section) ----------
+# ---------- TOC: link from jumbo to individual group pages ----------
 toc_items = []
 for sec in DATA['sections']:
     section_total = sum(len(sub['verbs']) for sub in sec['subsections'])
     toc_items.append(
-        f'<li><a href="#sec-{esc(sec["id"])}">'
+        f'<li class="toc-section"><a href="#sec-{esc(sec["id"])}">'
         f'<span class="toc-num">{esc(sec["id"])}</span> {esc(sec["title"])} '
         f'<span class="toc-count">({section_total})</span></a></li>'
     )
+    for sub in sec['subsections']:
+        sub_slug = slug_for(sub['id'])
+        pattern_clean = clean_pattern(sub['pattern'])
+        toc_items.append(
+            f'<li class="toc-sub"><a href="/skupina/{sub_slug}/">'
+            f'<span class="toc-num">{esc(sub["id"])}</span> {esc(pattern_clean)} '
+            f'<span class="toc-count">({len(sub["verbs"])})</span></a></li>'
+        )
 toc_html = '\n'.join(toc_items)
 
-# ---------- Full page ----------
-today = date.today().isoformat()
-page = f'''<!DOCTYPE html>
+# ---------- Jumbo /seznam/ page ----------
+jumbo = f'''<!DOCTYPE html>
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
@@ -188,13 +249,7 @@ page = f'''<!DOCTYPE html>
   <!-- Icons / PWA -->
   <link rel="icon" type="image/png" href="../icon-192.png" />
   <link rel="apple-touch-icon" href="../icon-180.png" />
-
-  <!-- Privacy-friendly analytics by Plausible -->
-  <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
-  <script>
-    window.plausible=window.plausible||function(){{(plausible.q=plausible.q||[]).push(arguments)}},plausible.init=plausible.init||function(i){{plausible.o=i||{{}}}};
-    plausible.init()
-  </script>
+{PLAUSIBLE_SNIPPET}
 
   <!-- Schema.org structured data -->
   <script type="application/ld+json">{json.dumps(faq_schema, ensure_ascii=False)}</script>
@@ -241,7 +296,7 @@ page = f'''<!DOCTYPE html>
       </div>
 
       <nav class="seo-toc" aria-label="Obsah">
-        <h2>Obsah</h2>
+        <h2>Obsah – 24 skupin</h2>
         <ol>{toc_html}</ol>
       </nav>
 
@@ -266,7 +321,7 @@ page = f'''<!DOCTYPE html>
   <footer class="seo-footer">
     <div class="container">
       <p>© ucseslovesa.cz · <a href="../">Aplikace</a> · <a href="#seznam">Seznam</a> · <a href="#faq">FAQ</a> · <a href="mailto:hello@ucseslovesa.cz">✉️ hello@ucseslovesa.cz</a></p>
-      <p class="seo-foot-meta">Aktualizováno: {today}</p>
+      <p class="seo-foot-meta">Aktualizováno: {TODAY}</p>
     </div>
   </footer>
 </body>
@@ -274,29 +329,280 @@ page = f'''<!DOCTYPE html>
 
 os.makedirs(os.path.join(ROOT, 'seznam'), exist_ok=True)
 with open(os.path.join(ROOT, 'seznam', 'index.html'), 'w', encoding='utf-8') as f:
-    f.write(page)
-print(f'Wrote seznam/index.html ({TOTAL} verbs across {sum(len(s["subsections"]) for s in DATA["sections"])} subgroups)')
+    f.write(jumbo)
+print(f'Wrote seznam/index.html ({TOTAL} verbs across {SUB_COUNT} subgroups)')
+
+# ---------- Per-group landing pages ----------
+def build_group_page(sub_idx, sub, parent_sec):
+    sub_slug = slug_for(sub['id'])
+    pattern_clean = clean_pattern(sub['pattern'])
+    n_verbs = len(sub['verbs'])
+
+    # Example trio for title/meta (first 3 verbs)
+    sample = sub['verbs'][:3]
+    sample_str = ', '.join(f"{v['inf']}–{v['past']}–{v['pp']}" for v in sample)
+
+    # Verb rows
+    verb_rows = []
+    schema_items = []
+    for i, v in enumerate(sub['verbs']):
+        inf, past, pp, cs = v['inf'], v['past'], v['pp'], v['cs']
+        emoji = v.get('emoji') or '·'
+        verb_rows.append(f'''
+            <tr>
+              <td class="emoji" aria-hidden="true">{esc(emoji)}</td>
+              <td class="inf"><strong>{esc(inf)}</strong></td>
+              <td class="past">{esc(past)}</td>
+              <td class="pp">{esc(pp)}</td>
+              <td class="cs">{esc(cs)}</td>
+            </tr>''')
+        schema_items.append({
+            "@type": "ListItem",
+            "position": i + 1,
+            "name": f'{inf} – {past} – {pp} ({cs})',
+        })
+
+    # Prev/next groups within ORDERED_SUBS
+    prev_sub = ORDERED_SUBS[sub_idx - 1] if sub_idx > 0 else None
+    next_sub = ORDERED_SUBS[sub_idx + 1] if sub_idx < len(ORDERED_SUBS) - 1 else None
+    related = []
+    for s in (prev_sub, next_sub):
+        if not s: continue
+        s_slug = slug_for(s['id'])
+        s_pattern = clean_pattern(s['pattern'])
+        related.append(
+            f'<li><a href="/skupina/{s_slug}/">'
+            f'<span class="rel-id">{esc(s["id"])}</span> '
+            f'<span class="rel-pattern">{esc(s_pattern)}</span> '
+            f'<span class="rel-count">{len(s["verbs"])} sloves</span></a></li>'
+        )
+    # Pick 1 more from same parent section if available, to keep "related" non-empty
+    sibs = [x for x in parent_sec['subsections'] if x['id'] != sub['id'] and (not prev_sub or x['id'] != prev_sub['id']) and (not next_sub or x['id'] != next_sub['id'])]
+    if sibs:
+        s = sibs[0]
+        s_slug = slug_for(s['id'])
+        s_pattern = clean_pattern(s['pattern'])
+        related.append(
+            f'<li><a href="/skupina/{s_slug}/">'
+            f'<span class="rel-id">{esc(s["id"])}</span> '
+            f'<span class="rel-pattern">{esc(s_pattern)}</span> '
+            f'<span class="rel-count">{len(s["verbs"])} sloves</span></a></li>'
+        )
+
+    # Title (≤ ~60 chars target, but Czech is longer; aim for ≤ 70)
+    title = f'{pattern_clean} – nepravidelná slovesa ({n_verbs}) | ucseslovesa.cz'
+    # Meta description (target ~155 chars)
+    meta_desc = (
+        f'{n_verbs} anglických nepravidelných sloves se vzorcem {pattern_clean}: '
+        f'{sample_str}. Pravidlo, tabulka, výslovnost, český překlad. '
+        f'Nauč se celou skupinu za 5 minut.'
+    )[:300]
+
+    # Schemas
+    breadcrumb = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Domů", "item": f"{SITE}/"},
+            {"@type": "ListItem", "position": 2, "name": "Seznam sloves", "item": f"{SITE}/seznam/"},
+            {"@type": "ListItem", "position": 3, "name": pattern_clean, "item": f"{SITE}/skupina/{sub_slug}/"},
+        ],
+    }
+    learning = {
+        "@context": "https://schema.org",
+        "@type": "LearningResource",
+        "name": f'Nepravidelná slovesa – vzorec {pattern_clean}',
+        "description": f'{n_verbs} anglických nepravidelných sloves sdílejících vzorec {pattern_clean}.',
+        "inLanguage": "cs",
+        "learningResourceType": "Reference",
+        "educationalLevel": "secondary",
+        "audience": {"@type": "EducationalAudience", "educationalRole": "student"},
+        "isPartOf": {"@type": "Course", "name": "Anglická nepravidelná slovesa", "url": f"{SITE}/"},
+        "url": f"{SITE}/skupina/{sub_slug}/",
+    }
+    item_list = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": f'Slovesa se vzorcem {pattern_clean}',
+        "numberOfItems": n_verbs,
+        "itemListElement": schema_items,
+    }
+
+    # Sample verbs as a teaser sentence
+    if len(sample) >= 2:
+        teaser = ' Třeba ' + ', '.join(
+            f'<em>{v["inf"]} – {v["past"]} – {v["pp"]}</em>' for v in sample
+        ) + '.'
+    else:
+        teaser = ''
+
+    related_html = '\n'.join(related)
+
+    page = f'''<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{esc(title)}</title>
+  <meta name="description" content="{esc(meta_desc)}" />
+  <link rel="canonical" href="{SITE}/skupina/{sub_slug}/" />
+  <link rel="alternate" hreflang="cs" href="{SITE}/skupina/{sub_slug}/" />
+  <meta name="theme-color" content="#5dc9bd" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="{esc(pattern_clean)} – nepravidelná slovesa ({n_verbs})" />
+  <meta property="og:description" content="{esc(meta_desc)}" />
+  <meta property="og:url" content="{SITE}/skupina/{sub_slug}/" />
+  <meta property="og:locale" content="cs_CZ" />
+  <meta property="og:site_name" content="Nepravidelná slovesa – jednou a provždy" />
+  <meta property="og:image" content="{SITE}/icon-512.png" />
+  <meta name="twitter:card" content="summary" />
+
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icon-180.png" />
+{PLAUSIBLE_SNIPPET}
+
+  <script type="application/ld+json">{json.dumps(breadcrumb, ensure_ascii=False)}</script>
+  <script type="application/ld+json">{json.dumps(learning, ensure_ascii=False)}</script>
+  <script type="application/ld+json">{json.dumps(item_list, ensure_ascii=False)}</script>
+
+  <link rel="stylesheet" href="/seznam/seznam.css" />
+</head>
+<body>
+  <header class="seo-header">
+    <div class="container">
+      <a class="seo-logo" href="/">
+        <img src="/icon-192.png" alt="" width="40" height="40" />
+        <div class="seo-logo-text">
+          <span class="seo-logo-name">Nepravidelná slovesa</span>
+          <span class="seo-logo-sub">… jednou a provždy.</span>
+        </div>
+      </a>
+      <a class="seo-cta seo-cta-header" href="/#/skupina/{sub_slug}" data-track="cta_header">Spustit aplikaci →</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <article>
+      <nav class="breadcrumb" aria-label="Drobečková navigace">
+        <a href="/">Domů</a> <span aria-hidden="true">›</span>
+        <a href="/seznam/">Seznam sloves</a> <span aria-hidden="true">›</span>
+        <span aria-current="page">{esc(pattern_clean)}</span>
+      </nav>
+
+      <h1>Nepravidelná slovesa: vzorec <span class="h1-pattern">{sub['pattern']}</span></h1>
+      <p class="lede">
+        {n_verbs} anglických nepravidelných sloves, která sdílejí stejný výslovnostní vzorec
+        <strong>{esc(pattern_clean)}</strong>.{teaser}
+        Když si zapamatuješ jedno, znáš všechna.
+      </p>
+
+      <section class="rule-box">
+        <h2>Pravidlo skupiny</h2>
+        <p>{sub.get('rule', '')}</p>
+      </section>
+
+      <div class="seo-cta-banner">
+        <div>
+          <strong>Nauč se celou skupinu za 5 minut</strong>
+          <p>Interaktivní lekce — píšeš tvary, dostaneš zpětnou vazbu. Tahle skupina ({n_verbs} sloves) tě v appce čeká hned po kliknutí.</p>
+        </div>
+        <a class="seo-cta" href="/#/skupina/{sub_slug}" data-track="cta_deep_{sub_slug}">Otevřít skupinu v appce →</a>
+      </div>
+
+      <section class="verb-sub" id="verbs">
+        <h2>Slovesa v této skupině ({n_verbs})</h2>
+        <div class="verb-table-wrap">
+          <table class="verb-table">
+            <thead>
+              <tr>
+                <th class="emoji" aria-hidden="true"></th>
+                <th>Infinitiv</th>
+                <th>Past simple</th>
+                <th>Past participle</th>
+                <th>Význam</th>
+              </tr>
+            </thead>
+            <tbody>{''.join(verb_rows)}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="why-groups">
+        <h2>Proč se učit slovesa po skupinách?</h2>
+        <p>
+          Tradiční seznamy nepravidelných sloves jsou abecední — což znamená,
+          že vedle sebe stojí <em>be</em>, <em>beat</em> a <em>become</em>,
+          která spolu nijak nesouvisí. Tahle stránka jde opačně: 106 sloves jsme
+          rozdělili do <strong>24 výslovnostních skupin</strong>, kde slovesa
+          sdílí stejný vzorec změny samohlásky nebo koncovky.
+        </p>
+        <p>
+          Místo memorování 106 nesouvisejících řádků chytíš
+          <strong>24 vzorců</strong> — a každý ti odemkne 2–12 sloves naráz.
+          <a href="/seznam/">Mrkni na celý seznam ›</a>
+        </p>
+      </section>
+
+      <section class="related">
+        <h2>Pokračuj na další skupiny</h2>
+        <ul class="related-list">
+          {related_html}
+        </ul>
+      </section>
+
+      <div class="seo-cta-banner">
+        <div>
+          <strong>Zkus si tuhle skupinu v appce</strong>
+          <p>3 skupiny zdarma. Premium od 49 Kč odemkne všech {TOTAL} sloves.</p>
+        </div>
+        <a class="seo-cta" href="/#/skupina/{sub_slug}" data-track="cta_bottom_{sub_slug}">Spustit lekci →</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="seo-footer">
+    <div class="container">
+      <p>© ucseslovesa.cz · <a href="/">Aplikace</a> · <a href="/seznam/">Seznam</a> · <a href="mailto:hello@ucseslovesa.cz">✉️ hello@ucseslovesa.cz</a></p>
+      <p class="seo-foot-meta">Aktualizováno: {TODAY}</p>
+    </div>
+  </footer>
+</body>
+</html>'''
+    out_dir = os.path.join(ROOT, 'skupina', sub_slug)
+    os.makedirs(out_dir, exist_ok=True)
+    with open(os.path.join(out_dir, 'index.html'), 'w', encoding='utf-8') as f:
+        f.write(page)
+
+# Build all 24 per-group pages
+for sub_idx, sub in enumerate(ORDERED_SUBS):
+    parent_sec = next(sec for sec in DATA['sections'] if sub in sec['subsections'])
+    build_group_page(sub_idx, sub, parent_sec)
+print(f'Wrote {len(ORDERED_SUBS)} skupina/<slug>/index.html pages')
 
 # ---------- sitemap.xml ----------
-sitemap = f'''<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>{SITE}/</loc>
-    <lastmod>{today}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>{SITE}/seznam/</loc>
-    <lastmod>{today}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-</urlset>
-'''
+urls = [
+    (f'{SITE}/',         'weekly',  '1.0'),
+    (f'{SITE}/seznam/',  'monthly', '0.9'),
+]
+for sub in ORDERED_SUBS:
+    urls.append((f'{SITE}/skupina/{slug_for(sub["id"])}/', 'monthly', '0.8'))
+
+sitemap_lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+                 '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+for loc, cf, pr in urls:
+    sitemap_lines.append('  <url>')
+    sitemap_lines.append(f'    <loc>{loc}</loc>')
+    sitemap_lines.append(f'    <lastmod>{TODAY}</lastmod>')
+    sitemap_lines.append(f'    <changefreq>{cf}</changefreq>')
+    sitemap_lines.append(f'    <priority>{pr}</priority>')
+    sitemap_lines.append('  </url>')
+sitemap_lines.append('</urlset>')
+sitemap_lines.append('')
 with open(os.path.join(ROOT, 'sitemap.xml'), 'w', encoding='utf-8') as f:
-    f.write(sitemap)
-print('Wrote sitemap.xml')
+    f.write('\n'.join(sitemap_lines))
+print(f'Wrote sitemap.xml ({len(urls)} URLs)')
 
 # ---------- robots.txt ----------
 robots = f'''User-agent: *

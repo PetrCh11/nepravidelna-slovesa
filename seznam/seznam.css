@@ -236,6 +236,113 @@ h3 {
 .seo-footer a:hover { text-decoration: underline; }
 .seo-foot-meta { font-size: 0.78rem; }
 
+/* --- Per-group landing pages (/skupina/<slug>/) --- */
+.breadcrumb {
+  font-size: 0.92rem;
+  color: #6b7280;
+  margin: 8px 0 18px;
+}
+.breadcrumb a {
+  color: #5b59d9;
+  text-decoration: none;
+}
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span[aria-current] { color: #1d2329; font-weight: 600; }
+
+.h1-pattern {
+  display: inline-block;
+  background: linear-gradient(135deg, #5dc9bd, #5b59d9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  padding: 0 4px;
+}
+
+.rule-box {
+  background: #f7f9fc;
+  border-left: 4px solid #5dc9bd;
+  padding: 14px 18px;
+  margin: 22px 0;
+  border-radius: 8px;
+}
+.rule-box h2 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  color: #1d2329;
+}
+.rule-box p {
+  margin: 0;
+  color: #3b454f;
+  line-height: 1.55;
+}
+
+.why-groups {
+  margin: 36px 0;
+  padding: 18px 22px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+}
+.why-groups h2 { margin-top: 0; }
+.why-groups p { color: #3b454f; line-height: 1.6; }
+.why-groups a { color: #5b59d9; }
+
+.related {
+  margin: 30px 0 20px;
+}
+.related-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.related-list a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 10px;
+  text-decoration: none;
+  color: #1d2329;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.related-list a:hover {
+  border-color: #5dc9bd;
+  transform: translateY(-1px);
+}
+.rel-id {
+  font-size: 0.78rem;
+  background: #5b59d9;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.rel-pattern { flex: 1; font-weight: 600; }
+.rel-count { color: #6b7280; font-size: 0.85rem; }
+
+/* TOC sub-rows on jumbo page */
+.toc-sub {
+  margin-left: 16px;
+  font-size: 0.93rem;
+}
+.toc-sub a { color: #3b454f; }
+
+/* "Detail skupiny →" link in jumbo H3 */
+.sub-deep {
+  font-size: 0.82rem;
+  color: #5b59d9;
+  text-decoration: none;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.sub-deep:hover { text-decoration: underline; }
+
 /* Print-friendly */
 @media print {
   .seo-header, .seo-cta-banner, .seo-footer { display: none; }
