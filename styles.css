@@ -3144,6 +3144,9 @@ body, .text { color: var(--text); }
 }
 
 /* ================== Hero intro ================== */
+.intro-hero {
+  margin-top: 28px;
+}
 .intro-hero h2 {
   font-size: 1.85rem;
   line-height: 1.2;

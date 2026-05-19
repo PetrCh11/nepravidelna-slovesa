@@ -138,10 +138,10 @@ const NEG_STUDENT = [
 
 const TEXTS = {
   // Hero
-  hero_h2:       { pro: '106 sloves, 24 skupin podle logiky. Pochopíš změnu → zvládneš celou skupinu.',
-                   student: '106 sloves, 24 skupin podle logiky. Chytneš vzorec → máš celou skupinu.' },
-  hero_h2_html:  { pro: '<span class="hero-facts">106 sloves, 24 skupin podle logiky.</span><span class="hero-slogan">Pochopíš změnu <span class="hero-arrow">→</span> zvládneš celou skupinu.</span>',
-                   student: '<span class="hero-facts">106 sloves, 24 skupin podle logiky.</span><span class="hero-slogan">Chytneš vzorec <span class="hero-arrow">→</span> máš celou skupinu.</span>' },
+  hero_h2:       { pro: '106 sloves a 24 skupin ve vzorcích. Pochopíš změnu → zvládneš celou skupinu.',
+                   student: '106 sloves a 24 skupin ve vzorcích. Chytneš vzorec → máš celou skupinu.' },
+  hero_h2_html:  { pro: '<span class="hero-facts">106 sloves a 24 skupin ve vzorcích.</span><span class="hero-slogan">Pochopíš změnu <span class="hero-arrow">→</span> zvládneš celou skupinu.</span>',
+                   student: '<span class="hero-facts">106 sloves a 24 skupin ve vzorcích.</span><span class="hero-slogan">Chytneš vzorec <span class="hero-arrow">→</span> máš celou skupinu.</span>' },
   hero_lead:     { pro: '', student: '' },
   hero_foot:     { pro: '', student: '' },
   // Fáze 1 (study)
