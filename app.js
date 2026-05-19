@@ -331,8 +331,10 @@ function renderLessonPicker() {
     const emoji = sectionEmojis[sec.id] || '📚';
     h.innerHTML = `
       <span class="lesson-sec-emoji">${emoji}</span>
-      <span class="lesson-sec-num">${sec.id}</span>
-      <span class="lesson-sec-name">${sec.title}</span>
+      <span class="lesson-sec-text">
+        <span class="lesson-sec-num">${sec.id}</span>
+        <span class="lesson-sec-name">${sec.title}</span>
+      </span>
       <button type="button" class="section-review-chip${allSecMastered ? ' mastered' : ''}${sectionLocked ? ' locked' : ''}" title="${chipTitle}">
         <span class="section-review-chip-icon">${icon}</span>
         <span class="section-review-chip-label">${chipLabel}</span>
