@@ -873,7 +873,7 @@ main { flex: 1; padding: 28px 0 48px; }
   .lesson-sec-text {
     flex-direction: column;
     align-items: flex-start;
-    gap: 2px;
+    gap: 6px;
   }
   .lesson-sec-num {
     font-size: 0.7rem;
