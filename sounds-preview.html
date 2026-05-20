@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirm sound preview — Nepravidelná slovesa</title>
+  <meta name="robots" content="noindex" />
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --text: #1a1d29;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #5dc9bd;
+      --primary-dark: #3da89c;
+      --accent: #7c6ff5;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1115;
+        --card: #1a1d29;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --border: #2a2f3a;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 32px 16px 80px;
+      line-height: 1.5;
+    }
+    .container { max-width: 760px; margin: 0 auto; }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.7rem;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    p.lead { margin: 0 0 24px; color: var(--muted); }
+    .controls {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .controls label { font-size: 0.9rem; color: var(--muted); }
+    .controls input[type="range"] { flex: 1; min-width: 160px; accent-color: var(--primary); }
+    .controls button.play-all {
+      background: var(--accent);
+      color: white;
+      border: 0;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .controls button.play-all:hover { filter: brightness(1.08); }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 600px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+    .sound-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .sound-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+      border-color: var(--primary);
+    }
+    .sound-card.picked {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+    .sound-num {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .sound-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .sound-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin: 0;
+      min-height: 2.5em;
+    }
+    .sound-actions { display: flex; gap: 8px; margin-top: 6px; }
+    .sound-actions button {
+      flex: 1;
+      background: var(--primary);
+      color: white;
+      border: 0;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.92rem;
+      transition: background 0.15s;
+    }
+    .sound-actions button:hover { background: var(--primary-dark); }
+    .sound-actions button.pick {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      flex: 0 0 auto;
+      padding: 9px 12px;
+    }
+    .sound-actions button.pick.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .pick-summary {
+      margin-top: 22px;
+      padding: 14px 16px;
+      background: var(--card);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .pick-summary strong { color: var(--text); }
+    footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔊 Confirm-sound preview</h1>
+    <p class="lead">Klikni „Přehrát" u každého zvuku. Až najdeš ten správný, mačkni „⭐ Vybrat" a řekni mi číslo — pak ho zapojím do appky.</p>
+
+    <div class="controls">
+      <label for="vol">Hlasitost</label>
+      <input id="vol" type="range" min="0" max="100" value="40" />
+      <span id="vol-val" style="min-width: 36px; text-align: right; font-size: 0.85rem;">40 %</span>
+      <button class="play-all" id="play-all">▶ Přehrát všechny popořadě</button>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="pick-summary" id="pick-summary">
+      Zatím nevybráno. Klikni „⭐ Vybrat" u libovolné karty.
+    </div>
+
+    <footer>
+      Wave-form synth přes Web Audio API · žádné MP3 soubory · bez tracking ·
+      <a href="/">← zpátky do appky</a>
+    </footer>
+  </div>
+
+  <script>
+    // ============================================================
+    // Sound bank — each entry returns a function that plays the sound
+    // through a master gain node. Designed to be subtle and short.
+    // ============================================================
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const master = ctx.createGain();
+    master.gain.value = 0.4;
+    master.connect(ctx.destination);
+
+    function envelope(gain, t0, attack, hold, release, peak) {
+      gain.gain.cancelScheduledValues(t0);
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(peak, t0 + attack);
+      gain.gain.setValueAtTime(peak, t0 + attack + hold);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + attack + hold + release);
+    }
+
+    function tone(freq, dur, type, peak, when) {
+      const t0 = when ?? ctx.currentTime;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      o.connect(g); g.connect(master);
+      envelope(g, t0, 0.005, dur * 0.15, dur * 0.85, peak);
+      o.start(t0);
+      o.stop(t0 + dur + 0.05);
+    }
+
+    function noiseBurst(dur, peak, when) {
+      const t0 = when ?? ctx.currentTime;
+      const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'highpass';
+      filt.frequency.value = 1500;
+      const g = ctx.createGain();
+      src.connect(filt); filt.connect(g); g.connect(master);
+      envelope(g, t0, 0.001, 0.005, dur, peak);
+      src.start(t0);
+      src.stop(t0 + dur + 0.02);
+    }
+
+    const SOUNDS = [
+      {
+        id: 1,
+        name: 'Duo-ding ✨',
+        desc: 'Jeden krátký bright tón (C6) + tichá oktáva. Univerzální „správně" feeling.',
+        play() {
+          const t = ctx.currentTime;
+          tone(1046.5, 0.18, 'sine', 0.6, t);
+          tone(2093, 0.14, 'sine', 0.15, t);
+        }
+      },
+      {
+        id: 2,
+        name: 'Two-note ping 🔔',
+        desc: 'Dva tóny ascending (E5 → G5). Klasické kvízové „bingo".',
+        play() {
+          const t = ctx.currentTime;
+          tone(659.25, 0.12, 'sine', 0.55, t);
+          tone(783.99, 0.16, 'sine', 0.55, t + 0.08);
+        }
+      },
+      {
+        id: 3,
+        name: 'Soft pluck 🎵',
+        desc: 'Imitace brnknutí struny — rychlý attack, exponenciální decay (~300 ms).',
+        play() {
+          const t = ctx.currentTime;
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(880, t);
+          o.frequency.exponentialRampToValueAtTime(820, t + 0.3);
+          o.connect(g); g.connect(master);
+          g.gain.setValueAtTime(0.7, t);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+          o.start(t);
+          o.stop(t + 0.35);
+        }
+      },
+      {
+        id: 4,
+        name: 'Marimba tap 🪵',
+        desc: 'Tlumený dřevěný „tok", teplý, krátký (~180 ms). Apple/iOS vibe.',
+        play() {
+          const t = ctx.currentTime;
+          [783.99, 1567.98, 2349.32].forEach((f, i) => {
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = 'sine';
+            o.frequency.value = f;
+            o.connect(g); g.connect(master);
+            const peak = [0.55, 0.18, 0.05][i];
+            g.gain.setValueAtTime(0, t);
+            g.gain.linearRampToValueAtTime(peak, t + 0.005);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+            o.start(t);
+            o.stop(t + 0.22);
+          });
+        }
+      },
+      {
+        id: 5,
+        name: 'Glass chime 🔮',
+        desc: 'Vysoké zvonění (A6) s doznívajícím partial tone. Trochu mystické.',
+        play() {
+          const t = ctx.currentTime;
+          [1760, 3520, 5000].forEach((f, i) => {
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = 'sine';
+            o.frequency.value = f;
+            o.connect(g); g.connect(master);
+            const peak = [0.35, 0.12, 0.06][i];
+            g.gain.setValueAtTime(0, t);
+            g.gain.linearRampToValueAtTime(peak, t + 0.005);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+            o.start(t);
+            o.stop(t + 0.6);
+          });
+        }
+      },
+      {
+        id: 6,
+        name: 'Pop bubble 💧',
+        desc: 'Krátké stoupající pípnutí (200 → 600 Hz). Skoro nepostřehnutelné.',
+        play() {
+          const t = ctx.currentTime;
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(200, t);
+          o.frequency.exponentialRampToValueAtTime(600, t + 0.06);
+          o.connect(g); g.connect(master);
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(0.4, t + 0.005);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+          o.start(t);
+          o.stop(t + 0.1);
+        }
+      },
+      {
+        id: 7,
+        name: 'Gentle chord 🎹',
+        desc: 'Tři tóny zároveň (C5 / E5 / G5 = C-dur). „Dovršené", bohatší.',
+        play() {
+          const t = ctx.currentTime;
+          [523.25, 659.25, 783.99].forEach((f) => {
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = 'sine';
+            o.frequency.value = f;
+            o.connect(g); g.connect(master);
+            g.gain.setValueAtTime(0, t);
+            g.gain.linearRampToValueAtTime(0.25, t + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+            o.start(t);
+            o.stop(t + 0.3);
+          });
+        }
+      },
+      {
+        id: 8,
+        name: 'Click + tail ⚪',
+        desc: 'Drobné cvaknutí + krátký nízký hum. Minimalistický UI confirm.',
+        play() {
+          const t = ctx.currentTime;
+          noiseBurst(0.012, 0.35, t);
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'sine';
+          o.frequency.value = 220;
+          o.connect(g); g.connect(master);
+          g.gain.setValueAtTime(0, t + 0.005);
+          g.gain.linearRampToValueAtTime(0.3, t + 0.015);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+          o.start(t + 0.005);
+          o.stop(t + 0.11);
+        }
+      },
+    ];
+
+    // Build UI
+    const grid = document.getElementById('grid');
+    let picked = null;
+
+    SOUNDS.forEach((s) => {
+      const card = document.createElement('div');
+      card.className = 'sound-card';
+      card.dataset.id = s.id;
+      card.innerHTML = `
+        <span class="sound-num">#${s.id}</span>
+        <h3 class="sound-name">${s.name}</h3>
+        <p class="sound-desc">${s.desc}</p>
+        <div class="sound-actions">
+          <button type="button" class="play">▶ Přehrát</button>
+          <button type="button" class="pick" title="Označit jako vybraný">⭐ Vybrat</button>
+        </div>
+      `;
+      card.querySelector('.play').addEventListener('click', () => {
+        if (ctx.state === 'suspended') ctx.resume();
+        s.play();
+      });
+      card.querySelector('.pick').addEventListener('click', () => {
+        picked = s;
+        document.querySelectorAll('.sound-card').forEach((c) => c.classList.remove('picked'));
+        document.querySelectorAll('.sound-actions .pick').forEach((b) => b.classList.remove('active'));
+        card.classList.add('picked');
+        card.querySelector('.pick').classList.add('active');
+        document.getElementById('pick-summary').innerHTML =
+          `Vybráno: <strong>#${s.id} — ${s.name}</strong>. Napiš mi v chatu „použij #${s.id}" a zapojím ho.`;
+      });
+      grid.appendChild(card);
+    });
+
+    // Volume slider
+    const vol = document.getElementById('vol');
+    const volVal = document.getElementById('vol-val');
+    vol.addEventListener('input', () => {
+      const v = parseInt(vol.value, 10) / 100;
+      master.gain.value = v;
+      volVal.textContent = vol.value + ' %';
+    });
+
+    // Play-all sequence
+    document.getElementById('play-all').addEventListener('click', async () => {
+      if (ctx.state === 'suspended') await ctx.resume();
+      for (let i = 0; i < SOUNDS.length; i++) {
+        SOUNDS[i].play();
+        await new Promise((r) => setTimeout(r, 850));
+      }
+    });
+  </script>
+</body>
+</html>
