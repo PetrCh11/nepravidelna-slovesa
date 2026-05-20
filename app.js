@@ -29,6 +29,10 @@ const state = {
   // their answer in Stage 2 (askStage2Verb). Toggled by a small 🔊/🔇 button in
   // the top-right corner of the question card; preference persists.
   audioAfterAnswer: localStorage.getItem('audioAfterAnswer') === 'true',
+  // Short UI confirmation/wrong/streak cues. Defaults ON — set to 'false' in
+  // localStorage to mute. Independent of audioAfterAnswer (which reads the
+  // three verb forms aloud). May get its own toggle later if needed.
+  soundEffects: localStorage.getItem('soundEffects') !== 'false',
 };
 
 // ============================================================
@@ -389,6 +393,73 @@ function speak(text, dialect) {
   utter.rate = 0.9;
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utter);
+}
+
+// ============================================================
+// UI cue sounds (Web Audio API — no external assets).
+// - 'correct' → glass-chime triad (sound #5 from sounds-preview.html)
+// - 'wrong'   → soft pop bubble    (sound #6)
+// - 'streak'  → gentle C-major chord (sound #7) — plays on 3+ correct in a row
+// Sounds are subtle (low gain, short) and respect state.soundEffects.
+// ============================================================
+let _audioCtx = null;
+function getAudioCtx() {
+  if (_audioCtx) return _audioCtx;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  try {
+    _audioCtx = new AC();
+    return _audioCtx;
+  } catch (_) {
+    return null;
+  }
+}
+
+function playUiSound(kind) {
+  if (!state.soundEffects) return;
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  // Some browsers start the context in 'suspended' state until first user
+  // interaction. Stage 2 sound always fires after a click/key, so this resume
+  // is essentially free.
+  if (ctx.state === 'suspended') { try { ctx.resume(); } catch (_) {} }
+  const t0 = ctx.currentTime;
+
+  const playTone = (freq, peak, dur, attack = 0.005) => {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.start(t0);
+    o.stop(t0 + dur + 0.05);
+  };
+
+  if (kind === 'correct') {
+    // Sound #5 — glass chime: A6 + 2nd partial + sparkle, ~600 ms decay
+    playTone(1760, 0.22, 0.55);
+    playTone(3520, 0.08, 0.55);
+    playTone(5000, 0.04, 0.55);
+  } else if (kind === 'wrong') {
+    // Sound #6 — pop bubble: short rising blip 200→600 Hz, very quiet
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(200, t0);
+    o.frequency.exponentialRampToValueAtTime(600, t0 + 0.06);
+    o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(0.22, t0 + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.08);
+    o.start(t0);
+    o.stop(t0 + 0.1);
+  } else if (kind === 'streak') {
+    // Sound #7 — gentle C-major triad (C5/E5/G5), 250 ms, fades together
+    [523.25, 659.25, 783.99].forEach((f) => playTone(f, 0.16, 0.25, 0.01));
+  }
 }
 
 // Highlight the segment of `word` between indices [start, end). When called with
@@ -1405,12 +1476,21 @@ function askStage2Verb(verb, step) {
     const fb = q.querySelector('.q-feedback');
     fb.innerHTML = msg;
     fb.className = `q-feedback ${allRight ? 'correct' : 'wrong'}`;
+    // Short confirmation cue: streak (3+) > correct > wrong. These respect
+    // state.soundEffects (default ON) and are independent of form-reading.
+    if (!allRight) {
+      playUiSound('wrong');
+    } else if ((L.streak || 0) >= 3) {
+      playUiSound('streak');
+    } else {
+      playUiSound('correct');
+    }
     // Read the three correct forms aloud if the student opted in via the
-    // top-right toggle. Small delay so the feedback text appears first.
+    // top-right toggle. Small delay so the feedback text + cue play first.
     if (state.audioAfterAnswer) {
       setTimeout(() => {
         try { speak(`${verb.inf}, ${past}, ${pp}`, state.dialect); } catch (_) {}
-      }, 350);
+      }, 600);
     }
     persistProgress();
     persistActiveLesson();
