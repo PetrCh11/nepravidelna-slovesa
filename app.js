@@ -197,7 +197,9 @@ const TEXTS = {
   stat_red:      { pro: 'ještě bojuje', student: 'boj o život' },
   res_again:     { pro: 'Procvičit jen ta zlobivá',
                    student: 'Ještě jednou jen ty problematický' },
+  res_again_all: { pro: 'Procvičit znovu', student: 'Dát si to ještě jednou' },
   res_new:       { pro: 'Nová lekce', student: 'Nová skupina' },
+  res_back_all:  { pro: 'Zpět na všechny skupiny', student: 'Zpět na skupiny' },
   // Section chip
   chip_default:  { pro: 'Zamíchaně 🎲', student: 'Náhodný mix 🎲' },
   chip_mastered: { pro: 'Velký test 🏆', student: 'Final boss 🏆' },
@@ -1622,6 +1624,35 @@ function finishLesson() {
   $('.lesson-active').classList.add('hidden');
   document.body.classList.remove('practicing');
   $('.lesson-results').classList.remove('hidden');
+  // Adapt the two result actions to the score. When the student aced everything
+  // (no yellow/red), "Procvičit jen ta zlobivá" doesn't make sense — swap to
+  // "Procvičit znovu" + a clear "Zpět na všechny skupiny".
+  const allGreen = ((counts.yellow || 0) + (counts.red || 0)) === 0;
+  const againBtn = $('#results-again');
+  const newBtn = $('#results-new');
+  if (againBtn && newBtn) {
+    // Replace nodes to wipe any prior listeners attached by setupEventListeners,
+    // then re-bind with handlers chosen for this run.
+    const freshAgain = againBtn.cloneNode(true);
+    const freshNew = newBtn.cloneNode(true);
+    againBtn.replaceWith(freshAgain);
+    newBtn.replaceWith(freshNew);
+    if (allGreen) {
+      freshAgain.textContent = t('res_again_all');
+      freshAgain.removeAttribute('data-tone');
+      freshAgain.addEventListener('click', againFullLesson);
+      freshNew.textContent = t('res_back_all');
+      freshNew.removeAttribute('data-tone');
+      freshNew.addEventListener('click', exitLesson);
+    } else {
+      freshAgain.textContent = t('res_again');
+      freshAgain.setAttribute('data-tone', 'res_again');
+      freshAgain.addEventListener('click', againOnlyProblem);
+      freshNew.textContent = t('res_new');
+      freshNew.setAttribute('data-tone', 'res_new');
+      freshNew.addEventListener('click', exitLesson);
+    }
+  }
   $('#results-summary').innerHTML = `
     <div class="stat stat-green"><div class="stat-num">${counts.green || 0}</div><div class="stat-label">${t('stat_green')}</div></div>
     <div class="stat stat-yellow"><div class="stat-num">${counts.yellow || 0}</div><div class="stat-label">${t('stat_yellow')}</div></div>
@@ -1777,6 +1808,14 @@ function againOnlyProblem() {
   }
   const pseudoSub = { ...L.sub, verbs: keep };
   startLesson(pseudoSub);
+}
+
+// Restart the same lesson from scratch (used when student scored 100 % green
+// — "Procvičit jen ta zlobivá" would be a no-op then, so we offer a full redo).
+function againFullLesson() {
+  const L = state.lesson;
+  if (!L) return;
+  startLesson({ ...L.sub, verbs: L.verbs.slice() });
 }
 
 // ============================================================
@@ -2526,6 +2565,24 @@ function toggleTheme() {
   localStorage.setItem('theme', state.theme);
   applyTheme();
 }
+
+// ---------- Sound-effects menu toggle ----------
+function applySoundEffectsUI() {
+  const btn = $('#sound-toggle-menu');
+  const ic = $('#sound-toggle-menu-icon');
+  const lb = $('#sound-toggle-menu-label');
+  const on = !!state.soundEffects;
+  if (btn) btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  if (ic) ic.textContent = on ? '🔔' : '🔕';
+  if (lb) lb.textContent = on ? 'Zvuky odpovědí: zapnuté' : 'Zvuky odpovědí: vypnuté';
+}
+function toggleSoundEffects() {
+  state.soundEffects = !state.soundEffects;
+  localStorage.setItem('soundEffects', state.soundEffects ? 'true' : 'false');
+  applySoundEffectsUI();
+  // Audible confirmation when turning ON (so the student knows what to expect).
+  if (state.soundEffects) playUiSound('correct');
+}
 function toggleMenu() {
   const d = $('#menu-dropdown');
   const btn = $('#menu-btn');
@@ -2900,15 +2957,12 @@ async function init() {
   $('#logo-home')?.addEventListener('click', () => {
     // Stop a running audio session if any
     if (autoSession) autoStop();
-    // If a lesson is in progress, just hide it and show the picker (snapshot already saved)
-    if (state.lesson && !state.lesson.done) {
-      $('.lesson-active').classList.add('hidden');
-  document.body.classList.remove('practicing');
-      $('.lesson-results').classList.add('hidden');
-      $('.lesson-picker').classList.remove('hidden');
-      state.lesson = null;
-      renderLessonPicker();
-      renderStatsStrip();
+    // Whenever any lesson screen is showing (active flow OR results), tear it
+    // down via exitLesson() so the picker re-appears and refreshes its stats.
+    const resultsVisible = !$('.lesson-results').classList.contains('hidden');
+    const activeVisible = !$('.lesson-active').classList.contains('hidden');
+    if (state.lesson || resultsVisible || activeVisible) {
+      exitLesson();
     }
     setView('lesson');
   });
@@ -2916,6 +2970,8 @@ async function init() {
   // Theme & dialect
   $('#theme-toggle').addEventListener('click', toggleTheme);
   $('#theme-toggle-menu')?.addEventListener('click', toggleTheme);
+  $('#sound-toggle-menu')?.addEventListener('click', toggleSoundEffects);
+  applySoundEffectsUI();
   $('#dialect-select').value = state.dialect;
   $('#dialect-select').addEventListener('change', (e) => {
     state.dialect = e.target.value;
