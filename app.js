@@ -1041,9 +1041,19 @@ function hueOf(subId) {
 
 // Scroll the page to the very top — used between lesson stages so the student
 // always sees the new headline/prompt instead of staying mid-page from the
-// previous step.
+// previous step. Uses smooth behavior so a still-resting finger doesn't end
+// up tapping whatever the instant snap moves under it (was causing the
+// "← Zpět" / logo to be hit accidentally after pressing Hotovo at the bottom).
+// Also temporarily disables pointer events on the header for ~450 ms so any
+// stray secondary tap during the scroll cannot dismiss the lesson.
 function scrollLessonTop() {
-  try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (_) { window.scrollTo(0, 0); }
+  try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) { window.scrollTo(0, 0); }
+  const guards = [document.querySelector('.app-header'), document.querySelector('.lesson-topbar')]
+    .filter(Boolean);
+  guards.forEach((el) => {
+    el.style.pointerEvents = 'none';
+    setTimeout(() => { el.style.pointerEvents = ''; }, 450);
+  });
 }
 
 function showStageIntro(stage) {
@@ -1144,7 +1154,7 @@ function stage1Study() {
     L.stage = 1.5;
     persistActiveLesson();
     stage1Mark();
-  });
+  }, { once: true });
   updateStageDots();
   updateLessonBar();
   renderStepPills();
@@ -1221,7 +1231,7 @@ function stage1Mark() {
     renderVerbChips();
     renderStepPills();
     persistActiveLesson();
-  });
+  }, { once: true });
   updateStageDots();
   updateLessonBar();
   renderStepPills();
