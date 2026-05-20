@@ -4114,6 +4114,10 @@ body.theme-dark .auto-tile::before {
 /* When in auto-driving, hide the regular header/footer for max focus */
 body.auto-driving .app-header,
 body.auto-driving .app-footer { display: none; }
+/* Hide the footer while in an active lesson — the "📋 kompletní seznam" link
+   sat right below the "Hotovo" button at the end of the mark-list, and stray
+   taps were navigating students away from their lesson to the SEO list page. */
+body.practicing .app-footer { display: none; }
 body.auto-driving { overflow: hidden; }
 
 @media (max-width: 480px) {
