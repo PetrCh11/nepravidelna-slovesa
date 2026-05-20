@@ -526,9 +526,13 @@ function inferVowels(verb, dialect) {
 
 // ---------- View switching ----------
 function setView(view) {
+  // Guard: a missing/unknown view used to wipe every .view and then throw on
+  // null.classList.add, leaving the user on a blank page.
+  const target = view ? document.getElementById(`view-${view}`) : null;
+  if (!target) return;
   state.currentView = view;
   $$('.view').forEach((v) => v.classList.remove('active'));
-  $(`#view-${view}`).classList.add('active');
+  target.classList.add('active');
   $('#menu-dropdown').classList.remove('open');
   $('#menu-btn').setAttribute('aria-expanded', 'false');
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2926,7 +2930,10 @@ async function init() {
       $('#menu-btn').setAttribute('aria-expanded', 'false');
     }
   });
-  $$('.menu-item').forEach((b) => b.addEventListener('click', () => {
+  // Only menu items with a data-view attribute should route to setView() —
+  // other .menu-item buttons (theme toggle, sound toggle, cloud sign-in,
+  // billing portal) handle their own action and would crash setView(undefined).
+  $$('.menu-item[data-view]').forEach((b) => b.addEventListener('click', () => {
     // If audio session running, stop it before switching views
     if (autoSession && b.dataset.view !== 'auto') autoStop();
     // Premium gate: Car mode is Premium-only
