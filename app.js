@@ -1476,15 +1476,9 @@ function askStage2Verb(verb, step) {
     const fb = q.querySelector('.q-feedback');
     fb.innerHTML = msg;
     fb.className = `q-feedback ${allRight ? 'correct' : 'wrong'}`;
-    // Short confirmation cue: streak (3+) > correct > wrong. These respect
-    // state.soundEffects (default ON) and are independent of form-reading.
-    if (!allRight) {
-      playUiSound('wrong');
-    } else if ((L.streak || 0) >= 3) {
-      playUiSound('streak');
-    } else {
-      playUiSound('correct');
-    }
+    // Short confirmation cue. Always the same glass-chime for any correct
+    // answer (streak included) — separate streak chord turned out too musical.
+    playUiSound(allRight ? 'correct' : 'wrong');
     // Read the three correct forms aloud if the student opted in via the
     // top-right toggle. Small delay so the feedback text + cue play first.
     if (state.audioAfterAnswer) {
