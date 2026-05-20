@@ -3449,11 +3449,24 @@ body.theme-dark .section-review-card.mastered,
 }
 
 /* ================== Resume card (in-progress lesson) ================== */
+/* Shared row that hosts the resume-card and "Slabá místa" tile side-by-side
+   when both are present, wrapping to a single column only on tight screens. */
+.picker-banners {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 0 0 20px;
+}
+.picker-banners:empty { display: none; margin: 0; }
+
 .resume-card {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 14px;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "icon text"
+    "actions actions";
+  gap: 4px 12px;
   align-items: center;
   background: linear-gradient(135deg,
     hsl(var(--sub-hue, 200) 70% 96%),
@@ -3461,9 +3474,10 @@ body.theme-dark .section-review-card.mastered,
   border: 1px solid hsl(var(--sub-hue, 200) 60% 70% / 0.55);
   border-left: 5px solid hsl(var(--sub-hue, 200) 65% 55%);
   border-radius: 16px;
-  padding: 14px 18px;
-  margin: 0 0 22px;
+  padding: 12px 14px 12px 12px;
+  margin: 0;
   box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  min-width: 0;
 }
 /* Dismiss × in the top-right corner of the resume card */
 .resume-dismiss {
@@ -3490,34 +3504,40 @@ body.theme-dark .section-review-card.mastered,
 .resume-dismiss:hover { background: rgba(0,0,0,0.08); color: var(--text); }
 .resume-dismiss:active { transform: scale(0.92); }
 [data-theme="dark"] .resume-dismiss:hover { background: rgba(255,255,255,0.12); }
-.resume-icon { font-size: 2rem; line-height: 1; }
-.resume-text { min-width: 0; }
-.resume-title { font-weight: 700; font-size: 1.02rem; margin: 0 0 4px; }
-.resume-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 4px; }
+.resume-icon { grid-area: icon; font-size: 1.5rem; line-height: 1; }
+.resume-text { grid-area: text; min-width: 0; }
+.resume-title { font-weight: 700; font-size: 0.95rem; margin: 0 0 2px; }
+.resume-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 2px; }
 .resume-meta .subsection-id {
   background: hsl(var(--sub-hue, 200) 65% 45%);
   color: white;
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   font-weight: 700;
 }
-.resume-pattern { font-size: 0.92rem; color: var(--text); }
-.resume-stage { font-size: 0.85rem; color: var(--text-muted); }
-.resume-card { padding-top: 20px; }
-.resume-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.resume-actions .btn { padding: 8px 14px; font-size: 0.9rem; }
-
-@media (max-width: 560px) {
-  .resume-card {
-    grid-template-columns: auto 1fr;
-    grid-template-areas: "icon text" "actions actions";
-    gap: 10px 12px;
-  }
-  .resume-icon { grid-area: icon; font-size: 1.6rem; }
-  .resume-text { grid-area: text; }
-  .resume-actions { grid-area: actions; justify-content: stretch; }
-  .resume-actions .btn { flex: 1; }
+.resume-pattern {
+  font-size: 0.8rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  min-width: 0;
+}
+.resume-stage { font-size: 0.75rem; color: var(--text-muted); }
+.resume-card { padding-top: 18px; }
+.resume-actions {
+  grid-area: actions;
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.resume-actions .btn {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  flex: 1;
+  white-space: nowrap;
 }
 
 /* Dark mode */
@@ -4126,36 +4146,37 @@ body.practicing .app-footer { display: none; }
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
+  min-width: 0;
   background: linear-gradient(135deg, #ff7a45 0%, #ff5c8a 100%);
   color: white;
   border: 0;
   border-radius: 16px;
-  padding: 16px 20px;
-  margin: 0 0 22px;
+  padding: 12px 14px;
+  margin: 0;
   cursor: pointer;
   font-family: inherit;
   text-align: left;
-  box-shadow: 0 6px 20px rgba(255, 90, 60, 0.28);
+  box-shadow: 0 4px 14px rgba(255, 90, 60, 0.28);
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .slaba-mista-tile:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(255, 90, 60, 0.38);
+  box-shadow: 0 8px 22px rgba(255, 90, 60, 0.38);
 }
 .slaba-mista-tile:active { transform: translateY(0); }
-.slaba-mista-icon { font-size: 2rem; line-height: 1; }
-.slaba-mista-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.slaba-mista-title { font-size: 1.05rem; font-weight: 800; }
-.slaba-mista-sub { font-size: 0.85rem; opacity: 0.92; }
-.slaba-mista-arrow { font-size: 1.1rem; opacity: 0.85; }
-@media (max-width: 480px) {
-  .slaba-mista-tile { padding: 14px 16px; gap: 12px; }
-  .slaba-mista-icon { font-size: 1.7rem; }
-  .slaba-mista-title { font-size: 0.98rem; }
-  .slaba-mista-sub { font-size: 0.78rem; }
+.slaba-mista-icon { font-size: 1.6rem; line-height: 1; }
+.slaba-mista-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; overflow: hidden; }
+.slaba-mista-title { font-size: 0.95rem; font-weight: 800; }
+.slaba-mista-sub {
+  font-size: 0.78rem;
+  opacity: 0.92;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.slaba-mista-arrow { font-size: 1rem; opacity: 0.85; }
 body.auto-driving { overflow: hidden; }
 
 @media (max-width: 480px) {

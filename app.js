@@ -543,8 +543,10 @@ function setView(view) {
 // ============================================================
 
 function renderLessonPicker() {
+  ensurePickerBanners(); // shared row that holds resume-card + slaba-mista-tile
   renderResumeCard();
   renderSlabaMistaTile();
+  finalizePickerBanners();
   const c = $('#lesson-groups');
   c.innerHTML = '';
   let subIdx = 0;
@@ -918,10 +920,32 @@ function findSubById(subId) {
   return null;
 }
 
-function renderResumeCard() {
+// Shared row for the two top banners (resume-card + slaba-mista-tile). When
+// both are present they sit side-by-side; on narrow screens they wrap. When
+// neither is present the row is removed so it adds no vertical space.
+function ensurePickerBanners() {
   const picker = document.querySelector('.lesson-picker');
-  if (!picker) return;
-  const old = picker.querySelector('.resume-card');
+  if (!picker) return null;
+  let row = picker.querySelector('.picker-banners');
+  if (!row) {
+    row = document.createElement('div');
+    row.className = 'picker-banners';
+    const statsStrip = picker.querySelector('#stats-strip');
+    if (statsStrip && statsStrip.nextSibling) picker.insertBefore(row, statsStrip.nextSibling);
+    else picker.appendChild(row);
+  }
+  row.innerHTML = '';
+  return row;
+}
+function finalizePickerBanners() {
+  const row = document.querySelector('.lesson-picker .picker-banners');
+  if (row && row.children.length === 0) row.remove();
+}
+
+function renderResumeCard() {
+  const row = document.querySelector('.lesson-picker .picker-banners') || ensurePickerBanners();
+  if (!row) return;
+  const old = row.querySelector('.resume-card');
   if (old) old.remove();
   const saved = getActiveLesson();
   if (!saved) return;
@@ -954,13 +978,7 @@ function renderResumeCard() {
       <button class="btn btn-secondary" id="resume-restart">Začít znovu</button>
     </div>
   `;
-  // Insert after stats-strip (or at top of picker)
-  const statsStrip = picker.querySelector('#stats-strip');
-  if (statsStrip && statsStrip.nextSibling) {
-    picker.insertBefore(card, statsStrip.nextSibling);
-  } else {
-    picker.appendChild(card);
-  }
+  row.appendChild(card);
   card.querySelector('#resume-continue').addEventListener('click', () => {
     if (isLocked) { showPaywall(sub); return; }
     resumeLesson(saved);
@@ -1935,9 +1953,9 @@ function selectSlabaMista() {
 // verbs with any progress recorded (cold-start protection). Sits between the
 // stats-strip and the section grid.
 function renderSlabaMistaTile() {
-  const picker = document.querySelector('.lesson-picker');
-  if (!picker) return;
-  const old = picker.querySelector('.slaba-mista-tile');
+  const row = document.querySelector('.lesson-picker .picker-banners') || ensurePickerBanners();
+  if (!row) return;
+  const old = row.querySelector('.slaba-mista-tile');
   if (old) old.remove();
   const picks = selectSlabaMista();
   if (!picks || picks.length === 0) return; // cold start — nothing to show
@@ -1963,13 +1981,7 @@ function renderSlabaMistaTile() {
     <span class="slaba-mista-arrow" aria-hidden="true">▶</span>
   `;
   tile.addEventListener('click', startSlabaMista);
-  // Insert after stats-strip (or after resume-card if present)
-  const anchor = picker.querySelector('.resume-card') || picker.querySelector('#stats-strip');
-  if (anchor && anchor.nextSibling) {
-    picker.insertBefore(tile, anchor.nextSibling);
-  } else {
-    picker.appendChild(tile);
-  }
+  row.appendChild(tile);
 }
 
 function startSlabaMista() {
