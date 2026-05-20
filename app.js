@@ -1481,9 +1481,18 @@ function askStage2Verb(verb, step) {
         const streakKey = (L.streak >= 3) ? 'fb_streak' : 'fb_finale_ok';
         msg = '✅ ' + t(streakKey);
       } else {
+        // Leitner-style spacing instead of "always to the end". On the first
+        // miss the verb comes back after a short detour (so the student isn't
+        // grilled on the same word immediately, but also doesn't have to wait
+        // for the whole queue to cycle). On repeated misses the gap widens.
         p.finalWrong = (p.finalWrong || 0) + 1;
         p.finalHadError = true;
-        L.stage2Q.push(L.stage2Q.shift());
+        const current = L.stage2Q.shift();
+        const remaining = L.stage2Q.length;
+        const back = p.finalWrong === 1 ? Math.min(3, remaining)
+                   : p.finalWrong === 2 ? Math.min(6, remaining)
+                   : remaining; // 3+ misses → straight to the end
+        L.stage2Q.splice(back, 0, current);
         L.streak = 0;
         msg = '❌ ' + t('fb_finale_wrong');
       }
