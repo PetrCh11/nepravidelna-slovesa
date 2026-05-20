@@ -25,6 +25,10 @@ const state = {
   quiz: { pool: [], idx: 0, score: 0, total: 0, type: 'mixed', selectedSections: new Set(), review: [] },
   progress: JSON.parse(localStorage.getItem('progress') || '{}'), // { inf: {status, lastSeen, attempts} }
   premium: localStorage.getItem('premium') === 'true',
+  // When true, the three correct forms are read aloud after the student submits
+  // their answer in Stage 2 (askStage2Verb). Toggled by a small 🔊/🔇 button in
+  // the top-right corner of the question card; preference persists.
+  audioAfterAnswer: localStorage.getItem('audioAfterAnswer') === 'true',
 };
 
 // ============================================================
@@ -41,10 +45,10 @@ const POS_PRO = [
   'Tenhle task máš splněnej na 110 %. 📈',
   'Doručeno v termínu a v top kvalitě. 📦',
   'Tady někdo aspiroval na povýšení. 💼',
-  'KPIs splněny pro dnešek. 📊',
+  'KPI splněny pro dnešek. 📊',
   'As per my previous email... tohle bylo bez chyby! 📩',
   'Skvěle odřízený projekt. 🦾',
-  'Kdo neskáče není "{name}", HOP HOP HOP! 🏒',
+  'Kdo neskáče, není {name}, HOP HOP HOP! 🏒',
   'V příštím mailu zahraničním kolegům už neuděláš chybu. 👋',
   'Dovolená v zahraničí se začíná vyplácet. ✈️',
   'HR oddělení tleská. 👏',
@@ -80,7 +84,7 @@ const POS_STUDENT = [
   'Trefa do černýho. 🎯',
   'No cap, tohle bylo perfektní. 🙌',
   'Slay! 💅',
-  'Kdo neskáče není "{name}", HOP HOP HOP! 🏒',
+  'Kdo neskáče, není {name}, HOP HOP HOP! 🏒',
 ];
 const STREAK_PRO = [
   'Tohle je na povýšení ještě před kvartálním hodnocením! 📈',
@@ -104,7 +108,7 @@ const STREAK_STUDENT = [
   'Rodilí mluvčí ti právě závidí. 🇬🇧',
   'Shakespearovi ukápla slza štěstí. 🥲',
   'Tvoje angličtinářka is proud of you. 👩‍🏫',
-  'Tohle sloveso si tě podvolilo. 😎',
+  'Tohle sloveso se ti podvolilo. 😎',
   'Už i tvůj telefon uznává tvou dominanci. 📱',
   'S takovou můžeš jít rovnou do Hollywoodu. 🎬',
   'Moje databáze přímo přede blahem. 🤖',
@@ -387,24 +391,64 @@ function speak(text, dialect) {
   window.speechSynthesis.speak(utter);
 }
 
-function highlightVowel(word, vowelSet) {
+// Highlight the segment of `word` between indices [start, end). When called with
+// the legacy Set-based vowelSet (back-compat), fall back to highlighting the
+// first vowel char — but all production call sites now pass a [start, end) range
+// produced by inferVowels(), which marks the actually changing region across
+// the three forms (inf / past / pp).
+function highlightVowel(word, range) {
   if (!word) return '';
-  const lower = word.toLowerCase();
-  let html = '';
-  let highlighted = false;
-  for (let i = 0; i < word.length; i++) {
-    const ch = word[i];
-    if (!highlighted && vowelSet.has(lower[i])) {
-      html += `<span class="vowel">${ch}</span>`;
-      highlighted = true;
-    } else html += ch;
+  if (Array.isArray(range)) {
+    const [s, e] = range;
+    if (s == null || e == null || s >= e || s < 0 || e > word.length) return word;
+    return word.slice(0, s) + `<span class="vowel">${word.slice(s, e)}</span>` + word.slice(e);
   }
-  return html;
+  // Legacy fallback (Set of vowel chars) — highlight first matching vowel.
+  if (range && typeof range.has === 'function') {
+    const lower = word.toLowerCase();
+    for (let i = 0; i < word.length; i++) {
+      if (range.has(lower[i])) {
+        return word.slice(0, i) + `<span class="vowel">${word[i]}</span>` + word.slice(i + 1);
+      }
+    }
+  }
+  return word;
 }
 
-function inferVowels(verb) {
-  const pick = (w) => new Set([...(w || '').toLowerCase()].filter((c) => 'aeiou'.includes(c)));
-  return { infV: pick(verb.inf), pastV: pick(verb.past), ppV: pick(verb.pp) };
+// Compute the [start, end) range in each form (inf/past/pp) covering the
+// segment that actually CHANGES across the three forms. Uses longest common
+// prefix + suffix; whatever is left in the middle gets highlighted. For verbs
+// where all three forms are identical (cut/cut/cut) nothing is highlighted.
+// For wholly irregular verbs without any common edge (be/was-were/been,
+// go/went/gone) the entire form is highlighted, which is the honest answer.
+function diffRanges(forms) {
+  const arr = forms.map((f) => String(f || ''));
+  // All identical (case-insensitive) → no highlight
+  const norm = arr.map((s) => s.toLowerCase());
+  if (norm.every((s) => s === norm[0])) return arr.map(() => [0, 0]);
+  // Common prefix across ALL forms
+  let pre = 0;
+  const minLen = Math.min(...arr.map((s) => s.length));
+  while (pre < minLen && arr.every((s) => s[pre].toLowerCase() === arr[0][pre].toLowerCase())) pre++;
+  // Common suffix (cannot overlap the prefix in any string)
+  let suf = 0;
+  while (
+    arr.every((s) => s.length - suf > pre) &&
+    arr.every((s) => s[s.length - 1 - suf].toLowerCase() === arr[0][arr[0].length - 1 - suf].toLowerCase())
+  ) suf++;
+  return arr.map((s) => [pre, s.length - suf]);
+}
+
+// Returns { infV, pastV, ppV } where each value is a [start, end) range used by
+// highlightVowel(). Uses the dialect-resolved past/pp forms so AmE highlights
+// line up with the actually displayed word (e.g. learn/learned/learned).
+function inferVowels(verb, dialect) {
+  const d = dialect || (state && state.dialect) || 'BrE';
+  const inf = verb.inf || '';
+  const past = pickForm(verb, 'past', d) || '';
+  const pp = pickForm(verb, 'pp', d) || '';
+  const [infR, pastR, ppR] = diffRanges([inf, past, pp]);
+  return { infV: infR, pastV: pastR, ppV: ppR };
 }
 
 // ---------- View switching ----------
@@ -809,6 +853,7 @@ function renderResumeCard() {
   card.className = 'resume-card';
   card.style.setProperty('--sub-hue', hueOf(sub.id));
   card.innerHTML = `
+    <button type="button" class="resume-dismiss" id="resume-dismiss" aria-label="Zavřít hlášku — zapomenout rozdělané cvičení" title="Zavřít — rozdělané cvičení zapomeneme">✕</button>
     <div class="resume-icon">⏯️</div>
     <div class="resume-text">
       <div class="resume-title">Máš rozdělané cvičení</div>
@@ -838,6 +883,15 @@ function renderResumeCard() {
     if (isLocked) { showPaywall(sub); return; }
     clearActiveLesson();
     startLesson(sub);
+  });
+  // Dismiss (✕): zapomeň rozdělané cvičení a skryj kartu — chová se jako
+  // "Začít znovu", jen bez automatického spuštění. Student se ke skupině může
+  // kdykoli vrátit přes mřížku níž.
+  card.querySelector('#resume-dismiss').addEventListener('click', (e) => {
+    e.stopPropagation();
+    try { track('resume_card_dismissed', { sub: sub.id, stage: saved.stage }); } catch (_) {}
+    clearActiveLesson();
+    card.remove();
   });
 }
 
@@ -908,7 +962,15 @@ function hueOf(subId) {
   return 20;
 }
 
+// Scroll the page to the very top — used between lesson stages so the student
+// always sees the new headline/prompt instead of staying mid-page from the
+// previous step.
+function scrollLessonTop() {
+  try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (_) { window.scrollTo(0, 0); }
+}
+
 function showStageIntro(stage) {
+  scrollLessonTop();
   const intros = {
     1:   { emoji: '👀', title: 'Fáze 1 — Seznámení', desc: t('s1_intro_desc') },
     1.5: { emoji: '✋', title: t('mh_title'),         desc: t('mh_intro_desc') },
@@ -947,6 +1009,7 @@ function updateLessonBar() {
 
 // ---------- Stage 1: Study view — read all verbs in the group ----------
 function stage1Study() {
+  scrollLessonTop();
   $('#lesson-stage-intro').classList.add('hidden');
   const L = state.lesson;
   const hue = hueOf(L.sub.id);
@@ -1012,6 +1075,7 @@ function stage1Study() {
 
 // ---------- Mezifáze: Mark verbs the student thinks will be hardest ----------
 function stage1Mark() {
+  scrollLessonTop();
   $('#lesson-stage-intro').classList.add('hidden');
   const L = state.lesson;
   const hue = hueOf(L.sub.id);
@@ -1212,6 +1276,7 @@ function stage2Finish() {
 }
 
 function askStage2Verb(verb, step) {
+  scrollLessonTop();
   $('#lesson-stage-intro').classList.add('hidden');
   const L = state.lesson;
   const p = L.perVerb.get(verb.inf);
@@ -1245,8 +1310,14 @@ function askStage2Verb(verb, step) {
   };
 
   const q = $('#lesson-question');
+  const audioOn = !!state.audioAfterAnswer;
   q.innerHTML = `
     <div class="q-card" style="--sub-hue:${hue}">
+      <button type="button" class="audio-toggle ${audioOn ? 'is-on' : 'is-off'}" id="audio-toggle"
+        aria-pressed="${audioOn ? 'true' : 'false'}"
+        title="${audioOn ? 'Audio po odpovědi je ZAPNUTO — klikni pro vypnutí' : 'Audio po odpovědi je VYPNUTO — klikni pro zapnutí'}">
+        <span class="audio-toggle-icon" aria-hidden="true">${audioOn ? '🔊' : '🔇'}</span>
+      </button>
       <div class="q-emoji">${verb.emoji || '❓'}</div>
       <div class="q-prompt">${verb.cs}</div>
       <div class="q-sub">${progressText}</div>
@@ -1334,6 +1405,13 @@ function askStage2Verb(verb, step) {
     const fb = q.querySelector('.q-feedback');
     fb.innerHTML = msg;
     fb.className = `q-feedback ${allRight ? 'correct' : 'wrong'}`;
+    // Read the three correct forms aloud if the student opted in via the
+    // top-right toggle. Small delay so the feedback text appears first.
+    if (state.audioAfterAnswer) {
+      setTimeout(() => {
+        try { speak(`${verb.inf}, ${past}, ${pp}`, state.dialect); } catch (_) {}
+      }, 350);
+    }
     persistProgress();
     persistActiveLesson();
     L.currentInf = null;
@@ -1387,6 +1465,31 @@ function askStage2Verb(verb, step) {
     q.querySelector('#s2-check').addEventListener('click', finalize);
   }
 
+  // Audio toggle (top-right corner of the card). Persists across questions
+  // and sessions; reflects state without forcing a re-render of the card.
+  const audioBtn = q.querySelector('#audio-toggle');
+  if (audioBtn) {
+    audioBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.audioAfterAnswer = !state.audioAfterAnswer;
+      localStorage.setItem('audioAfterAnswer', state.audioAfterAnswer ? 'true' : 'false');
+      const on = state.audioAfterAnswer;
+      audioBtn.classList.toggle('is-on', on);
+      audioBtn.classList.toggle('is-off', !on);
+      audioBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      audioBtn.title = on
+        ? 'Audio po odpovědi je ZAPNUTO — klikni pro vypnutí'
+        : 'Audio po odpovědi je VYPNUTO — klikni pro zapnutí';
+      const icon = audioBtn.querySelector('.audio-toggle-icon');
+      if (icon) icon.textContent = on ? '🔊' : '🔇';
+      // If the student just turned audio on AFTER finalizing, play the forms now
+      // so they don't have to wait for the next verb.
+      if (on && finalized) {
+        try { speak(`${verb.inf}, ${past}, ${pp}`, state.dialect); } catch (_) {}
+      }
+    });
+  }
+
   // Give-up: requires double-tap to prevent accidental triggers (especially on mobile)
   let giveUpArmed = false;
   let giveUpResetTimer = null;
@@ -1427,6 +1530,7 @@ function askStage2Verb(verb, step) {
 }
 
 function finishLesson() {
+  scrollLessonTop();
   const L = state.lesson;
   L.done = true;
   // Telemetry — how many verbs ended up in each bucket

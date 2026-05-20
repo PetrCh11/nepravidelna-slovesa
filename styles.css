@@ -2495,6 +2495,38 @@ body {
 }
 .sentence-blank { border-radius: 8px; border-bottom-width: 2px; }
 .q-card { position: relative; padding-bottom: 42px; }
+/* Audio-after-answer toggle (top-right of the question card). */
+.audio-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  z-index: 2;
+}
+.audio-toggle:hover { background: rgba(0,0,0,0.04); border-color: var(--text-muted); }
+.audio-toggle:active { transform: scale(0.94); }
+.audio-toggle .audio-toggle-icon { font-size: 1.05rem; }
+.audio-toggle.is-on {
+  background: linear-gradient(135deg, hsl(var(--sub-hue, 180) 70% 55%), hsl(var(--sub-hue, 180) 65% 45%));
+  border-color: transparent;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+}
+.audio-toggle.is-on .audio-toggle-icon { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.audio-toggle.is-off { opacity: 0.78; }
+[data-theme="dark"] .audio-toggle { background: rgba(255,255,255,0.04); }
+[data-theme="dark"] .audio-toggle:hover { background: rgba(255,255,255,0.08); }
 .give-up-btn {
   position: absolute;
   right: 14px;
@@ -3418,6 +3450,7 @@ body.theme-dark .section-review-card.mastered,
 
 /* ================== Resume card (in-progress lesson) ================== */
 .resume-card {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 14px;
@@ -3432,6 +3465,31 @@ body.theme-dark .section-review-card.mastered,
   margin: 0 0 22px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.06);
 }
+/* Dismiss × in the top-right corner of the resume card */
+.resume-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+  z-index: 2;
+}
+.resume-dismiss:hover { background: rgba(0,0,0,0.08); color: var(--text); }
+.resume-dismiss:active { transform: scale(0.92); }
+[data-theme="dark"] .resume-dismiss:hover { background: rgba(255,255,255,0.12); }
 .resume-icon { font-size: 2rem; line-height: 1; }
 .resume-text { min-width: 0; }
 .resume-title { font-weight: 700; font-size: 1.02rem; margin: 0 0 4px; }
@@ -3446,6 +3504,7 @@ body.theme-dark .section-review-card.mastered,
 }
 .resume-pattern { font-size: 0.92rem; color: var(--text); }
 .resume-stage { font-size: 0.85rem; color: var(--text-muted); }
+.resume-card { padding-top: 20px; }
 .resume-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .resume-actions .btn { padding: 8px 14px; font-size: 0.9rem; }
 
