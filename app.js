@@ -544,6 +544,7 @@ function setView(view) {
 
 function renderLessonPicker() {
   renderResumeCard();
+  renderSlabaMistaTile();
   const c = $('#lesson-groups');
   c.innerHTML = '';
   let subIdx = 0;
@@ -690,9 +691,9 @@ function practiceSubFromCTA(sub) {
   openGroupStartChoice(sub);
 }
 
-function startLesson(sub) {
+function startLesson(sub, options) {
   track('lesson_started', { sub: sub.id });
-  const verbs = sub.verbs.map((v) => ({ ...v, subId: sub.id }));
+  const verbs = sub.verbs.map((v) => ({ ...v, subId: v.subId || sub.id }));
   state.lesson = {
     sub,
     verbs,
@@ -710,7 +711,15 @@ function startLesson(sub) {
   document.body.classList.add('practicing');
   $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sub.id)} 65% 45%)">${sub.id}</span> ${sub.pattern}`;
   document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sub.id));
-  showStageIntro(1);
+  if (options && options.skipToFinale) {
+    // "Slabá místa": no study, no mark — student knows these verbs, jump
+    // straight to the shuffled atomic finale.
+    state.lesson.stage = 2;
+    stage2InitStep1();
+    stage2AdvanceToFinale();
+  } else {
+    showStageIntro(1);
+  }
 }
 
 function openGroupStartChoice(sub) {
@@ -1660,25 +1669,35 @@ function finishLesson() {
   $('.lesson-active').classList.add('hidden');
   document.body.classList.remove('practicing');
   $('.lesson-results').classList.remove('hidden');
-  // Adapt the two result actions to the score. When the student aced everything
-  // (no yellow/red), "Procvičit jen ta zlobivá" doesn't make sense — swap to
-  // "Procvičit znovu" + a clear "Zpět na všechny skupiny".
+  // Adapt the two result actions to the score and lesson type:
+  //   - Slabá místa (isReview): "Další porce slabin" (re-pick) + "Zpět na skupiny"
+  //   - Regular lesson, all green: "Procvičit znovu" + "Zpět na všechny skupiny"
+  //   - Regular lesson, some misses: "Procvičit jen ta zlobivá" + "Nová lekce"
   const allGreen = ((counts.yellow || 0) + (counts.red || 0)) === 0;
+  const isReview = !!(L.sub && L.sub.isReview);
   const againBtn = $('#results-again');
   const newBtn = $('#results-new');
   if (againBtn && newBtn) {
-    // Replace nodes to wipe any prior listeners attached by setupEventListeners,
-    // then re-bind with handlers chosen for this run.
+    // Replace nodes to wipe any prior listeners, then re-bind for this run.
     const freshAgain = againBtn.cloneNode(true);
     const freshNew = newBtn.cloneNode(true);
     againBtn.replaceWith(freshAgain);
     newBtn.replaceWith(freshNew);
-    if (allGreen) {
+    freshAgain.removeAttribute('data-tone');
+    freshNew.removeAttribute('data-tone');
+    if (isReview) {
+      freshAgain.textContent = 'Další porce slabin →';
+      freshAgain.addEventListener('click', () => {
+        // Tear down current lesson, then re-pick a fresh batch
+        state.lesson = null;
+        startSlabaMista();
+      });
+      freshNew.textContent = t('res_back_all');
+      freshNew.addEventListener('click', exitLesson);
+    } else if (allGreen) {
       freshAgain.textContent = t('res_again_all');
-      freshAgain.removeAttribute('data-tone');
       freshAgain.addEventListener('click', againFullLesson);
       freshNew.textContent = t('res_back_all');
-      freshNew.removeAttribute('data-tone');
       freshNew.addEventListener('click', exitLesson);
     } else {
       freshAgain.textContent = t('res_again');
@@ -1852,6 +1871,125 @@ function againFullLesson() {
   const L = state.lesson;
   if (!L) return;
   startLesson({ ...L.sub, verbs: L.verbs.slice() });
+}
+
+// ============================================================
+// "Slabá místa" — cross-group daily review
+// ============================================================
+// Composition target: 10 verbs total = ~8 weak + ~2 spot-check greens.
+// Cold-start: returns null if there isn't enough history (< 5 verbs seen).
+// Selection is across all UNLOCKED groups (free for free users, all for premium).
+
+const SLABA_TARGET = 10;
+const SLABA_COLD_START_MIN = 5;
+
+function selectSlabaMista() {
+  if (!state.data) return null;
+  // Pool of verbs the student can practice (premium gate respected)
+  const allVerbs = flattenVerbs(state.data).filter((v) =>
+    state.premium || FREE_SUB_IDS.has(v.subId)
+  );
+  const seen = allVerbs.filter((v) => state.progress[v.inf]);
+  if (seen.length < SLABA_COLD_START_MIN) return null; // cold start
+
+  const weak = [];
+  const greens = [];
+  seen.forEach((v) => {
+    const p = state.progress[v.inf];
+    if (p.status === 'green') greens.push(v);
+    else weak.push(v);
+  });
+
+  // Score weak verbs by errorRate × status weight × recency boost.
+  const now = Date.now();
+  const scored = weak.map((v) => {
+    const p = state.progress[v.inf];
+    const errorRate = p.attempts ? (p.errors / p.attempts) : 0.5;
+    const statusBoost = p.status === 'red' ? 2.0 : 1.0;
+    // Recency: verbs missed within the last week get a small boost, decays.
+    const ageDays = p.lastWrong ? (now - p.lastWrong) / 86400000 : 7;
+    const recency = Math.max(0.6, 1.5 - ageDays / 14);
+    return { verb: v, score: errorRate * statusBoost * recency };
+  });
+  scored.sort((a, b) => b.score - a.score);
+
+  // Compose pool: take up to 8 weakest, fill rest with random greens.
+  // If weaks < 8, take all weaks. If no weaks, dose is all greens (light review).
+  const targetWeak = Math.min(8, scored.length);
+  const targetGreen = SLABA_TARGET - targetWeak;
+  const picked = [];
+  scored.slice(0, targetWeak).forEach((s) => picked.push(s.verb));
+  shuffle(greens).slice(0, targetGreen).forEach((v) => picked.push(v));
+  // If still under target (very few seen verbs), pad with any seen verb we
+  // haven't included yet — better to have a slightly shorter dose than to
+  // repeat the same verb.
+  if (picked.length < SLABA_TARGET) {
+    const have = new Set(picked.map((v) => v.inf));
+    const rest = seen.filter((v) => !have.has(v.inf));
+    shuffle(rest).slice(0, SLABA_TARGET - picked.length).forEach((v) => picked.push(v));
+  }
+  return shuffle(picked);
+}
+
+// Tile on the lesson picker. Hidden until the student has ≥ SLABA_COLD_START_MIN
+// verbs with any progress recorded (cold-start protection). Sits between the
+// stats-strip and the section grid.
+function renderSlabaMistaTile() {
+  const picker = document.querySelector('.lesson-picker');
+  if (!picker) return;
+  const old = picker.querySelector('.slaba-mista-tile');
+  if (old) old.remove();
+  const picks = selectSlabaMista();
+  if (!picks || picks.length === 0) return; // cold start — nothing to show
+
+  // Quick descriptive subline based on the pool composition
+  const weakCount = picks.filter((v) => {
+    const p = state.progress[v.inf];
+    return p && p.status !== 'green';
+  }).length;
+  const sub = weakCount > 0
+    ? `${picks.length} sloves · ${weakCount} slabin + ${picks.length - weakCount} spot-check`
+    : `${picks.length} náhodných sloves · retention test`;
+
+  const tile = document.createElement('button');
+  tile.type = 'button';
+  tile.className = 'slaba-mista-tile';
+  tile.innerHTML = `
+    <span class="slaba-mista-icon" aria-hidden="true">🎯</span>
+    <span class="slaba-mista-text">
+      <span class="slaba-mista-title">Dnešní porce slabin</span>
+      <span class="slaba-mista-sub">${sub}</span>
+    </span>
+    <span class="slaba-mista-arrow" aria-hidden="true">▶</span>
+  `;
+  tile.addEventListener('click', startSlabaMista);
+  // Insert after stats-strip (or after resume-card if present)
+  const anchor = picker.querySelector('.resume-card') || picker.querySelector('#stats-strip');
+  if (anchor && anchor.nextSibling) {
+    picker.insertBefore(tile, anchor.nextSibling);
+  } else {
+    picker.appendChild(tile);
+  }
+}
+
+function startSlabaMista() {
+  const picks = selectSlabaMista();
+  if (!picks || picks.length === 0) {
+    toast('Zatím není dost dat — udělej pár lekcí a vrať se. 🌱', 'info');
+    return;
+  }
+  // Pseudo-sub mimics the regular shape lesson code expects. The isReview
+  // flag lets finishLesson swap the result actions accordingly.
+  const pseudoSub = {
+    id: 'slabaMista',
+    title: 'Slabá místa',
+    pattern: `Dnešní porce slabin · ${picks.length} sloves`,
+    rule: '',
+    verbs: picks,
+    isReview: true,
+  };
+  track('slaba_mista_started', { n: picks.length });
+  startLesson(pseudoSub, { skipToFinale: true });
 }
 
 // ============================================================

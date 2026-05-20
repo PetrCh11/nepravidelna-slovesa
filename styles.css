@@ -4118,6 +4118,44 @@ body.auto-driving .app-footer { display: none; }
    sat right below the "Hotovo" button at the end of the mark-list, and stray
    taps were navigating students away from their lesson to the SEO list page. */
 body.practicing .app-footer { display: none; }
+
+/* ============================================================
+   "Slabá místa" tile — daily cross-group review on the picker home
+   ============================================================ */
+.slaba-mista-tile {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  background: linear-gradient(135deg, #ff7a45 0%, #ff5c8a 100%);
+  color: white;
+  border: 0;
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin: 0 0 22px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  box-shadow: 0 6px 20px rgba(255, 90, 60, 0.28);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.slaba-mista-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(255, 90, 60, 0.38);
+}
+.slaba-mista-tile:active { transform: translateY(0); }
+.slaba-mista-icon { font-size: 2rem; line-height: 1; }
+.slaba-mista-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.slaba-mista-title { font-size: 1.05rem; font-weight: 800; }
+.slaba-mista-sub { font-size: 0.85rem; opacity: 0.92; }
+.slaba-mista-arrow { font-size: 1.1rem; opacity: 0.85; }
+@media (max-width: 480px) {
+  .slaba-mista-tile { padding: 14px 16px; gap: 12px; }
+  .slaba-mista-icon { font-size: 1.7rem; }
+  .slaba-mista-title { font-size: 0.98rem; }
+  .slaba-mista-sub { font-size: 0.78rem; }
+}
 body.auto-driving { overflow: hidden; }
 
 @media (max-width: 480px) {
