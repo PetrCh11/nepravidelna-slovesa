@@ -1628,9 +1628,22 @@ function finishLesson() {
   L.perVerb.forEach((p) => { counts[p.status] = (counts[p.status] || 0) + 1; });
   track('lesson_completed', { sub: L.sub.id, green: counts.green, yellow: counts.yellow, red: counts.red });
   clearActiveLesson(); // lesson finished — no resume needed
-  // Save to progress
+  // Save to progress. Per-lesson binary accumulation:
+  //   - attempts: number of lessons that included this verb (incl. this one)
+  //   - errors:   subset of those that ended yellow / red / gave-up
+  //   - lastWrong: timestamp of the most recent error-ending lesson
+  // errorRate = errors / attempts → drives the "Slabá místa" selection later.
+  const now = Date.now();
   L.perVerb.forEach((p, inf) => {
-    state.progress[inf] = { status: p.status, lastSeen: Date.now() };
+    const prev = state.progress[inf] || {};
+    const erred = p.status !== 'green' || !!p.gaveUp;
+    state.progress[inf] = {
+      status: p.status,
+      lastSeen: now,
+      attempts: (prev.attempts || 0) + 1,
+      errors: (prev.errors || 0) + (erred ? 1 : 0),
+      lastWrong: erred ? now : (prev.lastWrong || null),
+    };
   });
   persistProgress();
   markStudyToday();
