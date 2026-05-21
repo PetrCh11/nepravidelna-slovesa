@@ -2754,10 +2754,10 @@ function quizRender() {
       <div class="quiz-feedback"></div>
       <div class="quiz-next-row"><button class="btn btn-primary" id="quiz-check">Zkontrolovat</button><button class="btn btn-primary hidden" id="quiz-next">Další →</button></div>
     `;
-    card.querySelector('#quiz-check').addEventListener('click', () => {
-      const inputs = Array.from(card.querySelectorAll('.quiz-fill-inputs input'));
+    const fillInputs = Array.from(card.querySelectorAll('.quiz-fill-inputs input'));
+    const submitFill = () => {
       let ok = true;
-      inputs.forEach((inp) => {
+      fillInputs.forEach((inp) => {
         const key = inp.dataset.form;
         const good = isAnswerCorrect(inp.value, verb, key, state.dialect);
         inp.classList.add(good ? 'correct' : 'wrong');
@@ -2766,8 +2766,28 @@ function quizRender() {
       });
       handleQuizAnswer(ok, verb, verb.inf, `${past} – ${pp}`);
       card.querySelector('#quiz-check').classList.add('hidden');
+    };
+    card.querySelector('#quiz-check').addEventListener('click', submitFill);
+
+    // Enter chování: posuň na další prázdné pole; teprve když jsou všechna
+    // vyplněná (a Enter je v posledním), odešli — stejně jako klasická Lekce.
+    fillInputs.forEach((inp, idx) => {
+      const advance = (e) => {
+        if (e) e.preventDefault();
+        const nextEmpty = fillInputs.find((x) => !x.value.trim());
+        if (nextEmpty && nextEmpty !== inp) { nextEmpty.focus(); return; }
+        if (idx < fillInputs.length - 1) { fillInputs[idx + 1].focus(); return; }
+        submitFill();
+      };
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') advance(e);
+      });
+      // Android: "Next" může přijít jako insertLineBreak místo Enter
+      inp.addEventListener('beforeinput', (e) => {
+        if (e.inputType === 'insertLineBreak') advance(e);
+      });
     });
-    setTimeout(() => card.querySelector('input')?.focus(), 50);
+    setTimeout(() => fillInputs[0]?.focus(), 50);
   }
   card.querySelectorAll('[data-speak]').forEach((el) =>
     el.addEventListener('click', (e) => { e.stopPropagation(); speak(el.dataset.speak, state.dialect); })
@@ -3299,10 +3319,11 @@ async function init() {
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && state.currentView === 'quiz') {
-      const check = document.querySelector('#quiz-card #quiz-check');
+      // V quiz-fill režimu má Enter řešit per-input handler (posun na další
+      // pole); globální fallback se uplatní jen pro "Další →" mimo input.
+      if (e.target && e.target.closest && e.target.closest('.quiz-fill-inputs')) return;
       const next = document.querySelector('#quiz-card #quiz-next');
-      if (check && !check.classList.contains('hidden')) { e.preventDefault(); check.click(); }
-      else if (next && !next.classList.contains('hidden')) { e.preventDefault(); next.click(); }
+      if (next && !next.classList.contains('hidden')) { e.preventDefault(); next.click(); }
     }
   });
 
