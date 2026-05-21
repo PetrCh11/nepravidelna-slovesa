@@ -4618,18 +4618,19 @@ body.dark .why-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
 .tone-choice {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
   margin-top: 6px;
 }
 .tone-option {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 6px;
-  padding: 18px 14px 16px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px;
+  aspect-ratio: 1 / 1;
+  padding: 14px 12px;
   background: rgba(124, 111, 245, 0.06);
   border: 2px solid transparent;
-  border-radius: 14px;
+  border-radius: 22px;
   cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s, background 0.15s;
+  transition: transform 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
   color: inherit;
   text-align: center;
 }
@@ -4637,12 +4638,17 @@ body.dark .why-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
   transform: translateY(-2px);
   border-color: #7c6ff5;
   background: rgba(124, 111, 245, 0.12);
+  box-shadow: 0 8px 22px rgba(124, 111, 245, 0.25);
 }
-.tone-option-emoji { font-size: 2rem; line-height: 1; }
-.tone-option-name { font-weight: 800; font-size: 1.05rem; }
-.tone-option-preview { font-size: 0.85rem; color: #5a6470; font-style: italic; line-height: 1.3; }
+.tone-option-emoji { font-size: 2.4rem; line-height: 1; }
+.tone-option-name { font-weight: 800; font-size: 1.1rem; }
+.tone-option-preview { font-size: 0.82rem; color: #5a6470; font-style: italic; line-height: 1.3; }
 @media (max-width: 480px) {
-  .tone-choice { grid-template-columns: 1fr; }
+  .tone-choice { gap: 10px; }
+  .tone-option { border-radius: 18px; padding: 10px 8px; }
+  .tone-option-emoji { font-size: 2rem; }
+  .tone-option-name { font-size: 1rem; }
+  .tone-option-preview { font-size: 0.76rem; }
 }
 [data-theme="dark"] .tone-card,
 body.theme-dark .tone-card { background: #1f2630; color: #e6ecf3; }
