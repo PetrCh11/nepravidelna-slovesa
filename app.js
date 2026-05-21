@@ -531,6 +531,25 @@ window.addEventListener('touchstart', _unlockAudio, { once: true, capture: true 
 function highlightVowel(word, range) {
   if (!word) return '';
   if (Array.isArray(range)) {
+    // Empty array → no highlight at all (explicit override)
+    if (range.length === 0) return word;
+    // Multi-range form: [[s,e], [s,e], ...] — non-contiguous highlights
+    if (Array.isArray(range[0])) {
+      const sorted = range
+        .filter((r) => Array.isArray(r) && r.length === 2 && r[0] != null && r[1] != null && r[0] < r[1] && r[0] >= 0 && r[1] <= word.length)
+        .sort((a, b) => a[0] - b[0]);
+      if (sorted.length === 0) return word;
+      let out = '';
+      let pos = 0;
+      for (const [s, e] of sorted) {
+        if (s < pos) continue; // skip overlap
+        out += word.slice(pos, s) + `<span class="vowel">${word.slice(s, e)}</span>`;
+        pos = e;
+      }
+      out += word.slice(pos);
+      return out;
+    }
+    // Single range [s, e)
     const [s, e] = range;
     if (s == null || e == null || s >= e || s < 0 || e > word.length) return word;
     return word.slice(0, s) + `<span class="vowel">${word.slice(s, e)}</span>` + word.slice(e);
@@ -580,6 +599,17 @@ function inferVowels(verb, dialect) {
   const past = pickForm(verb, 'past', d) || '';
   const pp = pickForm(verb, 'pp', d) || '';
   const [infR, pastR, ppR] = diffRanges([inf, past, pp]);
+  // Per-verb override: verb.hl = { inf?: ranges, past?: ranges, pp?: ranges }
+  // where `ranges` is either a single [s,e] or an array of [s,e] for non-contiguous
+  // highlights, or [] to disable highlighting entirely for that form.
+  const hl = verb && verb.hl;
+  if (hl && typeof hl === 'object') {
+    return {
+      infV: hl.inf !== undefined ? hl.inf : infR,
+      pastV: hl.past !== undefined ? hl.past : pastR,
+      ppV: hl.pp !== undefined ? hl.pp : ppR,
+    };
+  }
   return { infV: infR, pastV: pastR, ppV: ppR };
 }
 

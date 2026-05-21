@@ -28,7 +28,7 @@
             {"inf": "know", "past": "knew", "pp": "known", "cs": "znát", "emoji": "🧠"},
             {"inf": "throw", "past": "threw", "pp": "thrown", "cs": "házet", "emoji": "🎯"},
             {"inf": "draw", "past": "drew", "pp": "drawn", "cs": "táhnout, kreslit", "emoji": "✏️"},
-            {"inf": "fly", "past": "flew", "pp": "flown", "cs": "létat", "emoji": "✈️"}
+            {"inf": "fly", "past": "flew", "pp": "flown", "cs": "létat", "emoji": "✈️", "hl": {"inf": []}}
           ]
         },
         {
@@ -36,10 +36,10 @@
           "rule": "Infinitivní -I- se mění na -O- v minulém čase a pak zpět na -I- v příčestí minulém, které končí na –EN. Výslovnost -I- v infinitivu a příčestí je odlišná.",
           "pattern": "I → O → I+EN",
           "verbs": [
-            {"inf": "drive", "past": "drove", "pp": "driven", "cs": "řídit", "emoji": "🚗"},
-            {"inf": "ride", "past": "rode", "pp": "ridden", "cs": "jezdit", "emoji": "🚴"},
-            {"inf": "rise", "past": "rose", "pp": "risen", "cs": "stoupat", "emoji": "📈"},
-            {"inf": "write", "past": "wrote", "pp": "written", "cs": "psát", "emoji": "✍️"}
+            {"inf": "drive", "past": "drove", "pp": "driven", "cs": "řídit", "emoji": "🚗", "hl": {"inf": [2,3], "past": [2,3], "pp": [[2,3],[4,6]]}},
+            {"inf": "ride", "past": "rode", "pp": "ridden", "cs": "jezdit", "emoji": "🚴", "hl": {"inf": [1,2], "past": [1,2], "pp": [[1,2],[4,6]]}},
+            {"inf": "rise", "past": "rose", "pp": "risen", "cs": "stoupat", "emoji": "📈", "hl": {"inf": [1,2], "past": [1,2], "pp": [[1,2],[3,5]]}},
+            {"inf": "write", "past": "wrote", "pp": "written", "cs": "psát", "emoji": "✍️", "hl": {"inf": [2,3], "past": [2,3], "pp": [[2,3],[5,7]]}}
           ]
         },
         {
@@ -47,9 +47,9 @@
           "rule": "Dochází ke změně samohlásky v minulém čase. V příčestí minulém je samohláska stejná jako v infinitivu, ale příčestí končí na –EN.",
           "pattern": "samohl. → změna → inf.+EN",
           "verbs": [
-            {"inf": "fall", "past": "fell", "pp": "fallen", "cs": "padat", "emoji": "🍂"},
-            {"inf": "forgive", "past": "forgave", "pp": "forgiven", "cs": "odpustit", "emoji": "🙏"},
-            {"inf": "give", "past": "gave", "pp": "given", "cs": "dát", "emoji": "🎁"}
+            {"inf": "fall", "past": "fell", "pp": "fallen", "cs": "padat", "emoji": "🍂", "hl": {"inf": [1,2], "past": [1,2], "pp": [4,6]}},
+            {"inf": "forgive", "past": "forgave", "pp": "forgiven", "cs": "odpustit", "emoji": "🙏", "hl": {"inf": [4,5], "past": [4,5], "pp": [[4,5],[6,8]]}},
+            {"inf": "give", "past": "gave", "pp": "given", "cs": "dát", "emoji": "🎁", "hl": {"inf": [1,2], "past": [1,2], "pp": [[1,2],[3,5]]}}
           ]
         },
         {
