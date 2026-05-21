@@ -2029,17 +2029,37 @@ function renderSlabaMistaTile() {
     const p = state.progress[v.inf];
     return p && p.status !== 'green';
   }).length;
-  const sub = weakCount > 0
-    ? `${picks.length} sloves · ${weakCount} slabin + ${picks.length - weakCount} spot-check`
-    : `${picks.length} náhodných sloves · retention test`;
+  const restCount = picks.length - weakCount;
+
+  // Czech adjective inflection for implied "slovesa" (neuter plural):
+  // 1 → -é, 2–4 → -á, 0 / 5+ → -ých
+  const adj = (n, stem) => {
+    if (n === 1) return stem + 'é';
+    if (n >= 2 && n <= 4) return stem + 'á';
+    return stem + 'ých';
+  };
+
+  const isPro = state.style === 'pro';
+  const icon = isPro ? '🎯' : '👾';
+  const title = isPro ? 'Dnešní cílovka' : 'Boss mode';
+  let sub;
+  if (isPro) {
+    sub = weakCount > 0
+      ? `${weakCount} ${adj(weakCount, 'problémov')} + ${restCount} ${adj(restCount, 'náhodn')}`
+      : `${picks.length} ${adj(picks.length, 'náhodn')} · retention check`;
+  } else {
+    sub = weakCount > 0
+      ? `${weakCount} ${adj(weakCount, 'failnut')} + ${restCount} random`
+      : `${picks.length} random · spot check`;
+  }
 
   const tile = document.createElement('button');
   tile.type = 'button';
   tile.className = 'slaba-mista-tile';
   tile.innerHTML = `
-    <span class="slaba-mista-icon" aria-hidden="true">🎯</span>
+    <span class="slaba-mista-icon" aria-hidden="true">${icon}</span>
     <span class="slaba-mista-text">
-      <span class="slaba-mista-title">Dnešní porce slabin</span>
+      <span class="slaba-mista-title">${title}</span>
       <span class="slaba-mista-sub">${sub}</span>
     </span>
     <span class="slaba-mista-arrow" aria-hidden="true">▶</span>
