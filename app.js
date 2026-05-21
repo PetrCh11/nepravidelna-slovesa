@@ -2032,6 +2032,7 @@ function renderBrowse() {
         <div class="subsection-head">
           <span class="subsection-id">${sub.id}</span>
           <span class="subsection-pattern">${sub.pattern}</span>
+          ${subLocked ? '<span class="menu-premium-badge">Premium</span>' : ''}
         </div>
         <p class="subsection-rule">${sub.rule}</p>
         <div class="verb-grid"></div>
@@ -2103,6 +2104,7 @@ function renderFlashcards() {
         <div class="fc-sub-head">
           <span class="subsection-id">${sub.id}</span>
           <span class="subsection-pattern">${sub.pattern}</span>
+          ${subLocked ? '<span class="menu-premium-badge">Premium</span>' : ''}
           <span class="fc-sub-rule">${sub.rule}</span>
         </div>
         <div class="fc-grid"></div>
@@ -2780,6 +2782,10 @@ function toggleMenu() {
 // Cloud sync UI helpers
 // ============================================================
 
+function applyPremiumUI() {
+  document.body.classList.toggle('is-premium', !!state.premium);
+}
+
 function updatePortalBtn() {
   const btn = $('#portal-btn');
   if (!btn) return;
@@ -2952,6 +2958,7 @@ async function redeemPromo(rawCode, ctx) {
     // Success — flip local state and close paywall
     state.premium = true;
     localStorage.setItem('premium', 'true');
+    applyPremiumUI();
     updatePortalBtn();
     track('promo_redeemed', { code });
     ctx.setMsg('Kód uplatněn! 🎉 Premium je tvoje.', 'success');
@@ -3064,6 +3071,7 @@ function updateSyncStatus(status) {
 
 async function init() {
   applyTheme();
+  applyPremiumUI();
   state.data = await fetch('data/verbs.json').then((r) => r.json());
 
   $('#verb-count').textContent = flattenVerbs(state.data).length;
@@ -3083,6 +3091,7 @@ async function init() {
   document.addEventListener('cloud-merged', () => {
     state.progress = JSON.parse(localStorage.getItem('progress') || '{}');
     state.premium = localStorage.getItem('premium') === 'true';
+    applyPremiumUI();
     renderLessonPicker();
     renderStatsStrip();
     renderBrowse();

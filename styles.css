@@ -2631,6 +2631,8 @@ body.theme-dark .browse-unlock-cta p { color: #ffe9a8; }
   vertical-align: middle;
   text-transform: uppercase;
 }
+/* Hide premium badges for users who already have Premium */
+body.is-premium .menu-premium-badge { display: none; }
 
 /* ----- Customer portal menu item ----- */
 .menu-portal {
