@@ -829,8 +829,11 @@ function openSectionReviewChoice(sec) {
   $('#gsm-all').querySelector('.modal-option-name').textContent = t('gsm_all');
   $('#gsm-problem').querySelector('.modal-option-name').textContent = t('gsm_problem');
   const sw = (n) => `${n} ${n === 1 ? 'sloveso' : (n < 5 ? 'slovesa' : 'sloves')}`;
-  $('#gsm-all-count').textContent = sw(all.length);
-  $('#gsm-problem-count').textContent = sw(problematic.length);
+  // Náhodný mix je capnutý na 10 — ukážeme reálnou velikost dávky, ne celé sekce
+  const allShown = Math.min(all.length, 10);
+  const problemShown = Math.min(problematic.length, 10);
+  $('#gsm-all-count').textContent = all.length > 10 ? `${sw(allShown)} z ${all.length}` : sw(all.length);
+  $('#gsm-problem-count').textContent = problematic.length > 10 ? `${sw(problemShown)} z ${problematic.length}` : sw(problematic.length);
   const problemBtn = $('#gsm-problem');
   if (problematic.length === 0) {
     problemBtn.classList.add('disabled');
@@ -876,6 +879,8 @@ function startSectionReview(sec, customVerbs = null) {
   }
   if (verbs.length === 0) return;
   shuffle(verbs);
+  // Cap náhodného mixu na 10 sloves — víc je v jedné dávce na hlavu moc
+  if (verbs.length > 10) verbs = verbs.slice(0, 10);
   // Synthetic "sub" used by lesson code: id is sec.id, pattern reflects review mode
   const pseudoSub = {
     id: sec.id,
