@@ -451,48 +451,66 @@ function playUiSound(kind) {
   if (!state.soundEffects) return;
   const ctx = getAudioCtx();
   if (!ctx) return;
-  // Some browsers start the context in 'suspended' state until first user
-  // interaction. Stage 2 sound always fires after a click/key, so this resume
-  // is essentially free.
-  if (ctx.state === 'suspended') { try { ctx.resume(); } catch (_) {} }
-  const t0 = ctx.currentTime;
 
-  const playTone = (freq, peak, dur, attack = 0.005) => {
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'sine';
-    o.frequency.value = freq;
-    o.connect(g); g.connect(ctx.destination);
-    g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(peak, t0 + attack);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.start(t0);
-    o.stop(t0 + dur + 0.05);
+  const schedule = () => {
+    const t0 = ctx.currentTime;
+    const playTone = (freq, peak, dur, attack = 0.005) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(peak, t0 + attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.start(t0);
+      o.stop(t0 + dur + 0.05);
+    };
+
+    if (kind === 'correct') {
+      playTone(1760, 0.22, 0.55);
+      playTone(3520, 0.08, 0.55);
+      playTone(5000, 0.04, 0.55);
+    } else if (kind === 'wrong') {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(200, t0);
+      o.frequency.exponentialRampToValueAtTime(600, t0 + 0.06);
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(0.22, t0 + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.08);
+      o.start(t0);
+      o.stop(t0 + 0.1);
+    } else if (kind === 'streak') {
+      [523.25, 659.25, 783.99].forEach((f) => playTone(f, 0.16, 0.25, 0.01));
+    }
   };
 
-  if (kind === 'correct') {
-    // Sound #5 — glass chime: A6 + 2nd partial + sparkle, ~600 ms decay
-    playTone(1760, 0.22, 0.55);
-    playTone(3520, 0.08, 0.55);
-    playTone(5000, 0.04, 0.55);
-  } else if (kind === 'wrong') {
-    // Sound #6 — pop bubble: short rising blip 200→600 Hz, very quiet
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(200, t0);
-    o.frequency.exponentialRampToValueAtTime(600, t0 + 0.06);
-    o.connect(g); g.connect(ctx.destination);
-    g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(0.22, t0 + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.08);
-    o.start(t0);
-    o.stop(t0 + 0.1);
-  } else if (kind === 'streak') {
-    // Sound #7 — gentle C-major triad (C5/E5/G5), 250 ms, fades together
-    [523.25, 659.25, 783.99].forEach((f) => playTone(f, 0.16, 0.25, 0.01));
+  // Browsers (esp. Safari) keep the AudioContext suspended until a user gesture
+  // resumes it. resume() is async — if we schedule oscillators before the
+  // promise settles, they're silently dropped. Await the resume, then play.
+  if (ctx.state === 'suspended') {
+    const p = ctx.resume();
+    if (p && typeof p.then === 'function') p.then(schedule, () => {});
+    else schedule();
+  } else {
+    schedule();
   }
 }
+
+// One-time global audio unlock: ensure the AudioContext is created + resumed
+// inside a real user gesture, so the first feedback sound actually plays.
+// Subsequent playUiSound calls reuse the warmed context.
+function _unlockAudio() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') { try { ctx.resume(); } catch (_) {} }
+}
+window.addEventListener('pointerdown', _unlockAudio, { once: true, capture: true });
+window.addEventListener('keydown', _unlockAudio, { once: true, capture: true });
+window.addEventListener('touchstart', _unlockAudio, { once: true, capture: true });
 
 // Highlight the segment of `word` between indices [start, end). When called with
 // the legacy Set-based vowelSet (back-compat), fall back to highlighting the
