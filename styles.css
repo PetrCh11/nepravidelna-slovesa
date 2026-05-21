@@ -4615,32 +4615,40 @@ body.dark .why-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
   -webkit-text-fill-color: transparent;
 }
 .tone-sub { margin: 0 0 18px; font-size: 0.92rem; color: #5a6470; }
-.tone-slider-wrap { margin: 12px 0 18px; }
-.tone-labels {
-  display: flex; justify-content: space-between;
-  font-weight: 700; font-size: 0.95rem; margin-bottom: 6px;
+.tone-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 6px;
 }
-.tone-label { padding: 4px 8px; border-radius: 8px; transition: background 0.18s, color 0.18s; cursor: pointer; }
-.tone-label.active { background: linear-gradient(135deg, #5dc9bd, #7c6ff5); color: #fff; }
-.tone-card input[type="range"] {
-  width: 100%;
-  accent-color: #7c6ff5;
-  margin: 4px 0 10px;
+.tone-option {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px;
+  padding: 18px 14px 16px;
+  background: rgba(124, 111, 245, 0.06);
+  border: 2px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, background 0.15s;
+  color: inherit;
+  text-align: center;
 }
-.tone-preview {
-  min-height: 2.4em;
-  font-size: 0.92rem;
-  color: #3a4452;
-  background: rgba(124, 111, 245, 0.08);
-  border-radius: 10px;
-  padding: 8px 12px;
-  font-style: italic;
+.tone-option:hover {
+  transform: translateY(-2px);
+  border-color: #7c6ff5;
+  background: rgba(124, 111, 245, 0.12);
 }
-.tone-confirm { min-width: 180px; }
-.tone-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+.tone-option-emoji { font-size: 2rem; line-height: 1; }
+.tone-option-name { font-weight: 800; font-size: 1.05rem; }
+.tone-option-preview { font-size: 0.85rem; color: #5a6470; font-style: italic; line-height: 1.3; }
+@media (max-width: 480px) {
+  .tone-choice { grid-template-columns: 1fr; }
+}
 [data-theme="dark"] .tone-card,
 body.theme-dark .tone-card { background: #1f2630; color: #e6ecf3; }
 [data-theme="dark"] .tone-sub,
-body.theme-dark .tone-sub { color: #a3aebc; }
-[data-theme="dark"] .tone-preview,
-body.theme-dark .tone-preview { background: rgba(124, 111, 245, 0.18); color: #d8def0; }
+body.theme-dark .tone-sub,
+[data-theme="dark"] .tone-option-preview,
+body.theme-dark .tone-option-preview { color: #a3aebc; }
+[data-theme="dark"] .tone-option,
+body.theme-dark .tone-option { background: rgba(124, 111, 245, 0.16); }

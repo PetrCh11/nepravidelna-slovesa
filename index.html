@@ -427,15 +427,18 @@
       <div class="tone-emoji">👋</div>
       <h2 id="tone-modal-title">Jaký styl komunikace ti vyhovuje?</h2>
       <p class="tone-sub">Můžeš to později kdykoli změnit v menu.</p>
-      <div class="tone-slider-wrap">
-        <div class="tone-labels">
-          <span class="tone-label tone-label-pro" data-side="pro">💼 Pracující</span>
-          <span class="tone-label tone-label-student" data-side="student">🎒 Student</span>
-        </div>
-        <input type="range" id="tone-slider" min="0" max="100" value="50" step="1" aria-label="Volba stylu komunikace mezi Pracující a Student">
-        <div class="tone-preview" id="tone-preview" aria-live="polite">Posuň, abys vybral/a styl.</div>
+      <div class="tone-choice">
+        <button class="tone-option" id="tone-pick-pro" type="button">
+          <span class="tone-option-emoji">💼</span>
+          <span class="tone-option-name">Pracující</span>
+          <span class="tone-option-preview">„Pochopíš změnu → zvládneš celou skupinu."</span>
+        </button>
+        <button class="tone-option" id="tone-pick-student" type="button">
+          <span class="tone-option-emoji">🎒</span>
+          <span class="tone-option-name">Student</span>
+          <span class="tone-option-preview">„Chytneš vzorec → máš celou skupinu."</span>
+        </button>
       </div>
-      <button class="btn btn-primary tone-confirm" id="tone-confirm" type="button" disabled>Pokračovat</button>
     </div>
   </div>
 
