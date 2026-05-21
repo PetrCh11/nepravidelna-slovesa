@@ -7,6 +7,14 @@
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  // Treat anything with a fine pointer + no touch + not iOS/Android UA as desktop.
+  // The install banner is mobile/tablet-only — desktops can use the browser's
+  // built-in "Install app" affordance if they really want a PWA.
+  const isMobileLike = isIOS || isAndroid
+    || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)
+    || (navigator.maxTouchPoints || 0) > 0;
+  const isDesktop = !isMobileLike;
   const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
@@ -34,6 +42,8 @@
   });
 
   function canShowNow() {
+    // Desktop browsers → never offer the PWA install banner
+    if (isDesktop) return false;
     // Already installed → never show
     if (isStandalone) return false;
     // Already showing this session → don't double-show
