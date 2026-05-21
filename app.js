@@ -270,6 +270,75 @@ function t(key, ...args) {
   return v;
 }
 
+// First-login tone picker modal
+const TONE_PREVIEW = {
+  pro: '💼 „Pochopíš změnu → zvládneš celou skupinu."',
+  student: '🎒 „Chytneš vzorec → máš celou skupinu."',
+};
+function openToneModal() {
+  const modal = document.getElementById('tone-modal');
+  if (!modal) return;
+  const slider = document.getElementById('tone-slider');
+  const preview = document.getElementById('tone-preview');
+  const confirm = document.getElementById('tone-confirm');
+  const labelPro = modal.querySelector('.tone-label-pro');
+  const labelStudent = modal.querySelector('.tone-label-student');
+  if (!slider || !preview || !confirm) return;
+  // Reset to neutral
+  slider.value = 50;
+  preview.textContent = 'Posuň, abys vybral/a styl.';
+  confirm.disabled = true;
+  labelPro.classList.remove('active');
+  labelStudent.classList.remove('active');
+  let chosen = null;
+  const reflect = () => {
+    const v = Number(slider.value);
+    if (v < 50) {
+      chosen = 'pro';
+      labelPro.classList.add('active');
+      labelStudent.classList.remove('active');
+      preview.textContent = TONE_PREVIEW.pro;
+    } else if (v > 50) {
+      chosen = 'student';
+      labelStudent.classList.add('active');
+      labelPro.classList.remove('active');
+      preview.textContent = TONE_PREVIEW.student;
+    } else {
+      chosen = null;
+      labelPro.classList.remove('active');
+      labelStudent.classList.remove('active');
+      preview.textContent = 'Posuň, abys vybral/a styl.';
+    }
+    confirm.disabled = !chosen;
+  };
+  slider.oninput = reflect;
+  // Tap on labels = jump to that side
+  labelPro.onclick = () => { slider.value = 0; reflect(); };
+  labelStudent.onclick = () => { slider.value = 100; reflect(); };
+  confirm.onclick = () => {
+    if (!chosen) return;
+    state.style = chosen;
+    localStorage.setItem('style', chosen);
+    localStorage.setItem('styleAsked', 'true');
+    // Reflect in menu toggle + texts
+    $$('.menu-style-btn').forEach((b) => b.classList.toggle('active', b.dataset.style === state.style));
+    applyStyleTexts();
+    // Sync to cloud (best-effort)
+    try { cloud.pushSoon && cloud.pushSoon(); } catch (_) {}
+    try { track('style_picked', { style: chosen }); } catch (_) {}
+    closeToneModal();
+    toast(chosen === 'pro' ? 'Styl: 💼 Pracující' : 'Styl: 🎒 Student', 'success', 2200);
+  };
+  modal.classList.remove('hidden');
+  requestAnimationFrame(() => modal.classList.add('visible'));
+}
+function closeToneModal() {
+  const modal = document.getElementById('tone-modal');
+  if (!modal) return;
+  modal.classList.remove('visible');
+  setTimeout(() => modal.classList.add('hidden'), 200);
+}
+
 function applyStyleTexts() {
   // Update all static elements tagged with data-tone="<key>"
   document.querySelectorAll('[data-tone]').forEach((el) => {
@@ -3085,7 +3154,15 @@ async function init() {
 
   // Cloud sync wiring
   cloud.setListeners({
-    onUser: (user) => { state.user = user || null; updateCloudUI(user); },
+    onUser: (user) => {
+      state.user = user || null;
+      updateCloudUI(user);
+      // First-time signed-in user → ask preferred tone
+      if (user && localStorage.getItem('styleAsked') !== 'true') {
+        // Slight delay so it doesn't fight the sign-in popup teardown
+        setTimeout(() => openToneModal(), 350);
+      }
+    },
     onSync: (status) => updateSyncStatus(status),
   });
   document.addEventListener('cloud-merged', () => {
@@ -3148,8 +3225,10 @@ async function init() {
   $$('.menu-style-btn').forEach((b) => b.addEventListener('click', () => {
     state.style = b.dataset.style;
     localStorage.setItem('style', state.style);
+    localStorage.setItem('styleAsked', 'true');
     reflectStyleBtns();
     applyStyleTexts();
+    try { cloud.pushSoon && cloud.pushSoon(); } catch (_) {}
   }));
   // Logo → return to home (lesson picker)
   $('#logo-home')?.addEventListener('click', () => {

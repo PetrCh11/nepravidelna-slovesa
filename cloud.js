@@ -86,6 +86,15 @@ function mergeIntoLocal(remote) {
     localStorage.setItem('premium', remote.premium ? 'true' : 'false');
   }
 
+  // Communication style preference (Pracující / Student) — synced across devices.
+  // Remote wins if local hasn't been set yet (first sign-in on a new device).
+  if (typeof remote.style === 'string' && (remote.style === 'pro' || remote.style === 'student')) {
+    if (!localStorage.getItem('styleAsked')) {
+      localStorage.setItem('style', remote.style);
+      localStorage.setItem('styleAsked', 'true');
+    }
+  }
+
   // Per-verb LWW by lastSeen
   const merged = {};
   let shouldPush = false;
@@ -131,9 +140,12 @@ async function pushNow() {
   try {
     const progress = JSON.parse(localStorage.getItem('progress') || '{}');
     const studyDays = JSON.parse(localStorage.getItem('studyDays') || '[]');
+    const style = localStorage.getItem('style');
+    const payload = { progress, studyDays, updatedAt: Date.now() };
+    if (style === 'pro' || style === 'student') payload.style = style;
     const ref = doc(db, 'users', user.uid);
     suppressPushOnce = true; // the snapshot we'll receive is from our own write
-    await setDoc(ref, { progress, studyDays, updatedAt: Date.now() }, { merge: true });
+    await setDoc(ref, payload, { merge: true });
     setSyncStatus('synced');
   } catch (e) {
     console.error('Push failed', e);
