@@ -3169,6 +3169,14 @@ async function init() {
     state.progress = JSON.parse(localStorage.getItem('progress') || '{}');
     state.premium = localStorage.getItem('premium') === 'true';
     applyPremiumUI();
+    updatePortalBtn();
+    // Reflect cloud-synced style preference in menu toggle + texts
+    const syncedStyle = localStorage.getItem('style');
+    if (syncedStyle === 'pro' || syncedStyle === 'student') {
+      state.style = syncedStyle;
+      $$('.menu-style-btn').forEach((b) => b.classList.toggle('active', b.dataset.style === state.style));
+      applyStyleTexts();
+    }
     renderLessonPicker();
     renderStatsStrip();
     renderBrowse();
