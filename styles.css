@@ -3183,27 +3183,6 @@ body, .text { color: var(--text); }
 }
 
 /* ================== Hero intro ================== */
-/* Subtle "header zone" wrapper around hero + stats strip */
-.lesson-header-zone {
-  background: rgba(255, 255, 255, 0.38);
-  border-bottom: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
-  border-radius: 14px 14px 0 0;
-  padding: 14px 16px 16px;
-  margin: 12px -4px 20px;
-}
-.lesson-header-zone .intro-hero {
-  margin-top: 0;
-}
-.lesson-header-zone .stats-strip {
-  margin-bottom: 0;
-}
-[data-theme="dark"] .lesson-header-zone {
-  background: rgba(255, 255, 255, 0.04);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
-}
-@media (max-width: 480px) {
-  .lesson-header-zone { padding: 10px 12px 12px; margin: 8px -2px 16px; }
-}
 .intro-hero {
   margin-top: 28px;
 }
