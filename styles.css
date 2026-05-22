@@ -2,6 +2,7 @@
 :root {
   --bg: #fdfbf7;
   --bg-elev: #ffffff;
+  --card-bg: #ffffff;
   --text: #1d1b20;
   --text-muted: #5f5b66;
   --border: #e6e1d8;
@@ -25,6 +26,7 @@
 [data-theme="dark"] {
   --bg: #15171c;
   --bg-elev: #1e2128;
+  --card-bg: #1e2128;
   --text: #f2eee8;
   --text-muted: #a6a0b0;
   --border: #2c2f38;
@@ -3183,8 +3185,54 @@ body, .text { color: var(--text); }
 }
 
 /* ================== Hero intro ================== */
+/* Hero + stats strip act as a single visually grouped "header zone":
+   tinted background + hairline at the bottom. No DOM wrapper — styles are
+   applied directly to .intro-hero (top half) and .stats-strip (bottom half)
+   so they butt together and read as one panel. */
 .intro-hero {
-  margin-top: 28px;
+  margin: 28px -4px 0;
+  padding: 14px 16px 12px;
+  background: rgba(255, 255, 255, 0.38);
+  border-radius: 14px 14px 0 0;
+}
+.lesson-picker .stats-strip {
+  margin: 0 -4px 24px;
+  padding: 4px 16px 14px;
+  background: rgba(255, 255, 255, 0.38);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0 0 14px 14px;
+}
+[data-theme="dark"] .intro-hero,
+[data-theme="dark"] .lesson-picker .stats-strip {
+  background: rgba(255, 255, 255, 0.04);
+}
+[data-theme="dark"] .lesson-picker .stats-strip {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+/* When resume-card or "Slabá místa" banner is present, extend the panel
+   through them. .picker-banners only exists in DOM when non-empty (see
+   finalizePickerBanners in app.js), so :has() targets only that state. */
+.lesson-picker:has(.picker-banners) .stats-strip {
+  margin-bottom: 0;
+  border-bottom: 0;
+  border-radius: 0;
+}
+.lesson-picker .picker-banners {
+  margin: 0 -4px 24px;
+  padding: 12px 16px 14px;
+  background: rgba(255, 255, 255, 0.38);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0 0 14px 14px;
+}
+[data-theme="dark"] .lesson-picker .picker-banners {
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+@media (max-width: 480px) {
+  .intro-hero { margin: 20px -2px 0; padding: 10px 12px 10px; }
+  .lesson-picker .stats-strip { margin: 0 -2px 18px; padding: 4px 12px 12px; }
+  .lesson-picker:has(.picker-banners) .stats-strip { margin-bottom: 0; }
+  .lesson-picker .picker-banners { margin: 0 -2px 18px; padding: 10px 12px 12px; }
 }
 .intro-hero h2 {
   font-size: 1.85rem;
@@ -3231,8 +3279,8 @@ body, .text { color: var(--text); }
   gap: 10px;
 }
 .hero-bullets li {
-  background: var(--card-bg, rgba(255,255,255,0.6));
-  border: 1px solid var(--border, rgba(0,0,0,0.06));
+  background: rgba(255,255,255,0.6);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px 14px;
   font-size: 0.95rem;
@@ -3458,13 +3506,51 @@ body.theme-dark .section-review-card.mastered,
 /* ================== Resume card (in-progress lesson) ================== */
 /* Shared row that hosts the resume-card and "Slabá místa" tile side-by-side
    when both are present, wrapping to a single column only on tight screens. */
+/* 3-column grid mirroring .stats-strip above. Slaba-mista is always pinned
+   to the middle column; resume-card (when present) sits in the left column. */
 .picker-banners {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
   margin: 0 0 20px;
 }
 .picker-banners:empty { display: none; margin: 0; }
+.picker-banners > .resume-card { grid-column: 1; min-width: 0; }
+.picker-banners > .slaba-mista-tile { grid-column: 2; min-width: 0; }
+/* Compact resume-card to match slaba-mista-tile size: single row layout,
+   secondary "Začít znovu" + stage detail hidden, "Pokračovat" stays as a
+   small inline action. */
+.picker-banners > .resume-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "icon text actions";
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  padding-top: 10px; /* override .resume-card { padding-top: 18px } */
+  border-left-width: 4px;
+}
+.picker-banners > .resume-card .resume-icon { font-size: 1.4rem; }
+.picker-banners > .resume-card .resume-title { font-size: 0.88rem; margin: 0; }
+.picker-banners > .resume-card .resume-meta { margin: 0; gap: 5px; }
+.picker-banners > .resume-card .resume-meta .subsection-id { font-size: 0.66rem; padding: 1px 6px; }
+.picker-banners > .resume-card .resume-pattern { display: none; }
+.picker-banners > .resume-card .resume-stage { display: none; }
+.picker-banners > .resume-card .resume-actions { margin: 0 18px 0 0; gap: 4px; }
+.picker-banners > .resume-card #resume-restart { display: none; }
+.picker-banners > .resume-card #resume-continue {
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  flex: 0 0 auto;
+}
+.picker-banners > .resume-card .resume-dismiss {
+  top: 2px; right: 4px; width: 20px; height: 20px; font-size: 0.78rem;
+}
+@media (max-width: 600px) {
+  .picker-banners { grid-template-columns: 1fr; }
+  .picker-banners > .resume-card,
+  .picker-banners > .slaba-mista-tile { grid-column: auto; }
+}
 
 .resume-card {
   position: relative;
@@ -3800,8 +3886,8 @@ body.theme-dark .paywall-promo-msg.is-success,
 }
 .auto-tile {
   position: relative;
-  background: var(--card-bg, #fff);
-  border: 2px solid var(--border, rgba(0,0,0,0.08));
+  background: var(--bg-elev);
+  border: 2px solid var(--border);
   border-radius: 14px;
   padding: 14px 16px;
   text-align: left;
