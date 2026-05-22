@@ -429,10 +429,75 @@ function phon(word) {
   return PHON_PAST_PP[key] || word;
 }
 
+// ---------- TTS voice selection ----------
+// Some platforms (older Android without Google English TTS data, Windows
+// without an English language pack, occasionally Firefox) ignore `utter.lang`
+// and use the system default voice, which for Czech users means English text
+// gets read with Czech phonetics ("written" → [vrɪtːɛn]). Mitigation: pick an
+// explicit English voice from getVoices() when one is available, and warn the
+// user once when no English voice exists at all.
+function _allVoices() {
+  if (!('speechSynthesis' in window)) return [];
+  try { return window.speechSynthesis.getVoices() || []; } catch (_) { return []; }
+}
+
+function pickEnglishVoice(lang) {
+  const voices = _allVoices();
+  if (!voices.length) return null;
+  const wanted = (lang || 'en-GB').toLowerCase();
+  // 1) Exact match
+  let v = voices.find((vv) => (vv.lang || '').toLowerCase() === wanted);
+  if (v) return v;
+  // 2) Same region prefix (en-us vs en-US-variant)
+  const region = wanted.split('-')[1];
+  if (region) {
+    v = voices.find((vv) => (vv.lang || '').toLowerCase().startsWith('en-' + region));
+    if (v) return v;
+  }
+  // 3) Any English voice — prefer non-novelty (no "Bells", "Trinoids" etc.) by
+  //    sorting localService voices first (those are the OS-quality ones).
+  const enVoices = voices.filter((vv) => (vv.lang || '').toLowerCase().startsWith('en'));
+  if (enVoices.length === 0) return null;
+  enVoices.sort((a, b) => (b.localService ? 1 : 0) - (a.localService ? 1 : 0));
+  return enVoices[0];
+}
+
+let _noEnVoiceWarned = false;
+function _checkEnglishVoiceAvailable() {
+  if (_noEnVoiceWarned) return;
+  if (localStorage.getItem('noEnVoiceWarned') === 'true') { _noEnVoiceWarned = true; return; }
+  const voices = _allVoices();
+  if (!voices.length) return; // not loaded yet — try again later
+  const hasEn = voices.some((v) => (v.lang || '').toLowerCase().startsWith('en'));
+  if (hasEn) { _noEnVoiceWarned = true; return; }
+  const ua = navigator.userAgent || '';
+  let hint = '🔊 Nemáš nainstalovaný anglický hlas — slovesa se proto čtou „česky". ';
+  if (/Android/i.test(ua)) hint += 'Android: Nastavení → Jazyk → Text-to-speech → Google → Stáhnout English.';
+  else if (/iPad|iPhone|iPod/.test(ua)) hint += 'iOS: Nastavení → Obecné → Jazyk a oblast → přidat English.';
+  else if (/Windows/i.test(ua)) hint += 'Windows: Nastavení → Čas a jazyk → Jazyk → Přidat English.';
+  else hint += 'Nainstaluj si anglický TTS hlas v systému.';
+  if (typeof toast === 'function') toast(hint, 'info', 9000);
+  else console.warn('[tts]', hint);
+  localStorage.setItem('noEnVoiceWarned', 'true');
+  _noEnVoiceWarned = true;
+}
+
+// getVoices() is async on Chromium — fires 'voiceschanged' once the list loads.
+// Some Android WebViews never fire it, so also probe on a short timeout.
+if ('speechSynthesis' in window) {
+  try {
+    window.speechSynthesis.addEventListener('voiceschanged', () => _checkEnglishVoiceAvailable());
+  } catch (_) {}
+  setTimeout(() => _checkEnglishVoiceAvailable(), 1500);
+  setTimeout(() => _checkEnglishVoiceAvailable(), 4000);
+}
+
 function speak(text, dialect) {
   if (!('speechSynthesis' in window)) return;
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = dialect === 'AmE' ? 'en-US' : 'en-GB';
+  const v = pickEnglishVoice(utter.lang);
+  if (v) utter.voice = v;
   utter.rate = 0.9;
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utter);
@@ -2559,6 +2624,8 @@ function speakEn(text) {
     if (!('speechSynthesis' in window) || autoSession?.aborted || autoSession?.paused) return resolve();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = state.dialect === 'AmE' ? 'en-US' : 'en-GB';
+    const v = pickEnglishVoice(u.lang);
+    if (v) u.voice = v;
     u.rate = autoSession?.tempo?.rateEn || 0.85;
     u.onend = () => resolve();
     u.onerror = () => resolve();
