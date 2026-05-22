@@ -3396,11 +3396,29 @@ async function init() {
   $('#theme-toggle-menu')?.addEventListener('click', toggleTheme);
   $('#sound-toggle-menu')?.addEventListener('click', toggleSoundEffects);
   applySoundEffectsUI();
-  $('#dialect-select').value = state.dialect;
-  $('#dialect-select').addEventListener('change', (e) => {
-    state.dialect = e.target.value;
+  function applyDialectUI() {
+    const sel = $('#dialect-select');
+    if (sel) sel.value = state.dialect;
+    const icon = $('#dialect-toggle-menu-icon');
+    const label = $('#dialect-toggle-menu-label');
+    if (state.dialect === 'AmE') {
+      if (icon) icon.textContent = '🇺🇸';
+      if (label) label.textContent = 'Varianta: americká (AmE)';
+    } else {
+      if (icon) icon.textContent = '🇬🇧';
+      if (label) label.textContent = 'Varianta: britská (BrE)';
+    }
+  }
+  function setDialect(value) {
+    state.dialect = value === 'AmE' ? 'AmE' : 'BrE';
     localStorage.setItem('dialect', state.dialect);
+    applyDialectUI();
     renderBrowse(); renderFlashcards(); renderLessonPicker();
+  }
+  applyDialectUI();
+  $('#dialect-select').addEventListener('change', (e) => setDialect(e.target.value));
+  $('#dialect-toggle-menu')?.addEventListener('click', () => {
+    setDialect(state.dialect === 'AmE' ? 'BrE' : 'AmE');
   });
 
   // Lesson

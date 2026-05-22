@@ -2278,6 +2278,13 @@ body {
 }
 .dialect-switch select { padding: 7px 12px; }
 
+/* On mobile, move dialect toggle from header into the menu. */
+.menu-item-mobile { display: none; }
+@media (max-width: 640px) {
+  .dialect-switch { display: none; }
+  .menu-item-mobile { display: block; }
+}
+
 /* ----- Generic glass surface utility ----- */
 .section-group,
 .group-card,
@@ -2654,8 +2661,11 @@ body.is-premium .menu-premium-badge { display: none; }
 /* ----- Cloud sync menu item ----- */
 .menu-divider {
   border: 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
   margin: 6px 8px;
+}
+[data-theme="dark"] .menu-divider {
+  border-top-color: rgba(255, 255, 255, 0.06);
 }
 
 /* Style toggle (Pracující / Student) in menu */
