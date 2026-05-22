@@ -2243,13 +2243,18 @@ body {
 }
 
 .menu-dropdown {
-  background: var(--glass-bg-strong);
+  /* Near-opaque so menu items don't bleed into page content below.
+     Glass blur is kept as a subtle fallback. */
+  background: rgba(255, 255, 255, 0.98);
   -webkit-backdrop-filter: var(--glass-blur-lg);
   backdrop-filter: var(--glass-blur-lg);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow-lg);
   border-radius: var(--radius);
   padding: 8px;
+}
+[data-theme="dark"] .menu-dropdown {
+  background: rgba(28, 24, 40, 0.98);
 }
 .menu-item:hover { background: rgba(74, 144, 226, 0.15); }
 
