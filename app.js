@@ -685,12 +685,17 @@ function setView(view) {
   const target = view ? document.getElementById(`view-${view}`) : null;
   if (!target) return;
   state.currentView = view;
+  // Remember last view across reloads so refresh keeps the user where they were.
+  try { localStorage.setItem('lastView', view); } catch (_) {}
   $$('.view').forEach((v) => v.classList.remove('active'));
   target.classList.add('active');
   $('#menu-dropdown').classList.remove('open');
   $('#menu-btn').setAttribute('aria-expanded', 'false');
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
+
+// Valid views that can be restored on reload. Keep in sync with #view-* sections.
+const RESTORABLE_VIEWS = new Set(['lesson', 'browse', 'flashcards', 'quiz', 'auto']);
 
 // ============================================================
 // LESSON (guided 3-stage flow)
@@ -3423,6 +3428,14 @@ async function init() {
       if (next && !next.classList.contains('hidden')) { e.preventDefault(); next.click(); }
     }
   });
+
+  // Restore last visited view across reload (so refresh doesn't always dump
+  // the user back to Lekce). Deep links and payment returns below can still
+  // override by calling setView() themselves.
+  try {
+    const last = localStorage.getItem('lastView');
+    if (last && last !== 'lesson' && RESTORABLE_VIEWS.has(last)) setView(last);
+  } catch (_) {}
 
   // Handle Stripe Checkout return (?premium=success|cancel)
   handlePaymentReturn();
