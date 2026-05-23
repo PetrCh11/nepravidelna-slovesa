@@ -12,6 +12,21 @@ const FREE_SUB_IDS = new Set(FREE_SUB_BASE); // kept for backwards-compat; new c
 // Each milestone offers the user a CHOICE of 3 curated groups (or wildcard at day 30).
 // Picked groups are added to state.streakRewards.unlockedSubIds permanently,
 // even if the streak later breaks. Cap = 4 milestones × 1 group + 3 base = 7 free groups max.
+// Trophies — visual "medal cabinet" on the streak pill. Derived from
+// maxStreakReached (never lost, even if streak breaks). The first threshold
+// matches the first STREAK_MILESTONES entry by design.
+const STREAK_TROPHIES = [
+  { days: 3,   icon: '🔥', label: '3 dny v řadě' },
+  { days: 7,   icon: '⭐', label: '7 dní — týden v kuse' },
+  { days: 14,  icon: '💎', label: '14 dní — dva týdny' },
+  { days: 30,  icon: '👑', label: '30 dní — měsíc' },
+  { days: 100, icon: '🏆', label: '100 dní — stovka' },
+  { days: 365, icon: '🐉', label: '365 dní — rok' },
+];
+function earnedTrophies(maxStreak) {
+  return STREAK_TROPHIES.filter((t) => maxStreak >= t.days);
+}
+
 const STREAK_MILESTONES = [
   {
     days: 3,
@@ -2105,8 +2120,12 @@ function claimMilestone(day, subId) {
   try { track('streak_reward_claimed', { day, subId }); } catch (_) {}
   cloud.pushSoon();
   closeStreakRewardModal();
-  // Refresh lesson picker so the newly-unlocked group is no longer locked.
-  if (state.currentView === 'lesson' && !state.lesson) renderLessonPicker();
+  // Refresh lesson picker so the newly-unlocked group is no longer locked,
+  // and stats strip so the new trophy appears next to the streak number.
+  if (state.currentView === 'lesson' && !state.lesson) {
+    renderLessonPicker();
+    renderStatsStrip();
+  }
   // If more pending milestones exist, queue next modal after a short beat.
   if (sr.pendingMilestones.length > 0) {
     const next = sr.pendingMilestones[0];
@@ -2185,15 +2204,15 @@ function checkStreakMilestones() {
     }
   });
   saveStreakRewards();
+  updateStreakRewardBadge();
+  // Refresh strip so a newly-earned trophy renders right away (independent of modal flow).
+  if (state.currentView === 'lesson' && !state.lesson) renderStatsStrip();
   if (added) {
-    updateStreakRewardBadge();
     // Auto-open modal only on lesson picker (don't interrupt mid-lesson).
     if (state.currentView === 'lesson' && !state.lesson) {
       const nextDay = sr.pendingMilestones[0];
       openStreakRewardModal(nextDay);
     }
-  } else {
-    updateStreakRewardBadge();
   }
 }
 function computeStreak() {
@@ -2247,12 +2266,22 @@ function renderStatsStrip() {
       <div class="stat-pill-label">zvládnutých sloves${s.inProgress ? ` · ${s.inProgress} v procesu` : ''}</div>
       <div class="stat-pill-bar"><div class="stat-pill-bar-fill" style="width:${pct}%"></div></div>
     </div>
-    <div class="stat-pill stat-pill-streak${streakBig}">
-      <div class="stat-pill-head">
-        <span class="stat-pill-icon">🔥</span>
-        <span class="stat-pill-num">${s.streak}</span>
+    <div class="stat-pill stat-pill-streak${streakBig}${earnedTrophies(Math.max(s.streak, state.streakRewards?.maxStreakReached || 0)).length ? ' has-trophies' : ''}">
+      <div class="stat-pill-streak-main">
+        <div class="stat-pill-head">
+          <span class="stat-pill-icon">🔥</span>
+          <span class="stat-pill-num">${s.streak}</span>
+        </div>
+        <div class="stat-pill-label">${s.streak === 0 ? 'začni dnes!' : plurDays(s.streak)}</div>
       </div>
-      <div class="stat-pill-label">${s.streak === 0 ? 'začni dnes!' : plurDays(s.streak)}</div>
+      ${(() => {
+        const max = Math.max(s.streak, state.streakRewards?.maxStreakReached || 0);
+        const trophies = earnedTrophies(max);
+        if (trophies.length === 0) return '';
+        return `<div class="stat-pill-trophies" aria-label="Získané trofeje">
+          ${trophies.map((t) => `<span class="trophy" title="${t.label}">${t.icon}</span>`).join('')}
+        </div>`;
+      })()}
     </div>
     <div class="stat-pill stat-pill-groups">
       <div class="stat-pill-head">
