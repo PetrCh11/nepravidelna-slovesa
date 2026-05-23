@@ -1929,6 +1929,45 @@ function persistProgress() {
   cloud.pushSoon();
 }
 
+function openSettingsModal() {
+  const modal = $('#settings-modal');
+  if (!modal) return;
+  // Show "Spravovat předplatné" only for signed-in premium users.
+  updatePortalBtn();
+  // Close the menu dropdown if open.
+  try { $('#menu-dropdown').classList.remove('open'); } catch (_) {}
+  modal.classList.remove('hidden');
+}
+function closeSettingsModal() {
+  const modal = $('#settings-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// Wipe all learning progress: per-verb mastery, study-day streak, and any
+// in-flight lesson. If signed in, also clears the user's Firestore doc.
+async function resetProgress() {
+  const signedIn = !!(state.user);
+  const msg = signedIn
+    ? 'Opravdu chceš vynulovat veškerý pokrok? Smaže se i v cloudu (Google účet).\n\nTuto akci nelze vrátit zpět.'
+    : 'Opravdu chceš vynulovat veškerý pokrok?\n\nTuto akci nelze vrátit zpět.';
+  if (!confirm(msg)) return;
+  try {
+    state.progress = {};
+    localStorage.setItem('progress', '{}');
+    localStorage.setItem('studyDays', '[]');
+    localStorage.removeItem(ACTIVE_LESSON_KEY);
+    if (signedIn) {
+      try { await cloud.clearCloudProgress(); } catch (e) { console.error(e); }
+    }
+    try { track('reset_progress', { signedIn }); } catch (_) {}
+    try { $('#menu-dropdown').classList.remove('open'); } catch (_) {}
+    renderLessonPicker();
+  } catch (e) {
+    console.error('Reset failed', e);
+    alert('Něco se nepovedlo. Zkus to znovu.');
+  }
+}
+
 // ---------- Macro progress: mastery counts, group medals, study streak ----------
 function loadStudyDays() {
   try { return new Set(JSON.parse(localStorage.getItem('studyDays') || '[]')); } catch { return new Set(); }
@@ -2995,7 +3034,7 @@ function applyPremiumUI() {
 }
 
 function updatePortalBtn() {
-  const btn = $('#portal-btn');
+  const btn = $('#settings-portal');
   if (!btn) return;
   // Show only for signed-in premium users (promo redemptions also see it; backend will return no_customer for those)
   if (cloud.getCurrentUser() && state.premium) btn.classList.remove('hidden');
@@ -3006,7 +3045,7 @@ async function openCustomerPortal() {
   if (!BACKEND_URL) { toast('Backend není dostupný.', 'error'); return; }
   const user = cloud.getCurrentUser();
   if (!user) { toast('Nejdřív se přihlas přes Google.', 'error'); return; }
-  const btn = $('#portal-btn');
+  const btn = $('#settings-portal');
   const origHtml = btn?.innerHTML;
   if (btn) { btn.disabled = true; btn.innerHTML = '<span>Otevírám…</span>'; }
   try {
@@ -3321,7 +3360,7 @@ async function init() {
     renderBrowse();
     renderFlashcards();
   });
-  $('#portal-btn')?.addEventListener('click', openCustomerPortal);
+  $('#settings-portal')?.addEventListener('click', openCustomerPortal);
   $('#google-btn')?.addEventListener('click', () => {
     if (cloud.getCurrentUser()) {
       if (confirm('Opravdu se chceš odhlásit?')) cloud.signOutNow();
@@ -3419,6 +3458,15 @@ async function init() {
   $('#dialect-select').addEventListener('change', (e) => setDialect(e.target.value));
   $('#dialect-toggle-menu')?.addEventListener('click', () => {
     setDialect(state.dialect === 'AmE' ? 'BrE' : 'AmE');
+  });
+  $('#settings-btn')?.addEventListener('click', openSettingsModal);
+  $('#settings-close')?.addEventListener('click', closeSettingsModal);
+  $('#settings-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'settings-modal') closeSettingsModal();
+  });
+  $('#settings-reset')?.addEventListener('click', () => {
+    closeSettingsModal();
+    resetProgress();
   });
 
   // Lesson

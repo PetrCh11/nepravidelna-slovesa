@@ -130,9 +130,8 @@
               </div>
             </div>
             <hr class="menu-divider" />
-            <button class="menu-item menu-portal hidden" id="portal-btn" role="menuitem">
-              <span class="menu-portal-icon">💳</span>
-              <span class="menu-portal-label">Spravovat předplatné</span>
+            <button class="menu-item" id="settings-btn" role="menuitem" type="button">
+              ⚙️ Nastavení
             </button>
             <button class="menu-item menu-cloud" id="cloud-btn" role="menuitem">
               <span class="cloud-line">
@@ -398,6 +397,31 @@
           <button class="btn btn-primary" id="paywall-promo-submit" type="button">Uplatnit</button>
           <div class="paywall-promo-msg" id="paywall-promo-msg"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings modal: progress reset, subscription management -->
+  <div class="modal-backdrop hidden" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal">
+      <button class="modal-close" id="settings-close" aria-label="Zavřít">×</button>
+      <div class="modal-emoji">⚙️</div>
+      <h2 class="modal-title" id="settings-title">Nastavení</h2>
+      <div class="settings-list">
+        <button class="settings-item hidden" id="settings-portal" type="button">
+          <span class="settings-item-icon">💳</span>
+          <span class="settings-item-text">
+            <span class="settings-item-name">Spravovat předplatné</span>
+            <span class="settings-item-desc">Faktury, platební karta, zrušení</span>
+          </span>
+        </button>
+        <button class="settings-item settings-item-danger" id="settings-reset" type="button">
+          <span class="settings-item-icon">🗑️</span>
+          <span class="settings-item-text">
+            <span class="settings-item-name">Vynulovat pokrok</span>
+            <span class="settings-item-desc">Smaže všechna zvládnutá slovesa a sérii dnů</span>
+          </span>
+        </button>
       </div>
     </div>
   </div>

@@ -126,6 +126,28 @@ function mergeIntoLocal(remote) {
   return { shouldPush };
 }
 
+// Wipe the user's cloud progress + study days. Replaces the whole doc
+// (no merge) so nested keys under `progress` are actually deleted.
+// Preserves `style` by re-writing it from localStorage if present.
+export async function clearCloudProgress() {
+  const user = auth.currentUser;
+  if (!user) return;
+  clearTimeout(pushDebounceTimer);
+  setSyncStatus('syncing');
+  try {
+    const ref = doc(db, 'users', user.uid);
+    const style = localStorage.getItem('style');
+    const payload = { progress: {}, studyDays: [], updatedAt: Date.now() };
+    if (style === 'pro' || style === 'student') payload.style = style;
+    suppressPushOnce = true;
+    await setDoc(ref, payload); // no merge → progress map fully replaced with {}
+    setSyncStatus('synced');
+  } catch (e) {
+    console.error('Clear cloud failed', e);
+    setSyncStatus('error');
+  }
+}
+
 export function pushSoon() {
   if (!auth.currentUser) return;
   clearTimeout(pushDebounceTimer);

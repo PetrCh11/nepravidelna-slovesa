@@ -2278,6 +2278,35 @@ body {
 }
 .dialect-switch select { padding: 7px 12px; }
 
+.menu-item-danger { color: var(--danger, #d04848); }
+.menu-item-danger:hover { background: rgba(208, 72, 72, 0.12); }
+
+/* Settings modal list */
+.settings-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.settings-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-elev, rgba(255,255,255,0.6));
+  border: 1px solid var(--border, rgba(0,0,0,0.1));
+  border-radius: 12px;
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.settings-item:hover { background: var(--accent-soft, rgba(74,144,226,0.1)); }
+.settings-item:active { transform: scale(0.99); }
+.settings-item-icon { font-size: 1.4rem; flex: 0 0 auto; }
+.settings-item-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.settings-item-name { font-weight: 600; font-size: 0.95rem; }
+.settings-item-desc { font-size: 0.8rem; opacity: 0.7; }
+.settings-item-danger { color: var(--danger, #d04848); }
+.settings-item-danger:hover { background: rgba(208, 72, 72, 0.12); }
+
 /* On mobile, move dialect toggle from header into the menu. */
 .menu-item-mobile { display: none; }
 @media (max-width: 640px) {
