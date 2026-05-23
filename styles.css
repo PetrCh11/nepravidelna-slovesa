@@ -1052,6 +1052,9 @@ main { flex: 1; padding: 28px 0 48px; }
   cursor: default;
 }
 .stat-pill-trophies .trophy:hover { transform: scale(1.25); }
+/* Streak label has two variants for the zero state — desktop = explanatory,
+   mobile = original short text. Toggled via the mobile breakpoint below. */
+.streak-lbl-m { display: none; }
 @keyframes flame-flicker {
   0%, 100% { transform: scale(1) rotate(-2deg); }
   50%      { transform: scale(1.08) rotate(2deg); }
@@ -1076,6 +1079,8 @@ main { flex: 1; padding: 28px 0 48px; }
     max-width: 78px;
     margin-left: 4px;
   }
+  .streak-lbl-d { display: none; }
+  .streak-lbl-m { display: inline; }
 }
 [data-theme="dark"] .group-card {
   --sub-bg: hsl(var(--sub-hue) 40% 16%);
