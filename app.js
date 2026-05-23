@@ -2125,6 +2125,7 @@ function openStreakRewardModal(milestoneDay) {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'srm-option';
+    card.style.setProperty('--sub-hue', hueOf(subId));
     const examples = (sub.verbs || []).slice(0, 3).map((v) => v.inf).join(', ');
     const count = (sub.verbs || []).length;
     const countLabel = count === 1 ? '1 sloveso' : (count < 5 ? `${count} slovesa` : `${count} sloves`);

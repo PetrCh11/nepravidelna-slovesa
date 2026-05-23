@@ -2363,8 +2363,10 @@ body {
   align-items: stretch;
   gap: 8px;
   padding: 14px 14px 12px;
-  background: var(--bg-elev, rgba(255,255,255,0.7));
-  border: 1.5px solid var(--border, rgba(0,0,0,0.1));
+  /* Soft tint matching the section's hue (--sub-hue is set per-card from JS,
+     mirroring the same hue used elsewhere in the app for that subsection). */
+  background: linear-gradient(135deg, hsl(var(--sub-hue, 210) 70% 96%), var(--bg-elev, rgba(255,255,255,0.7)) 80%);
+  border: 1.5px solid hsl(var(--sub-hue, 210) 55% 80%);
   border-radius: 14px;
   cursor: pointer;
   text-align: left;
@@ -2372,9 +2374,13 @@ body {
   color: var(--text);
   transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
 }
+[data-theme="dark"] .srm-option {
+  background: linear-gradient(135deg, hsl(var(--sub-hue, 210) 30% 20%), var(--bg-elev, rgba(255,255,255,0.05)) 80%);
+  border-color: hsl(var(--sub-hue, 210) 35% 40%);
+}
 .srm-option:hover {
-  border-color: var(--accent, #4a90e2);
-  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
+  border-color: hsl(var(--sub-hue, 210) 65% 50%);
+  box-shadow: 0 4px 12px hsl(var(--sub-hue, 210) 60% 50% / 0.2);
   transform: translateY(-2px);
 }
 .srm-option-pattern {
@@ -2395,7 +2401,7 @@ body {
 }
 .srm-option-cta {
   align-self: flex-start;
-  background: var(--accent, #4a90e2);
+  background: hsl(var(--sub-hue, 210) 65% 45%);
   color: white;
   border: 0;
   border-radius: 999px;
@@ -2404,7 +2410,7 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
-.srm-option:hover .srm-option-cta { background: var(--accent-strong, #357abd); }
+.srm-option:hover .srm-option-cta { background: hsl(var(--sub-hue, 210) 70% 38%); }
 .srm-options.srm-wildcard .srm-option {
   flex-direction: row;
   align-items: center;
