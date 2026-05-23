@@ -286,17 +286,19 @@ const TEXTS = {
   },
   streak_foot_h:    { pro: 'Tip: vybranou skupinu si můžeš procvičovat hned po výběru.',
                       student: 'Ber si tu, na kterou se nejvíc těšíš. 🎒' },
-  // Streak pill hint texts (bottom row inside the streak stat pill).
-  streak_hint_zero: { pro: '💡 3 dny v řadě = nová skupina zdarma.',
-                      student: '💡 Vydržíš 3 dny a máš novou skupinu zadara! 🎁' },
-  streak_hint_next: {
-    pro: (n, word) => `🎁 Další odměna za ${n} ${word}.`,
-    student: (n, word) => `🎁 Za ${n} ${word} máš novou skupinu! 🚀`,
+  // Streak pill label — inline smart text on the existing label row.
+  streak_label_zero:    { pro: 'začni dnes · 🎁 3 dny = nová skupina',
+                          student: 'začni dnes! 🎁 za 3 dny nová skupina' },
+  streak_label_pending: { pro: '🎁 nečerpaná odměna — vyber si',
+                          student: '🎁 odměna čeká! vyber si ✨' },
+  streak_label_maxed:   {
+    pro:     (n, word) => `${n} ${word} · 👑 vše zvládnuto`,
+    student: (n, word) => `${n} ${word} · 👑 vše! 🐉`,
   },
-  streak_hint_pending: { pro: '🎁 Máš nečerpanou odměnu — vyber si skupinu.',
-                         student: '🎁 Máš odměnu! Klikni a vyber si skupinu. ✨' },
-  streak_hint_max:  { pro: '👑 Všechny milníky zvládnuty. Streak buď bez konce.',
-                      student: '👑 Vše odemčeno. Streak je teď tvá hrdost. 🐉' },
+  streak_label_progress: {
+    pro:     (n, nWord, r, rWord) => `${n} ${nWord} · 🎁 za ${r} ${rWord} nová`,
+    student: (n, nWord, r, rWord) => `${n} ${nWord} · 🎁 za ${r} ${rWord} nová!`,
+  },
 
   srm_title:     { pro: 'Zamíchané procvičení', student: 'Velký random 🎲' },
   srm_sub_some:  { pro: 'Zamíchaná procházka napříč celou sekcí. Vyber si rozsah.',
@@ -2290,18 +2292,17 @@ function plurDayWord(n) {
   return 'dní';
 }
 
-// Bottom row inside the streak pill — communicates the streak reward system
-// so users learn about it before they hit the day-3 modal.
-function streakHintText(streak, maxStreak) {
+// Inline smart label for the streak pill — communicates the streak reward
+// system without growing the pill (replaces the plain "N dní v řadě" label).
+function streakLabelText(streak, maxStreak) {
   const sr = state.streakRewards || {};
   const pending = (sr.pendingMilestones || []).length > 0;
-  if (pending) return t('streak_hint_pending');
-  // Find smallest milestone the user hasn't yet earned.
+  if (pending) return t('streak_label_pending');
   const next = STREAK_MILESTONES.find((m) => maxStreak < m.days);
-  if (!next) return t('streak_hint_max');
-  if (streak === 0) return t('streak_hint_zero');
+  if (!next) return t('streak_label_maxed', streak, plurDays(streak));
+  if (streak === 0) return t('streak_label_zero');
   const remaining = next.days - streak;
-  return t('streak_hint_next', remaining, plurDayWord(remaining));
+  return t('streak_label_progress', streak, plurDays(streak), remaining, plurDayWord(remaining));
 }
 function renderStatsStrip() {
   const c = $('#stats-strip');
@@ -2322,23 +2323,20 @@ function renderStatsStrip() {
     ${(() => {
       const max = Math.max(s.streak, state.streakRewards?.maxStreakReached || 0);
       const trophies = earnedTrophies(max);
-      const hint = streakHintText(s.streak, max);
+      const labelText = streakLabelText(s.streak, max);
       const trophyHTML = trophies.length
         ? `<div class="stat-pill-trophies" aria-label="Získané trofeje">${trophies.map((tr) => `<span class="trophy" title="${tr.label}">${tr.icon}</span>`).join('')}</div>`
         : '';
       return `
     <div class="stat-pill stat-pill-streak${streakBig}${trophies.length ? ' has-trophies' : ''}">
-      <div class="stat-pill-streak-top">
-        <div class="stat-pill-streak-main">
-          <div class="stat-pill-head">
-            <span class="stat-pill-icon">🔥</span>
-            <span class="stat-pill-num">${s.streak}</span>
-          </div>
-          <div class="stat-pill-label">${s.streak === 0 ? 'začni dnes!' : plurDays(s.streak)}</div>
+      <div class="stat-pill-streak-main">
+        <div class="stat-pill-head">
+          <span class="stat-pill-icon">🔥</span>
+          <span class="stat-pill-num">${s.streak}</span>
         </div>
-        ${trophyHTML}
+        <div class="stat-pill-label">${labelText}</div>
       </div>
-      <div class="stat-pill-streak-hint">${hint}</div>
+      ${trophyHTML}
     </div>`;
     })()}
     <div class="stat-pill stat-pill-groups">
