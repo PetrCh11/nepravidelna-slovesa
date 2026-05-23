@@ -287,9 +287,11 @@ const TEXTS = {
   streak_foot_h:    { pro: 'Tip: vybranou skupinu si můžeš procvičovat hned po výběru.',
                       student: 'Ber si tu, na kterou se nejvíc těšíš. 🎒' },
   // Streak pill label — inline smart text on the existing label row.
-  // Desktop shows the explanatory hint; mobile keeps the original short label.
-  streak_label_zero:    { pro: '<span class="streak-lbl-d">3 dny v řadě = nová skupina zdarma</span><span class="streak-lbl-m">začni dnes!</span>',
-                          student: '<span class="streak-lbl-d">3 dny v řadě = nová skupina zdarma! 🎁</span><span class="streak-lbl-m">začni dnes! 🎁</span>' },
+  // Desktop carries the full hint; mobile gets a shorter version of the same idea.
+  streak_label_zero:    {
+    pro:     '<span class="streak-lbl-d">začni dnes · 🎁 3 dny v řadě = nová skupina zdarma</span><span class="streak-lbl-m">🎁 3 dny = nová skupina</span>',
+    student: '<span class="streak-lbl-d">začni dnes · 🎁 3 dny v řadě = nová skupina zdarma</span><span class="streak-lbl-m">🎁 3 dny = nová skupina</span>',
+  },
   streak_label_pending: { pro: '🎁 nečerpaná odměna — vyber si',
                           student: '🎁 odměna čeká! vyber si ✨' },
   streak_label_maxed:   {
