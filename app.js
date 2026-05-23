@@ -2014,16 +2014,6 @@ function updateStreakRewardBadge() {
   btn.classList.toggle('hidden', !hasPending);
 }
 
-function findSubById(subId) {
-  if (!state.data) return null;
-  for (const sec of state.data.sections) {
-    for (const sub of sec.subsections) {
-      if (sub.id === subId) return sub;
-    }
-  }
-  return null;
-}
-
 // Returns subIds eligible for the wildcard milestone: all locked, not-yet-base, not yet streak-unlocked.
 function wildcardCandidates() {
   if (!state.data) return [];
