@@ -2359,12 +2359,35 @@ function againFullLesson() {
 // ============================================================
 // "Slabá místa" — cross-group daily review
 // ============================================================
-// Composition target: 10 verbs total = ~8 weak + ~2 spot-check greens.
+// Composition target: 10 verbs total = ~7 weak + ~3 spot-check greens.
 // Cold-start: returns null if there isn't enough history (< 5 verbs seen).
 // Selection is across all UNLOCKED groups (free for free users, all for premium).
 
 const SLABA_TARGET = 10;
+const SLABA_WEAK_MAX = 7;
 const SLABA_COLD_START_MIN = 5;
+
+// Editorial allowlist: green verbs from this set are preferred when filling
+// the green-filler slots. Comes from two sources:
+//   1) every verb in a "small" group (1-3 verbs) — those are pedagogically
+//      precious because they're either core (be, have, do) or oddballs
+//      (forget, lie) that lose visibility in random shuffling.
+//   2) curated list of high-frequency / commonly-confused verbs.
+// Soft preference: ordered first, then random rest. Doesn't override weak
+// scoring or replace any of the up-to-7 weak slots.
+const SLABA_PRIORITY_GREENS = new Set([
+  // small groups (≤ 3 verbs)
+  'be', 'become', 'bite', 'bleed', 'burn', 'come', 'deal', 'do',
+  'eat', 'fall', 'feed', 'forget', 'forgive', 'get', 'give', 'go',
+  'hide', 'lay', 'lead', 'learn', 'lie', 'lose', 'mean', 'pay',
+  'run', 'say', 'see', 'sell', 'shake', 'swear', 'take', 'tear',
+  'tell', 'wear',
+  // explicit editorial picks
+  'sink', 'stink', 'begin', 'blow', 'draw', 'rise', 'choose', 'steal',
+  'feel', 'sweep', 'keep', 'bring', 'catch', 'seek', 'bend', 'lend',
+  'hold', 'find', 'sting', 'hang', 'light', 'strike', 'bet', 'hit',
+  'hurt', 'quit', 'spread', 'upset',
+]);
 
 function selectSlabaMista() {
   if (!state.data) return null;
@@ -2396,13 +2419,17 @@ function selectSlabaMista() {
   });
   scored.sort((a, b) => b.score - a.score);
 
-  // Compose pool: take up to 8 weakest, fill rest with random greens.
-  // If weaks < 8, take all weaks. If no weaks, dose is all greens (light review).
-  const targetWeak = Math.min(8, scored.length);
+  // Compose pool: take up to 7 weakest, fill rest with greens (priority-first).
+  // If weaks < 7, take all weaks. If no weaks, dose is all greens (light review).
+  const targetWeak = Math.min(SLABA_WEAK_MAX, scored.length);
   const targetGreen = SLABA_TARGET - targetWeak;
   const picked = [];
   scored.slice(0, targetWeak).forEach((s) => picked.push(s.verb));
-  shuffle(greens).slice(0, targetGreen).forEach((v) => picked.push(v));
+  // Editorial preference: priority greens go first (shuffled among themselves),
+  // then any remaining slots get random non-priority greens.
+  const priorityGreens = shuffle(greens.filter((v) => SLABA_PRIORITY_GREENS.has(v.inf)));
+  const otherGreens    = shuffle(greens.filter((v) => !SLABA_PRIORITY_GREENS.has(v.inf)));
+  [...priorityGreens, ...otherGreens].slice(0, targetGreen).forEach((v) => picked.push(v));
   // If still under target (very few seen verbs), pad with any seen verb we
   // haven't included yet — better to have a slightly shorter dose than to
   // repeat the same verb.
