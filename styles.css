@@ -1021,6 +1021,19 @@ main { flex: 1; padding: 28px 0 48px; }
   animation: flame-flicker 1.6s ease-in-out infinite;
   filter: drop-shadow(0 0 6px hsl(20 95% 60% / 0.6));
 }
+/* Grace period: today missing but yesterday studied. Streak still visible
+   but at risk. Subtle amber border + dimmed flame. */
+.stat-pill-streak.is-pending {
+  outline: 1.5px dashed hsl(35 90% 60% / 0.7);
+  outline-offset: -2px;
+}
+.stat-pill-streak.is-pending .stat-pill-icon {
+  animation: none;
+  filter: grayscale(0.3) opacity(0.85);
+}
+[data-theme="dark"] .stat-pill-streak.is-pending {
+  outline-color: hsl(35 90% 55% / 0.6);
+}
 /* Trophy cabinet on the streak pill (right side). */
 .stat-pill-streak.has-trophies {
   flex-direction: row;

@@ -294,6 +294,12 @@ const TEXTS = {
   },
   streak_label_pending: { pro: '🎁 nečerpaná odměna — vyber si',
                           student: '🎁 odměna čeká! vyber si ✨' },
+  // Grace period: today missing, but yesterday studied — streak is still
+  // visible but at risk of breaking at midnight.
+  streak_label_grace:   {
+    pro:     (n, word) => `<span class="streak-lbl-d">${n} ${word} · ⏳ dodělej dnes, jinak streak končí</span><span class="streak-lbl-m">⏳ dodělej dnes</span>`,
+    student: (n, word) => `<span class="streak-lbl-d">${n} ${word} · ⏳ rychle dnes, ať to neztratíš!</span><span class="streak-lbl-m">⏳ rychle dnes!</span>`,
+  },
   streak_label_maxed:   {
     pro:     (n, word) => `${n} ${word} · 👑 vše zvládnuto`,
     student: (n, word) => `${n} ${word} · 👑 vše! 🐉`,
@@ -2258,16 +2264,34 @@ function computeStreak() {
   const days = loadStudyDays();
   let streak = 0;
   const cur = new Date();
-  // Streak = consecutive days back from today; if today missing, streak = 0.
+  // Grace period: if today is missing but yesterday is in studyDays, count
+  // from yesterday. This keeps the streak visible until the end of "today"
+  // so users don't see a sudden 0 right after midnight before they've had a
+  // chance to study. The streak still breaks at the next midnight if not
+  // refreshed (yesterday becomes the-day-before-yesterday → no grace).
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  if (!days.has(fmt(cur))) {
+    cur.setDate(cur.getDate() - 1);
+    if (!days.has(fmt(cur))) return 0;
+  }
   while (true) {
-    const y = cur.getFullYear(), m = String(cur.getMonth() + 1).padStart(2, '0'), d = String(cur.getDate()).padStart(2, '0');
-    const k = `${y}-${m}-${d}`;
-    if (days.has(k)) {
+    if (days.has(fmt(cur))) {
       streak++;
       cur.setDate(cur.getDate() - 1);
     } else break;
   }
   return streak;
+}
+// True when the visible streak depends on the grace period — i.e. today is
+// missing from studyDays but yesterday is present. Used by the UI to surface
+// "dodělej dnes" hint.
+function isStreakPending() {
+  const days = loadStudyDays();
+  const d = new Date();
+  const fmt = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+  if (days.has(fmt(d))) return false;
+  d.setDate(d.getDate() - 1);
+  return days.has(fmt(d));
 }
 function computeMacroStats() {
   const all = flattenVerbs(state.data);
@@ -2297,10 +2321,11 @@ function plurDayWord(n) {
 
 // Inline smart label for the streak pill — communicates the streak reward
 // system without growing the pill (replaces the plain "N dní v řadě" label).
-function streakLabelText(streak, maxStreak) {
+function streakLabelText(streak, maxStreak, pending) {
   const sr = state.streakRewards || {};
-  const pending = (sr.pendingMilestones || []).length > 0;
-  if (pending) return t('streak_label_pending');
+  const rewardPending = (sr.pendingMilestones || []).length > 0;
+  if (rewardPending) return t('streak_label_pending');
+  if (pending && streak > 0) return t('streak_label_grace', streak, plurDays(streak));
   const next = STREAK_MILESTONES.find((m) => maxStreak < m.days);
   if (!next) return t('streak_label_maxed', streak, plurDays(streak));
   if (streak === 0) return t('streak_label_zero');
@@ -2326,12 +2351,13 @@ function renderStatsStrip() {
     ${(() => {
       const max = Math.max(s.streak, state.streakRewards?.maxStreakReached || 0);
       const trophies = earnedTrophies(max);
-      const labelText = streakLabelText(s.streak, max);
+      const pending = isStreakPending();
+      const labelText = streakLabelText(s.streak, max, pending);
       const trophyHTML = trophies.length
         ? `<div class="stat-pill-trophies" aria-label="Získané trofeje">${trophies.map((tr) => `<span class="trophy" title="${tr.label}">${tr.icon}</span>`).join('')}</div>`
         : '';
       return `
-    <div class="stat-pill stat-pill-streak${streakBig}${trophies.length ? ' has-trophies' : ''}">
+    <div class="stat-pill stat-pill-streak${streakBig}${trophies.length ? ' has-trophies' : ''}${pending ? ' is-pending' : ''}">
       <div class="stat-pill-streak-main">
         <div class="stat-pill-head">
           <span class="stat-pill-icon">🔥</span>
