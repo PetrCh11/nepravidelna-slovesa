@@ -2070,7 +2070,8 @@ function updateStreakRewardBadge() {
   if (!btn) return;
   const sr = state.streakRewards || {};
   const hasPending = (sr.pendingMilestones || []).length > 0;
-  btn.classList.toggle('hidden', !hasPending);
+  // Premium gets everything — no need for the header gift badge.
+  btn.classList.toggle('hidden', !hasPending || !!state.premium);
 }
 
 // Returns subIds eligible for the wildcard milestone: all locked, not-yet-base, not yet streak-unlocked.
@@ -2236,6 +2237,15 @@ function checkStreakMilestones() {
   const streak = computeStreak();
   const sr = state.streakRewards || (state.streakRewards = loadStreakRewards());
   if (streak > (sr.maxStreakReached || 0)) sr.maxStreakReached = streak;
+  // Premium users already have everything unlocked — keep the trophy/max
+  // tracking (so a trophy still appears in the cabinet) but don't queue any
+  // unclaimed group rewards.
+  if (state.premium) {
+    saveStreakRewards();
+    updateStreakRewardBadge();
+    if (state.currentView === 'lesson' && !state.lesson) renderStatsStrip();
+    return;
+  }
   const eligible = STREAK_MILESTONES
     .filter((m) => sr.maxStreakReached >= m.days)
     .map((m) => m.days);
@@ -2324,6 +2334,13 @@ function plurDayWord(n) {
 function streakLabelText(streak, maxStreak, pending) {
   const sr = state.streakRewards || {};
   const rewardPending = (sr.pendingMilestones || []).length > 0;
+  // Premium has every group unlocked — drop the reward-related copy and just
+  // surface the streak number (or the grace warning when at risk).
+  if (state.premium) {
+    if (pending && streak > 0) return t('streak_label_grace', streak, plurDays(streak));
+    if (streak === 0) return 'začni dnes';
+    return `${streak} ${plurDays(streak)}`;
+  }
   if (rewardPending) return t('streak_label_pending');
   if (pending && streak > 0) return t('streak_label_grace', streak, plurDays(streak));
   const next = STREAK_MILESTONES.find((m) => maxStreak < m.days);
@@ -3382,6 +3399,10 @@ function toggleMenu() {
 
 function applyPremiumUI() {
   document.body.classList.toggle('is-premium', !!state.premium);
+  // Premium toggles the visibility of streak-reward UI — keep the header
+  // gift badge and the pill label in sync whenever premium state changes.
+  updateStreakRewardBadge();
+  if (state.data) renderStatsStrip();
 }
 
 function updatePortalBtn() {
