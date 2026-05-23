@@ -155,6 +155,20 @@ function mergeIntoLocal(remote) {
     if (localExtraUnlocks > 0) shouldPush = true;
   }
 
+  // Active lesson — LWW via activeLessonAt timestamp. 24h TTL applied on read.
+  const localAlAt = Number(localStorage.getItem('activeLessonAt') || 0) || 0;
+  const remoteAlAt = Number(remote.activeLessonAt || 0) || 0;
+  if (remoteAlAt > localAlAt) {
+    if (remote.activeLesson) {
+      try { localStorage.setItem('activeLesson', JSON.stringify(remote.activeLesson)); } catch {}
+    } else {
+      try { localStorage.removeItem('activeLesson'); } catch {}
+    }
+    try { localStorage.setItem('activeLessonAt', String(remoteAlAt)); } catch {}
+  } else if (localAlAt > remoteAlAt) {
+    shouldPush = true;
+  }
+
   localStorage.setItem('progress', JSON.stringify(merged));
   localStorage.setItem('studyDays', JSON.stringify(mergedDays));
   localStorage.setItem('streakRewards', JSON.stringify(mergedSR));
@@ -180,6 +194,8 @@ export async function clearCloudProgress() {
       progress: {},
       studyDays: [],
       streakRewards: { unlockedSubIds: [], claimedMilestones: [], pendingMilestones: [], maxStreakReached: 0 },
+      activeLesson: null,
+      activeLessonAt: Date.now(),
       updatedAt: Date.now(),
     };
     if (style === 'pro' || style === 'student') payload.style = style;
@@ -209,9 +225,18 @@ async function pushNow() {
     const style = localStorage.getItem('style');
     let streakRewards = null;
     try { streakRewards = JSON.parse(localStorage.getItem('streakRewards') || 'null'); } catch {}
+    // Active lesson sync — LWW via activeLessonAt timestamp. `null` is a valid
+    // value meaning "cleared on this device at activeLessonAt".
+    let activeLesson = null;
+    try { activeLesson = JSON.parse(localStorage.getItem('activeLesson') || 'null'); } catch {}
+    const activeLessonAt = Number(localStorage.getItem('activeLessonAt') || 0) || 0;
     const payload = { progress, studyDays, updatedAt: Date.now() };
     if (style === 'pro' || style === 'student') payload.style = style;
     if (streakRewards) payload.streakRewards = streakRewards;
+    if (activeLessonAt > 0) {
+      payload.activeLesson = activeLesson; // either the object or null
+      payload.activeLessonAt = activeLessonAt;
+    }
     const ref = doc(db, 'users', user.uid);
     suppressPushOnce = true; // the snapshot we'll receive is from our own write
     await setDoc(ref, payload, { merge: true });

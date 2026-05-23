@@ -1115,6 +1115,10 @@ function startSectionReview(sec, customVerbs = null) {
 // Resume / persistence of in-progress lesson
 // ============================================================
 const ACTIVE_LESSON_KEY = 'activeLesson';
+const ACTIVE_LESSON_AT_KEY = 'activeLessonAt'; // separate timestamp so 'cleared' state is also datable
+// Lessons older than this are ignored on resume (per-device + cross-device sync). Avoids
+// surfacing stale state when one device left a lesson open days ago.
+const ACTIVE_LESSON_TTL_MS = 24 * 60 * 60 * 1000;
 
 function persistActiveLesson() {
   const L = state.lesson;
@@ -1126,6 +1130,7 @@ function persistActiveLesson() {
       step1Wrong: p.step1Wrong instanceof Set ? Array.from(p.step1Wrong) : (p.step1Wrong || []),
     };
   });
+  const now = Date.now();
   const data = {
     subId: L.sub.id,
     subPattern: L.sub.pattern,
@@ -1135,20 +1140,36 @@ function persistActiveLesson() {
     markedHard: Array.from(L.markedHard || []),
     perVerb,
     verbInfs: L.verbs.map((v) => v.inf), // preserves filtered subset on resume
-    updatedAt: Date.now(),
+    updatedAt: now,
   };
-  try { localStorage.setItem(ACTIVE_LESSON_KEY, JSON.stringify(data)); } catch {}
+  try {
+    localStorage.setItem(ACTIVE_LESSON_KEY, JSON.stringify(data));
+    localStorage.setItem(ACTIVE_LESSON_AT_KEY, String(now));
+  } catch {}
+  cloud.pushSoon();
 }
 
 function clearActiveLesson() {
-  try { localStorage.removeItem(ACTIVE_LESSON_KEY); } catch {}
+  try {
+    localStorage.removeItem(ACTIVE_LESSON_KEY);
+    localStorage.setItem(ACTIVE_LESSON_AT_KEY, String(Date.now())); // tombstone — null state with timestamp
+  } catch {}
+  cloud.pushSoon();
 }
 
 function getActiveLesson() {
   try {
     const raw = localStorage.getItem(ACTIVE_LESSON_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const data = JSON.parse(raw);
+    if (data && typeof data.updatedAt === 'number') {
+      if (Date.now() - data.updatedAt > ACTIVE_LESSON_TTL_MS) {
+        // Drop stale resume state silently.
+        try { localStorage.removeItem(ACTIVE_LESSON_KEY); } catch {}
+        return null;
+      }
+    }
+    return data;
   } catch { return null; }
 }
 
@@ -2148,6 +2169,7 @@ async function resetProgress() {
     localStorage.setItem('progress', '{}');
     localStorage.setItem('studyDays', '[]');
     localStorage.removeItem(ACTIVE_LESSON_KEY);
+    localStorage.setItem(ACTIVE_LESSON_AT_KEY, String(Date.now())); // tombstone propagates to other devices
     state.streakRewards = { unlockedSubIds: [], claimedMilestones: [], pendingMilestones: [], maxStreakReached: 0 };
     saveStreakRewards();
     updateStreakRewardBadge();
@@ -3593,6 +3615,7 @@ async function init() {
     updateStreakRewardBadge();
     applyPremiumUI();
     updatePortalBtn();
+    // Resume card visibility depends on cloud-synced activeLesson — re-render below picks it up.
     // Reflect cloud-synced style preference in menu toggle + texts
     const syncedStyle = localStorage.getItem('style');
     if (syncedStyle === 'pro' || syncedStyle === 'student') {
