@@ -3599,8 +3599,22 @@ async function init() {
   // Cloud sync wiring
   cloud.setListeners({
     onUser: (user) => {
+      const wasSignedIn = !!state.user;
       state.user = user || null;
       updateCloudUI(user);
+      // Sign-out: revoke server-authoritative entitlements locally.
+      // Progress / studyDays / streakRewards stay so the user doesn't lose
+      // learning state by signing out and back in, but premium is gated on
+      // the Stripe webhook → Firestore link, so it must drop immediately.
+      if (wasSignedIn && !user) {
+        state.premium = false;
+        localStorage.setItem('premium', 'false');
+        applyPremiumUI();
+        updatePortalBtn();
+        renderLessonPicker();
+        renderBrowse();
+        renderFlashcards();
+      }
       // First-time signed-in user → ask preferred tone
       if (user && localStorage.getItem('styleAsked') !== 'true') {
         // Slight delay so it doesn't fight the sign-in popup teardown
