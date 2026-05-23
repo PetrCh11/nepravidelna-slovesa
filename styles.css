@@ -1063,6 +1063,19 @@ main { flex: 1; padding: 28px 0 48px; }
   .stat-pill-num { font-size: 1.3rem; }
   .stat-pill-label { flex: 1; text-align: right; font-size: 0.75rem; }
   .stat-pill-bar { display: none; }
+  /* Streak pill on mobile: keep original single-row height, trophies inline at the end, smaller. */
+  .stat-pill-streak.has-trophies { gap: 8px; }
+  .stat-pill-streak.has-trophies .stat-pill-streak-main {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .stat-pill-streak.has-trophies .stat-pill-trophies {
+    font-size: 0.78rem;
+    gap: 1px 2px;
+    max-width: 78px;
+    margin-left: 4px;
+  }
 }
 [data-theme="dark"] .group-card {
   --sub-bg: hsl(var(--sub-hue) 40% 16%);
