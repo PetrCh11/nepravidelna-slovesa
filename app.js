@@ -1117,8 +1117,9 @@ function startSectionReview(sec, customVerbs = null) {
 const ACTIVE_LESSON_KEY = 'activeLesson';
 const ACTIVE_LESSON_AT_KEY = 'activeLessonAt'; // separate timestamp so 'cleared' state is also datable
 // Lessons older than this are ignored on resume (per-device + cross-device sync). Avoids
-// surfacing stale state when one device left a lesson open days ago.
-const ACTIVE_LESSON_TTL_MS = 24 * 60 * 60 * 1000;
+// surfacing stale state when one device left a lesson open days ago. 72h covers a long
+// weekend off the app without dropping in-progress work.
+const ACTIVE_LESSON_TTL_MS = 72 * 60 * 60 * 1000;
 
 function persistActiveLesson() {
   const L = state.lesson;
