@@ -5,7 +5,58 @@
 import * as cloud from './cloud.js';
 
 // Subsections free without premium. Premium unlocks all 106 verbs across all groups.
-const FREE_SUB_IDS = new Set(['1.1.0', '1.2.1', '1.2.5']);
+const FREE_SUB_BASE = ['1.1.0', '1.2.1', '1.2.5'];
+const FREE_SUB_IDS = new Set(FREE_SUB_BASE); // kept for backwards-compat; new code uses getFreeSubIds()
+
+// ----- Streak rewards (Phase B in product spec) -----
+// Each milestone offers the user a CHOICE of 3 curated groups (or wildcard at day 30).
+// Picked groups are added to state.streakRewards.unlockedSubIds permanently,
+// even if the streak later breaks. Cap = 4 milestones × 1 group + 3 base = 7 free groups max.
+const STREAK_MILESTONES = [
+  {
+    days: 3,
+    options: ['3.0.0', '2.1.1', '1.2.10'],  // kvantita / krása / kuriozita
+  },
+  {
+    days: 7,
+    options: ['2.1.3', '1.2.3', '2.4.0'],   // prestiž / klasika / anomálie
+  },
+  {
+    days: 14,
+    options: ['2.3.2', '2.2.4', '1.2.6'],   // 8 sl. / 7 sl. / 6 sl.
+  },
+  {
+    days: 30,
+    options: null,                          // wildcard — uživatel si vybere z čehokoli zbývajícího
+  },
+];
+function milestoneFor(days) {
+  return STREAK_MILESTONES.find((m) => m.days === days);
+}
+function loadStreakRewards() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('streakRewards') || '{}');
+    return {
+      unlockedSubIds: Array.isArray(raw.unlockedSubIds) ? raw.unlockedSubIds : [],
+      claimedMilestones: Array.isArray(raw.claimedMilestones) ? raw.claimedMilestones : [],
+      pendingMilestones: Array.isArray(raw.pendingMilestones) ? raw.pendingMilestones : [],
+      maxStreakReached: typeof raw.maxStreakReached === 'number' ? raw.maxStreakReached : 0,
+    };
+  } catch {
+    return { unlockedSubIds: [], claimedMilestones: [], pendingMilestones: [], maxStreakReached: 0 };
+  }
+}
+function saveStreakRewards() {
+  try { localStorage.setItem('streakRewards', JSON.stringify(state.streakRewards)); } catch {}
+}
+function getFreeSubIds() {
+  return new Set([...FREE_SUB_BASE, ...(state.streakRewards?.unlockedSubIds || [])]);
+}
+// Cheap inline check used in many render paths; respects streak rewards.
+function isFreeSub(subId) {
+  return FREE_SUB_BASE.includes(subId)
+    || (state.streakRewards?.unlockedSubIds || []).includes(subId);
+}
 
 // Stripe / backend config — backend URL set after Railway deploy
 const BACKEND_URL = 'https://nepravidelna-slovesa-production.up.railway.app'; // backend stays on Railway
@@ -25,6 +76,8 @@ const state = {
   quiz: { pool: [], idx: 0, score: 0, total: 0, type: 'mixed', selectedSections: new Set(), review: [] },
   progress: JSON.parse(localStorage.getItem('progress') || '{}'), // { inf: {status, lastSeen, attempts} }
   premium: localStorage.getItem('premium') === 'true',
+  // Streak-based group unlocks. Picked at milestones 3/7/14/30; permanent.
+  streakRewards: loadStreakRewards(),
   // When true, the three correct forms are read aloud after the student submits
   // their answer in Stage 2 (askStage2Verb). Toggled by a small 🔊/🔇 button in
   // the top-right corner of the question card; preference persists.
@@ -210,6 +263,15 @@ const TEXTS = {
   gsm_all:       { pro: 'Všechna slovesa', student: 'Všechno' },
   gsm_problem:   { pro: 'Jen ta zlobivá', student: 'Jen ta, co zlobí' },
   // Section review modal (variant)
+  // Streak reward modal (separate from srm_*, which is the section-review-mix modal)
+  streak_title_h:   { pro: 'Den vyplácení bonusů — vyber si', student: 'Tvoje odměna — vyber si!' },
+  streak_sub_h:     {
+    pro: (days) => `${days}denní streak ti vynesl novou skupinu sloves. Vyber si, kterou. Bude tvá natrvalo.`,
+    student: (days) => `Máš za sebou ${days} dní v řadě. 🔥 Tahle skupinka je tvoje napořád, i kdyby ses později zasekl/a.`,
+  },
+  streak_foot_h:    { pro: 'Tip: vybranou skupinu si můžeš procvičovat hned po výběru.',
+                      student: 'Ber si tu, na kterou se nejvíc těšíš. 🎒' },
+
   srm_title:     { pro: 'Zamíchané procvičení', student: 'Velký random 🎲' },
   srm_sub_some:  { pro: 'Zamíchaná procházka napříč celou sekcí. Vyber si rozsah.',
                    student: 'Náhodně přes celou sekci. Co dnes?' },
@@ -717,7 +779,7 @@ function renderLessonPicker() {
       sub.verbs.every((v) => state.progress[v.inf]?.status === 'green')
     );
     const totalVerbs = sec.subsections.reduce((n, ss) => n + ss.verbs.length, 0);
-    const sectionLocked = !state.premium && sec.subsections.some((sub) => !FREE_SUB_IDS.has(sub.id));
+    const sectionLocked = !state.premium && sec.subsections.some((sub) => !isFreeSub(sub.id));
     const icon = allSecMastered ? '🏆' : '🎲';
     const chipLabel = allSecMastered ? t('chip_mastered') : t('chip_default');
     const chipTitle = allSecMastered
@@ -743,7 +805,7 @@ function renderLessonPicker() {
     h.querySelector('.section-review-chip').addEventListener('click', (e) => {
       e.stopPropagation();
       if (sectionLocked) {
-        const lockedSub = sec.subsections.find((s) => !FREE_SUB_IDS.has(s.id));
+        const lockedSub = sec.subsections.find((s) => !isFreeSub(s.id));
         showPaywall(lockedSub);
         return;
       }
@@ -759,7 +821,7 @@ function renderLessonPicker() {
       const progress = subProgress(sub);
       const allMastered = sub.verbs.every((v) => state.progress[v.inf]?.status === 'green');
       if (allMastered) card.classList.add('group-card-mastered');
-      const isLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
+      const isLocked = !state.premium && !isFreeSub(sub.id);
       if (isLocked) card.classList.add('group-card-locked');
       const previewVerbs = sub.verbs.slice(0, 8);
       const previewHtml = previewVerbs.map((v) => `
@@ -838,7 +900,7 @@ function handleDeepLink() {
   if (!found) return;
   track('deeplink_skupina', { sub: found.id });
   setView('lesson');
-  const isLocked = !state.premium && !FREE_SUB_IDS.has(found.id);
+  const isLocked = !state.premium && !isFreeSub(found.id);
   if (isLocked) { showPaywall(found); return; }
   openGroupStartChoice(found);
 }
@@ -847,7 +909,7 @@ function handleDeepLink() {
 function practiceSubFromCTA(sub) {
   track('practice_cta_clicked', { sub: sub.id });
   setView('lesson');
-  const isLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
+  const isLocked = !state.premium && !isFreeSub(sub.id);
   if (isLocked) { showPaywall(sub); return; }
   openGroupStartChoice(sub);
 }
@@ -1115,7 +1177,7 @@ function renderResumeCard() {
   if (!saved) return;
   const sub = findSubById(saved.subId);
   if (!sub) { clearActiveLesson(); return; }
-  const isLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
+  const isLocked = !state.premium && !isFreeSub(sub.id);
   const stageLabels = { 1: 'Fáze 1 · Seznámení', 1.5: 'Mezifáze · Označ obtížná', 2: 'Fáze 2 · Psaní' };
   const stageLabel = stageLabels[saved.stage] || 'rozdělané cvičení';
   const stepLabels = { 1: 'v pořadí', 2: 'zamícháno' };
@@ -1943,6 +2005,127 @@ function closeSettingsModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+// ----- Streak reward modal -----
+function updateStreakRewardBadge() {
+  const btn = $('#streak-reward-btn');
+  if (!btn) return;
+  const sr = state.streakRewards || {};
+  const hasPending = (sr.pendingMilestones || []).length > 0;
+  btn.classList.toggle('hidden', !hasPending);
+}
+
+function findSubById(subId) {
+  if (!state.data) return null;
+  for (const sec of state.data.sections) {
+    for (const sub of sec.subsections) {
+      if (sub.id === subId) return sub;
+    }
+  }
+  return null;
+}
+
+// Returns subIds eligible for the wildcard milestone: all locked, not-yet-base, not yet streak-unlocked.
+function wildcardCandidates() {
+  if (!state.data) return [];
+  const taken = new Set([...FREE_SUB_BASE, ...(state.streakRewards?.unlockedSubIds || [])]);
+  const ids = [];
+  for (const sec of state.data.sections) {
+    for (const sub of sec.subsections) {
+      // Skip section-header pseudo-rows that have no verbs.
+      if (!sub.verbs || sub.verbs.length === 0) continue;
+      if (!taken.has(sub.id)) ids.push(sub.id);
+    }
+  }
+  return ids;
+}
+
+function openStreakRewardModal(milestoneDay) {
+  const modal = $('#streak-reward-modal');
+  if (!modal || !state.data) return;
+  const milestone = milestoneFor(milestoneDay);
+  if (!milestone) return;
+
+  // Header copy (tone-aware).
+  $('#srm-title').textContent = t('streak_title_h');
+  const subFn = TEXTS.streak_sub_h?.[state.style] ?? TEXTS.streak_sub_h?.pro;
+  $('#srm-sub').textContent = typeof subFn === 'function' ? subFn(milestoneDay) : `Streak ${milestoneDay} dní 🔥`;
+  $('#srm-foot').textContent = t('streak_foot_h');
+  $('#srm-emoji').textContent = milestoneDay >= 30 ? '👑' : milestoneDay >= 14 ? '💎' : milestoneDay >= 7 ? '⭐' : '🎁';
+
+  const optsEl = $('#srm-options');
+  optsEl.innerHTML = '';
+  let optionIds = milestone.options;
+  const isWildcard = optionIds === null;
+  optsEl.classList.toggle('srm-wildcard', isWildcard);
+  if (isWildcard) optionIds = wildcardCandidates();
+
+  // Filter out any already-unlocked (defensive — shouldn't happen if pendingMilestones is well-managed).
+  const taken = new Set([...FREE_SUB_BASE, ...(state.streakRewards?.unlockedSubIds || [])]);
+  optionIds = optionIds.filter((id) => !taken.has(id));
+
+  if (optionIds.length === 0) {
+    // Nothing left to give (e.g. all groups already unlocked). Just claim and bail.
+    claimMilestoneSilently(milestoneDay);
+    return;
+  }
+
+  optionIds.forEach((subId) => {
+    const sub = findSubById(subId);
+    if (!sub) return;
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'srm-option';
+    const examples = (sub.verbs || []).slice(0, 3).map((v) => v.inf).join(', ');
+    const count = (sub.verbs || []).length;
+    const countLabel = count === 1 ? '1 sloveso' : (count < 5 ? `${count} slovesa` : `${count} sloves`);
+    const pattern = sub.title || sub.id;
+    card.innerHTML = `
+      <div class="srm-option-pattern">${pattern}</div>
+      <div class="srm-option-count">${sub.id} · ${countLabel}</div>
+      <div class="srm-option-examples">${examples}</div>
+      <span class="srm-option-cta">Vybrat</span>
+    `;
+    card.addEventListener('click', () => claimMilestone(milestoneDay, subId));
+    optsEl.appendChild(card);
+  });
+
+  modal.classList.remove('hidden');
+}
+
+function closeStreakRewardModal() {
+  const modal = $('#streak-reward-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function claimMilestoneSilently(day) {
+  const sr = state.streakRewards;
+  sr.pendingMilestones = sr.pendingMilestones.filter((d) => d !== day);
+  if (!sr.claimedMilestones.includes(day)) sr.claimedMilestones.push(day);
+  saveStreakRewards();
+  updateStreakRewardBadge();
+  cloud.pushSoon();
+}
+
+function claimMilestone(day, subId) {
+  const sr = state.streakRewards;
+  if (!sr.unlockedSubIds.includes(subId)) sr.unlockedSubIds.push(subId);
+  sr.pendingMilestones = sr.pendingMilestones.filter((d) => d !== day);
+  if (!sr.claimedMilestones.includes(day)) sr.claimedMilestones.push(day);
+  saveStreakRewards();
+  try { track('streak_reward_claimed', { day, subId }); } catch (_) {}
+  cloud.pushSoon();
+  closeStreakRewardModal();
+  // Refresh lesson picker so the newly-unlocked group is no longer locked.
+  if (state.currentView === 'lesson' && !state.lesson) renderLessonPicker();
+  // If more pending milestones exist, queue next modal after a short beat.
+  if (sr.pendingMilestones.length > 0) {
+    const next = sr.pendingMilestones[0];
+    setTimeout(() => openStreakRewardModal(next), 350);
+  } else {
+    updateStreakRewardBadge();
+  }
+}
+
 // Wipe all learning progress: per-verb mastery, study-day streak, and any
 // in-flight lesson. If signed in, also clears the user's Firestore doc.
 async function resetProgress() {
@@ -1956,6 +2139,9 @@ async function resetProgress() {
     localStorage.setItem('progress', '{}');
     localStorage.setItem('studyDays', '[]');
     localStorage.removeItem(ACTIVE_LESSON_KEY);
+    state.streakRewards = { unlockedSubIds: [], claimedMilestones: [], pendingMilestones: [], maxStreakReached: 0 };
+    saveStreakRewards();
+    updateStreakRewardBadge();
     if (signedIn) {
       try { await cloud.clearCloudProgress(); } catch (e) { console.error(e); }
     }
@@ -1984,7 +2170,41 @@ function markStudyToday() {
   const days = loadStudyDays();
   days.add(todayKey());
   saveStudyDays(days);
+  checkStreakMilestones();
   cloud.pushSoon();
+}
+
+// After any study event, check whether the current streak crossed a milestone
+// the user hasn't yet claimed or queued. Updates state.streakRewards and
+// triggers UI to surface a pending reward (header 🎁 badge + auto-open modal
+// if user is on the lesson picker).
+function checkStreakMilestones() {
+  const streak = computeStreak();
+  const sr = state.streakRewards || (state.streakRewards = loadStreakRewards());
+  if (streak > (sr.maxStreakReached || 0)) sr.maxStreakReached = streak;
+  const eligible = STREAK_MILESTONES
+    .filter((m) => sr.maxStreakReached >= m.days)
+    .map((m) => m.days);
+  let added = false;
+  eligible.forEach((d) => {
+    const claimed = sr.claimedMilestones.includes(d);
+    const pending = sr.pendingMilestones.includes(d);
+    if (!claimed && !pending) {
+      sr.pendingMilestones.push(d);
+      added = true;
+    }
+  });
+  saveStreakRewards();
+  if (added) {
+    updateStreakRewardBadge();
+    // Auto-open modal only on lesson picker (don't interrupt mid-lesson).
+    if (state.currentView === 'lesson' && !state.lesson) {
+      const nextDay = sr.pendingMilestones[0];
+      openStreakRewardModal(nextDay);
+    }
+  } else {
+    updateStreakRewardBadge();
+  }
 }
 function computeStreak() {
   const days = loadStudyDays();
@@ -2108,7 +2328,7 @@ function selectSlabaMista() {
   if (!state.data) return null;
   // Pool of verbs the student can practice (premium gate respected)
   const allVerbs = flattenVerbs(state.data).filter((v) =>
-    state.premium || FREE_SUB_IDS.has(v.subId)
+    state.premium || isFreeSub(v.subId)
   );
   const seen = allVerbs.filter((v) => state.progress[v.inf]);
   if (seen.length < SLABA_COLD_START_MIN) return null; // cold start
@@ -2250,7 +2470,7 @@ function renderBrowse() {
       const div = document.createElement('div');
       div.className = 'subsection';
       div.style.setProperty('--sub-hue', hue);
-      const subLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
+      const subLocked = !state.premium && !isFreeSub(sub.id);
       div.innerHTML = `
         <div class="subsection-head">
           <span class="subsection-id">${sub.id}</span>
@@ -2322,7 +2542,7 @@ function renderFlashcards() {
       const subWrap = document.createElement('div');
       subWrap.className = 'fc-sub';
       subWrap.style.setProperty('--sub-hue', hue);
-      const subLocked = !state.premium && !FREE_SUB_IDS.has(sub.id);
+      const subLocked = !state.premium && !isFreeSub(sub.id);
       subWrap.innerHTML = `
         <div class="fc-sub-head">
           <span class="subsection-id">${sub.id}</span>
@@ -3329,6 +3549,10 @@ async function init() {
   renderAutoSetup();
   renderSectionChips($('#quiz-filter'), state.quiz.selectedSections);
   renderStatsStrip();
+  // Backfill: if a user upgrades to this build with an already-running streak,
+  // mark every milestone they passed as pending so they can claim retroactively.
+  checkStreakMilestones();
+  updateStreakRewardBadge();
 
   // Cloud sync wiring
   cloud.setListeners({
@@ -3346,6 +3570,8 @@ async function init() {
   document.addEventListener('cloud-merged', () => {
     state.progress = JSON.parse(localStorage.getItem('progress') || '{}');
     state.premium = localStorage.getItem('premium') === 'true';
+    state.streakRewards = loadStreakRewards();
+    updateStreakRewardBadge();
     applyPremiumUI();
     updatePortalBtn();
     // Reflect cloud-synced style preference in menu toggle + texts
@@ -3458,6 +3684,15 @@ async function init() {
   $('#dialect-select').addEventListener('change', (e) => setDialect(e.target.value));
   $('#dialect-toggle-menu')?.addEventListener('click', () => {
     setDialect(state.dialect === 'AmE' ? 'BrE' : 'AmE');
+  });
+  $('#srm-close')?.addEventListener('click', closeStreakRewardModal);
+  $('#streak-reward-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'streak-reward-modal') closeStreakRewardModal();
+  });
+  $('#streak-reward-btn')?.addEventListener('click', () => {
+    const sr = state.streakRewards || {};
+    const next = (sr.pendingMilestones || [])[0];
+    if (next) openStreakRewardModal(next);
   });
   $('#settings-btn')?.addEventListener('click', openSettingsModal);
   $('#settings-close')?.addEventListener('click', closeSettingsModal);

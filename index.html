@@ -100,6 +100,7 @@
           </svg>
           <span class="google-btn-label" id="google-btn-label">Přihlásit</span>
         </button>
+        <button id="streak-reward-btn" class="icon-btn streak-reward-btn hidden" aria-label="Vyzvednout odměnu za streak" type="button" title="Máš nečerpanou odměnu">🎁<span class="streak-reward-dot" aria-hidden="true"></span></button>
         <button id="theme-toggle" class="icon-btn" aria-label="Přepnout tmavý režim">🌙</button>
         <div class="menu-wrap">
           <button id="menu-btn" class="icon-btn" aria-label="Menu" aria-expanded="false">☰</button>
@@ -398,6 +399,18 @@
           <div class="paywall-promo-msg" id="paywall-promo-msg"></div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Streak reward modal: pick one of three curated groups (or wildcard at day 30) -->
+  <div class="modal-backdrop hidden" id="streak-reward-modal" role="dialog" aria-modal="true" aria-labelledby="srm-title">
+    <div class="modal modal-wide">
+      <button class="modal-close" id="srm-close" aria-label="Zavřít">×</button>
+      <div class="modal-emoji" id="srm-emoji">🎁</div>
+      <h2 class="modal-title" id="srm-title">Tvoje odměna — vyber si!</h2>
+      <p class="modal-sub" id="srm-sub">Máš za sebou 7 dní v řadě. 🔥</p>
+      <div class="srm-options" id="srm-options"></div>
+      <p class="srm-footnote" id="srm-foot">Skupina, kterou si vybereš, bude tvoje napořád. I když streak přerušíš.</p>
     </div>
   </div>
 

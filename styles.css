@@ -2281,6 +2281,102 @@ body {
 .menu-item-danger { color: var(--danger, #d04848); }
 .menu-item-danger:hover { background: rgba(208, 72, 72, 0.12); }
 
+/* Streak reward modal */
+.modal.modal-wide { max-width: 640px; }
+.srm-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0 12px;
+}
+.srm-options.srm-wildcard {
+  grid-template-columns: 1fr;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.srm-option {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 14px 14px 12px;
+  background: var(--bg-elev, rgba(255,255,255,0.7));
+  border: 1.5px solid var(--border, rgba(0,0,0,0.1));
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+.srm-option:hover {
+  border-color: var(--accent, #4a90e2);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
+  transform: translateY(-2px);
+}
+.srm-option-pattern {
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+.srm-option-count {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+.srm-option-examples {
+  font-size: 0.85rem;
+  color: var(--text);
+  font-style: italic;
+  opacity: 0.85;
+  margin: 2px 0 8px;
+}
+.srm-option-cta {
+  align-self: flex-start;
+  background: var(--accent, #4a90e2);
+  color: white;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.srm-option:hover .srm-option-cta { background: var(--accent-strong, #357abd); }
+.srm-options.srm-wildcard .srm-option {
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 14px;
+}
+.srm-options.srm-wildcard .srm-option-cta { margin-left: auto; align-self: center; }
+.srm-options.srm-wildcard .srm-option-examples { margin: 0; flex: 1; }
+.srm-footnote {
+  font-size: 0.8rem;
+  opacity: 0.65;
+  text-align: center;
+  margin-top: 8px;
+}
+@media (max-width: 600px) {
+  .srm-options { grid-template-columns: 1fr; }
+}
+
+/* Pulsing 🎁 in header when reward is pending */
+.streak-reward-btn { position: relative; }
+.streak-reward-dot {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 8px; height: 8px;
+  background: #ff5252;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.6);
+  animation: srm-pulse 1.8s infinite;
+}
+@keyframes srm-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 82, 82, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+}
+
 /* Settings modal list */
 .settings-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .settings-item {

@@ -117,8 +117,47 @@ function mergeIntoLocal(remote) {
   if (localExtra.length > 0) shouldPush = true;
   const mergedDays = [...new Set([...localDays, ...remoteDays])].sort();
 
+  // Streak rewards: union of unlocked groups (a user's choices on any device
+  // become permanent everywhere), claimed = union, pending = union minus claimed,
+  // maxStreakReached = max.
+  let localSR;
+  try { localSR = JSON.parse(localStorage.getItem('streakRewards') || '{}'); } catch { localSR = {}; }
+  const remoteSR = remote.streakRewards || {};
+  const mergedSR = {
+    unlockedSubIds: Array.from(new Set([
+      ...(Array.isArray(localSR.unlockedSubIds) ? localSR.unlockedSubIds : []),
+      ...(Array.isArray(remoteSR.unlockedSubIds) ? remoteSR.unlockedSubIds : []),
+    ])),
+    claimedMilestones: Array.from(new Set([
+      ...(Array.isArray(localSR.claimedMilestones) ? localSR.claimedMilestones : []),
+      ...(Array.isArray(remoteSR.claimedMilestones) ? remoteSR.claimedMilestones : []),
+    ])).sort((a, b) => a - b),
+    maxStreakReached: Math.max(
+      typeof localSR.maxStreakReached === 'number' ? localSR.maxStreakReached : 0,
+      typeof remoteSR.maxStreakReached === 'number' ? remoteSR.maxStreakReached : 0,
+    ),
+    pendingMilestones: [],
+  };
+  const localPending = Array.isArray(localSR.pendingMilestones) ? localSR.pendingMilestones : [];
+  const remotePending = Array.isArray(remoteSR.pendingMilestones) ? remoteSR.pendingMilestones : [];
+  const pendingUnion = new Set([...localPending, ...remotePending]);
+  mergedSR.pendingMilestones = [...pendingUnion]
+    .filter((d) => !mergedSR.claimedMilestones.includes(d))
+    .sort((a, b) => a - b);
+  const localSRStr = JSON.stringify(localSR);
+  const mergedSRStr = JSON.stringify(mergedSR);
+  if (localSRStr !== mergedSRStr) {
+    // If local differs from merged, local is more current iff it strictly contains remote.
+    // Simpler: push whenever local had extras the remote didn't.
+    const localExtraUnlocks = mergedSR.unlockedSubIds.filter((id) =>
+      !(Array.isArray(remoteSR.unlockedSubIds) ? remoteSR.unlockedSubIds : []).includes(id)
+    ).length;
+    if (localExtraUnlocks > 0) shouldPush = true;
+  }
+
   localStorage.setItem('progress', JSON.stringify(merged));
   localStorage.setItem('studyDays', JSON.stringify(mergedDays));
+  localStorage.setItem('streakRewards', JSON.stringify(mergedSR));
 
   // Notify app for re-render
   document.dispatchEvent(new CustomEvent('cloud-merged'));
@@ -137,7 +176,12 @@ export async function clearCloudProgress() {
   try {
     const ref = doc(db, 'users', user.uid);
     const style = localStorage.getItem('style');
-    const payload = { progress: {}, studyDays: [], updatedAt: Date.now() };
+    const payload = {
+      progress: {},
+      studyDays: [],
+      streakRewards: { unlockedSubIds: [], claimedMilestones: [], pendingMilestones: [], maxStreakReached: 0 },
+      updatedAt: Date.now(),
+    };
     if (style === 'pro' || style === 'student') payload.style = style;
     suppressPushOnce = true;
     await setDoc(ref, payload); // no merge → progress map fully replaced with {}
@@ -163,8 +207,11 @@ async function pushNow() {
     const progress = JSON.parse(localStorage.getItem('progress') || '{}');
     const studyDays = JSON.parse(localStorage.getItem('studyDays') || '[]');
     const style = localStorage.getItem('style');
+    let streakRewards = null;
+    try { streakRewards = JSON.parse(localStorage.getItem('streakRewards') || 'null'); } catch {}
     const payload = { progress, studyDays, updatedAt: Date.now() };
     if (style === 'pro' || style === 'student') payload.style = style;
+    if (streakRewards) payload.streakRewards = streakRewards;
     const ref = doc(db, 'users', user.uid);
     suppressPushOnce = true; // the snapshot we'll receive is from our own write
     await setDoc(ref, payload, { merge: true });
