@@ -4,6 +4,92 @@
 
 import * as cloud from './cloud.js';
 
+// ---- In-app webview (FB/IG/etc.) handling ----------------------------------
+// Google's signInWithPopup is blocked in embedded webviews ("disallowed_useragent").
+// The early <head> script in index.html sets html.is-inapp-webview + window.__inAppWebview.
+// Here we wire up the banner UI and intercept login clicks to steer users to a real browser.
+function isInAppWebview() { return !!window.__inAppWebview; }
+function showWebviewBanner(opts) {
+  opts = opts || {};
+  const banner = document.getElementById('webview-banner');
+  if (!banner) return;
+  const dismissed = sessionStorage.getItem('webview-banner-dismissed') === '1';
+  // Forced shows (e.g. after clicking login) ignore the per-session dismiss.
+  if (dismissed && !opts.force) return;
+  banner.hidden = false;
+  banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  try {
+    if (typeof window.plausible === 'function') {
+      window.plausible('webview_banner_shown', { props: { app: window.__inAppWebviewName || 'unknown', forced: !!opts.force } });
+    }
+  } catch (_) {}
+}
+function handleLoginInWebview(source) {
+  if (!isInAppWebview()) return false;
+  try {
+    if (typeof window.plausible === 'function') {
+      window.plausible('webview_login_blocked', { props: { app: window.__inAppWebviewName || 'unknown', source: source || 'unknown' } });
+    }
+  } catch (_) {}
+  showWebviewBanner({ force: true });
+  return true; // signal "we handled it; do not call signIn()"
+}
+// One-time wiring of banner buttons + initial event.
+(function initWebviewBanner() {
+  if (typeof document === 'undefined') return;
+  function setup() {
+    if (!isInAppWebview()) return;
+    const banner = document.getElementById('webview-banner');
+    if (!banner) return;
+    // Label which app we're in.
+    const appName = window.__inAppWebviewName || 'facebook';
+    const labelMap = { facebook: 'Facebooku', instagram: 'Instagramu', messenger: 'Messengeru', tiktok: 'TikToku', linkedin: 'LinkedInu', twitter: 'X/Twitteru', other: 'aplikace třetí strany' };
+    const labelEl = document.getElementById('webview-banner-app');
+    if (labelEl) labelEl.textContent = labelMap[appName] || labelMap.other;
+    // Android: offer "Open in Chrome" via intent URL.
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const openBtn = document.getElementById('webview-banner-open');
+    if (openBtn && isAndroid) {
+      openBtn.hidden = false;
+      openBtn.addEventListener('click', () => {
+        const url = location.href.replace(/^https?:\/\//, '');
+        const intent = 'intent://' + url + '#Intent;scheme=https;package=com.android.chrome;end';
+        try { if (typeof window.plausible === 'function') window.plausible('webview_open_external_clicked', { props: { app: appName, target: 'chrome_intent' } }); } catch(_){}
+        window.location.href = intent;
+      });
+    }
+    const copyBtn = document.getElementById('webview-banner-copy');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(location.href);
+          copyBtn.textContent = '✓ Zkopírováno';
+          setTimeout(() => { copyBtn.textContent = 'Zkopírovat odkaz'; }, 2200);
+          try { if (typeof window.plausible === 'function') window.plausible('webview_copy_link_clicked', { props: { app: appName } }); } catch(_){}
+        } catch (_) {
+          // Fallback: select location bar text not possible; just tell user.
+          copyBtn.textContent = '✗ Nepodařilo se';
+          setTimeout(() => { copyBtn.textContent = 'Zkopírovat odkaz'; }, 2200);
+        }
+      });
+    }
+    const closeBtn = document.getElementById('webview-banner-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        banner.hidden = true;
+        sessionStorage.setItem('webview-banner-dismissed', '1');
+      });
+    }
+    // Show on load (passive — respects dismiss).
+    showWebviewBanner({ force: false });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setup);
+  } else {
+    setup();
+  }
+})();
+
 // Subsections free without premium. Premium unlocks all 106 verbs across all groups.
 const FREE_SUB_BASE = ['1.1.0', '1.2.1', '1.2.5'];
 const FREE_SUB_IDS = new Set(FREE_SUB_BASE); // kept for backwards-compat; new code uses getFreeSubIds()
@@ -3499,6 +3585,7 @@ function showPaywall(sub) {
   m._refreshSignIn = refreshSignInState;
   const signBtn = m.querySelector('#paywall-signin-btn');
   signBtn.onclick = async () => {
+    if (handleLoginInWebview('paywall')) return;
     signBtn.disabled = true;
     signBtn.textContent = 'Přihlašuji…';
     try {
@@ -3759,6 +3846,7 @@ async function init() {
     if (cloud.getCurrentUser()) {
       if (confirm('Opravdu se chceš odhlásit?')) cloud.signOutNow();
     } else {
+      if (handleLoginInWebview('header_btn')) return;
       cloud.signIn().catch((e) => toast('Přihlášení selhalo: ' + (e?.message || e), 'error'));
     }
   });
@@ -3766,6 +3854,7 @@ async function init() {
     if (cloud.getCurrentUser()) {
       if (confirm('Opravdu se chceš odhlásit?')) cloud.signOutNow();
     } else {
+      if (handleLoginInWebview('menu_cloud')) return;
       cloud.signIn();
     }
   });

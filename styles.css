@@ -4952,3 +4952,109 @@ body.theme-dark .tone-sub,
 body.theme-dark .tone-option-preview { color: #a3aebc; }
 [data-theme="dark"] .tone-option,
 body.theme-dark .tone-option { background: rgba(124, 111, 245, 0.16); }
+
+/* ---- In-app webview banner (shown only inside FB/IG/etc.) ---- */
+.webview-banner {
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  background: linear-gradient(135deg, #fff4d6 0%, #ffe7b3 100%);
+  border-bottom: 2px solid #f0b94a;
+  color: #3a2c00;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  animation: webview-banner-in 0.25s ease-out;
+}
+@keyframes webview-banner-in {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.webview-banner-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.webview-banner-icon { font-size: 1.6rem; line-height: 1.2; flex-shrink: 0; }
+.webview-banner-text { flex: 1; min-width: 0; font-size: 0.92rem; line-height: 1.4; }
+.webview-banner-text strong { display: block; font-size: 1rem; margin-bottom: 2px; }
+.webview-banner-sub { display: block; }
+.webview-banner-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  flex-shrink: 0;
+  position: relative;
+}
+.webview-banner-actions .btn-sm {
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.webview-banner-close {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: rgba(0,0,0,0.08);
+  color: #3a2c00;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.7rem;
+  line-height: 22px;
+  padding: 0;
+}
+.webview-banner-close:hover { background: rgba(0,0,0,0.18); }
+@media (max-width: 540px) {
+  .webview-banner-inner { flex-wrap: wrap; gap: 8px; }
+  .webview-banner-text { font-size: 0.86rem; flex-basis: calc(100% - 40px); }
+  .webview-banner-actions { flex-direction: row; flex-basis: 100%; }
+  .webview-banner-actions .btn-sm { flex: 1; }
+  .webview-banner-close {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    flex: 0 0 auto;
+  }
+}
+/* Highlight Google buttons when in webview so users know what's blocked. */
+html.is-inapp-webview .google-btn,
+html.is-inapp-webview #paywall-signin-btn {
+  position: relative;
+}
+html.is-inapp-webview .google-btn::after,
+html.is-inapp-webview #paywall-signin-btn::after {
+  content: "⚠";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #f0b94a;
+  color: #3a2c00;
+  font-size: 0.7rem;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+[data-theme="dark"] .webview-banner,
+body.theme-dark .webview-banner {
+  background: linear-gradient(135deg, #4a3a10 0%, #5a4416 100%);
+  color: #ffe9b8;
+  border-bottom-color: #8a6a1f;
+}
+[data-theme="dark"] .webview-banner-close,
+body.theme-dark .webview-banner-close {
+  background: rgba(255,255,255,0.14);
+  color: #ffe9b8;
+}

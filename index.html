@@ -20,8 +20,50 @@
     window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
     plausible.init()
   </script>
+  <!-- In-app webview detection (FB/IG/Messenger/TikTok/LinkedIn/Twitter/Line/WeChat/GSA).
+       Google OAuth (signInWithPopup) is blocked in these embedded browsers with
+       `disallowed_useragent`, so users can't sign in. We mark <html> early so the
+       banner can render without flicker; the rest is wired up in app.js. -->
+  <script>
+    (function(){
+      try {
+        var ua = navigator.userAgent || '';
+        var re = /FBAN|FBAV|FB_IAB|FBIOS|Instagram|MessengerLite|Messenger\/|Line\/|MicroMessenger|GSA\/|Twitter|LinkedInApp|TikTok|musical_ly|Pinterest/i;
+        if (re.test(ua)) {
+          document.documentElement.classList.add('is-inapp-webview');
+          window.__inAppWebview = true;
+          // Best-effort label for analytics
+          var label = 'other';
+          if (/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)) label = 'facebook';
+          else if (/Instagram/i.test(ua)) label = 'instagram';
+          else if (/Messenger/i.test(ua)) label = 'messenger';
+          else if (/TikTok|musical_ly/i.test(ua)) label = 'tiktok';
+          else if (/LinkedInApp/i.test(ua)) label = 'linkedin';
+          else if (/Twitter/i.test(ua)) label = 'twitter';
+          window.__inAppWebviewName = label;
+        }
+      } catch(_) {}
+    })();
+  </script>
 </head>
 <body>
+  <!-- In-app webview banner: shown only when running inside Facebook/Instagram/etc.
+       Google OAuth is blocked there, so we steer users to a real browser. -->
+  <div id="webview-banner" class="webview-banner" role="region" aria-label="Otevři v prohlížeči" hidden>
+    <div class="webview-banner-inner">
+      <span class="webview-banner-icon" aria-hidden="true">📱</span>
+      <div class="webview-banner-text">
+        <strong>Přihlášení tu nefunguje.</strong>
+        <span class="webview-banner-sub">Jsi v aplikaci <span id="webview-banner-app">Facebooku</span>. Otevři odkaz v <b>Safari / Chromu</b> (klepni na <b>⋯</b> vpravo nahoře → <b>„Otevřít v prohlížeči“</b>). Pak se přihlásíš přes Google.</span>
+      </div>
+      <div class="webview-banner-actions">
+        <button id="webview-banner-copy" class="btn btn-primary btn-sm" type="button">Zkopírovat odkaz</button>
+        <button id="webview-banner-open" class="btn btn-secondary btn-sm" type="button" hidden>Otevřít v Chromu</button>
+        <button id="webview-banner-close" class="webview-banner-close" type="button" aria-label="Zavřít">✕</button>
+      </div>
+    </div>
+  </div>
+
   <!-- PWA install banner (Android: native prompt, iOS: instructions modal) -->
   <div id="install-banner" class="install-banner hidden" role="region" aria-label="Nainstalovat aplikaci">
     <div class="install-banner-inner">
