@@ -2244,6 +2244,18 @@ function closeStreakRewardModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+// Streak info modal — explains tiers + grace period. Opened by clicking the
+// streak pill on the lesson picker. Purely informational; no state changes.
+function openStreakInfoModal() {
+  const modal = $('#streak-info-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+}
+function closeStreakInfoModal() {
+  const modal = $('#streak-info-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
 function claimMilestoneSilently(day) {
   const sr = state.streakRewards;
   sr.pendingMilestones = sr.pendingMilestones.filter((d) => d !== day);
@@ -2471,7 +2483,7 @@ function renderStatsStrip() {
         ? `<div class="stat-pill-trophies" aria-label="Získané trofeje">${trophies.map((tr) => `<span class="trophy" title="${tr.label}">${tr.icon}</span>`).join('')}</div>`
         : '';
       return `
-    <div class="stat-pill stat-pill-streak${streakBig}${trophies.length ? ' has-trophies' : ''}${pending ? ' is-pending' : ''}">
+    <div class="stat-pill stat-pill-streak is-clickable${streakBig}${trophies.length ? ' has-trophies' : ''}${pending ? ' is-pending' : ''}" id="streak-info-open" role="button" tabindex="0" aria-label="Streak — jak to funguje">
       <div class="stat-pill-streak-main">
         <div class="stat-pill-head">
           <span class="stat-pill-icon">🔥</span>
@@ -3962,6 +3974,21 @@ async function init() {
   $('#srm-close')?.addEventListener('click', closeStreakRewardModal);
   $('#streak-reward-modal')?.addEventListener('click', (e) => {
     if (e.target.id === 'streak-reward-modal') closeStreakRewardModal();
+  });
+  // Streak info modal — pill is re-rendered, so use delegation on document.
+  document.addEventListener('click', (e) => {
+    const pill = e.target.closest && e.target.closest('#streak-info-open');
+    if (pill) openStreakInfoModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && document.activeElement?.id === 'streak-info-open') {
+      e.preventDefault();
+      openStreakInfoModal();
+    }
+  });
+  $('#sim-close')?.addEventListener('click', closeStreakInfoModal);
+  $('#streak-info-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'streak-info-modal') closeStreakInfoModal();
   });
   $('#streak-reward-btn')?.addEventListener('click', () => {
     const sr = state.streakRewards || {};

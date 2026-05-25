@@ -456,6 +456,34 @@
     </div>
   </div>
 
+  <!-- Streak info modal: tiers + grace period explanation -->
+  <div class="modal-backdrop hidden" id="streak-info-modal" role="dialog" aria-modal="true" aria-labelledby="sim-title">
+    <div class="modal modal-wide">
+      <button class="modal-close" id="sim-close" aria-label="Zavřít">×</button>
+      <div class="modal-emoji">🔥</div>
+      <h2 class="modal-title" id="sim-title">Streak — jak to funguje</h2>
+      <p class="modal-sub">Za každý den, kdy si zacvičíš, ti roste streak. Čím delší, tím lepší odměny.</p>
+
+      <div class="streak-info-section">
+        <h3 class="streak-info-h">🎁 Odměny za vytrvalost</h3>
+        <ul class="streak-info-list">
+          <li><span class="streak-info-badge">🔥 3 dny</span> vyber si <strong>1 ze 3</strong> nových skupin sloves</li>
+          <li><span class="streak-info-badge">⭐ 7 dní</span> vyber si <strong>1 ze 3</strong> dalších skupin</li>
+          <li><span class="streak-info-badge">💎 14 dní</span> vyber si <strong>1 ze 3</strong> dalších skupin</li>
+          <li><span class="streak-info-badge">👑 30 dní</span> divoká karta — vyber si <strong>libovolnou</strong> zbývající skupinu</li>
+          <li><span class="streak-info-badge">🏆 100 / 🐉 365</span> trofeje navíc (zůstávají, i když streak přerušíš)</li>
+        </ul>
+        <p class="streak-info-note">Skupina, kterou si vybereš, je tvoje natrvalo — i kdyby ti streak spadl.</p>
+      </div>
+
+      <div class="streak-info-section">
+        <h3 class="streak-info-h">⏳ Odpustky (grace period)</h3>
+        <p class="streak-info-p">Když dneska zapomeneš zacvičit, ale včera jsi cvičil/a, streak ti drží <strong>až do dnešní půlnoci</strong>. Stihni si dnes alespoň krátkou lekci a streak je zachráněn.</p>
+        <p class="streak-info-p">Když ani dnes nic nezvládneš, po půlnoci streak spadne na 0. Trofeje a získané skupiny ti ale zůstanou.</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Settings modal: progress reset, subscription management -->
   <div class="modal-backdrop hidden" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
     <div class="modal">
