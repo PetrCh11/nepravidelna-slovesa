@@ -81,9 +81,16 @@ function mergeIntoLocal(remote) {
   const remoteProgress = remote.progress || {};
   const remoteDays = new Set(remote.studyDays || []);
 
-  // Premium flag is server-authoritative (set by Stripe webhook). Always reflect remote value.
+  // Premium flag is server-authoritative (set by Stripe webhook or promo redemption).
+  // Time-limited promos (teacher codes etc.) set premiumExpiresAt; we compute the
+  // effective flag here so the rest of the app can stay a plain boolean check.
+  // Stripe payers never have premiumExpiresAt → always treated as active.
   if (typeof remote.premium === 'boolean') {
-    localStorage.setItem('premium', remote.premium ? 'true' : 'false');
+    const expiresAt = Number(remote.premiumExpiresAt) || 0;
+    const effective = remote.premium && (!expiresAt || expiresAt > Date.now());
+    localStorage.setItem('premium', effective ? 'true' : 'false');
+    if (expiresAt) localStorage.setItem('premiumExpiresAt', String(expiresAt));
+    else localStorage.removeItem('premiumExpiresAt');
   }
 
   // Communication style preference (Pracující / Student) — synced across devices.

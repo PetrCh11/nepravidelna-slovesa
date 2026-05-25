@@ -167,6 +167,16 @@ const STRIPE_PRICES = {
   monthly:  { id: 'price_1TYOX3K1GA1fPMpO7yLM6x8i', mode: 'subscription' }, // 49 Kč/mo (live)
 };
 
+// Effective premium check. Stripe payers: premium=true with no expiry → always active.
+// Promo redemptions (teacher codes etc.) may set premiumExpiresAt — once past, the
+// flag flips to false offline too, without waiting for the next Firestore sync.
+function isPremiumActive() {
+  if (localStorage.getItem('premium') !== 'true') return false;
+  const exp = Number(localStorage.getItem('premiumExpiresAt')) || 0;
+  if (!exp) return true; // no expiry = lifetime / stripe
+  return exp > Date.now();
+}
+
 const state = {
   data: null,
   dialect: localStorage.getItem('dialect') || 'BrE',
@@ -176,7 +186,7 @@ const state = {
   lesson: null, // lesson state when active
   quiz: { pool: [], idx: 0, score: 0, total: 0, type: 'mixed', selectedSections: new Set(), review: [] },
   progress: JSON.parse(localStorage.getItem('progress') || '{}'), // { inf: {status, lastSeen, attempts} }
-  premium: localStorage.getItem('premium') === 'true',
+  premium: isPremiumActive(),
   // Streak-based group unlocks. Picked at milestones 3/7/14/30; permanent.
   streakRewards: loadStreakRewards(),
   // When true, the three correct forms are read aloud after the student submits
@@ -3662,9 +3672,16 @@ async function redeemPromo(rawCode, ctx) {
       ctx.setMsg(PROMO_ERRORS[data.error] || ('Chyba: ' + (data.error || resp.status)), 'error');
       return;
     }
-    // Success — flip local state and close paywall
+    // Success — flip local state and close paywall. Mirror the expiry from the
+    // backend response so the gate flips back automatically when the year ends,
+    // even before the next Firestore sync arrives.
     state.premium = true;
     localStorage.setItem('premium', 'true');
+    if (data.premiumExpiresAt) {
+      localStorage.setItem('premiumExpiresAt', String(data.premiumExpiresAt));
+    } else {
+      localStorage.removeItem('premiumExpiresAt');
+    }
     applyPremiumUI();
     updatePortalBtn();
     track('promo_redeemed', { code });
@@ -3823,7 +3840,7 @@ async function init() {
   });
   document.addEventListener('cloud-merged', () => {
     state.progress = JSON.parse(localStorage.getItem('progress') || '{}');
-    state.premium = localStorage.getItem('premium') === 'true';
+    state.premium = isPremiumActive();
     state.streakRewards = loadStreakRewards();
     updateStreakRewardBadge();
     applyPremiumUI();

@@ -176,13 +176,27 @@ app.post('/redeem-code', async (req, res) => {
         redeemers: [...redeemers, uid],
         lastRedeemedAt: Date.now(),
       });
+      // Time-limited promos: write premiumExpiresAt so the gate auto-expires.
+      // Either durationDays (relative, e.g. 365 from redemption) or
+      // grantExpiresAt (absolute, e.g. end of school year) may be set on the code.
+      // Stripe-paid users never have this field, so existing payers are unaffected.
+      const durationDays = Number(data.durationDays) || 0;
+      const grantExpiresAt = Number(data.grantExpiresAt) || 0;
+      let premiumExpiresAt = null;
+      if (durationDays > 0) premiumExpiresAt = Date.now() + durationDays * 86400000;
+      if (grantExpiresAt > 0) {
+        premiumExpiresAt = premiumExpiresAt
+          ? Math.min(premiumExpiresAt, grantExpiresAt)
+          : grantExpiresAt;
+      }
       tx.set(db.collection('users').doc(uid), {
         premium: true,
         premiumPlan: data.plan || 'promo',
         premiumCode: normalized,
         premiumUpdatedAt: Date.now(),
+        premiumExpiresAt: premiumExpiresAt, // null = lifetime
       }, { merge: true });
-      return { plan: data.plan || 'promo', note: data.note || null };
+      return { plan: data.plan || 'promo', note: data.note || null, premiumExpiresAt };
     });
     console.log('Promo redeemed →', normalized, 'uid', uid);
 
