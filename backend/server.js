@@ -177,18 +177,15 @@ app.post('/redeem-code', async (req, res) => {
         lastRedeemedAt: Date.now(),
       });
       // Time-limited promos: write premiumExpiresAt so the gate auto-expires.
-      // Either durationDays (relative, e.g. 365 from redemption) or
-      // grantExpiresAt (absolute, e.g. end of school year) may be set on the code.
-      // Stripe-paid users never have this field, so existing payers are unaffected.
+      // durationDays on the code = how long each redeemer gets premium
+      // (e.g. 365 from the moment of redemption). The `expiresAt` field
+      // above is a separate concept — the deadline for NEW redemptions —
+      // and is already enforced. Stripe-paid users have no durationDays
+      // and thus no premiumExpiresAt → treated as lifetime by the client.
       const durationDays = Number(data.durationDays) || 0;
-      const grantExpiresAt = Number(data.grantExpiresAt) || 0;
-      let premiumExpiresAt = null;
-      if (durationDays > 0) premiumExpiresAt = Date.now() + durationDays * 86400000;
-      if (grantExpiresAt > 0) {
-        premiumExpiresAt = premiumExpiresAt
-          ? Math.min(premiumExpiresAt, grantExpiresAt)
-          : grantExpiresAt;
-      }
+      const premiumExpiresAt = durationDays > 0
+        ? Date.now() + durationDays * 86400000
+        : null;
       tx.set(db.collection('users').doc(uid), {
         premium: true,
         premiumPlan: data.plan || 'promo',
