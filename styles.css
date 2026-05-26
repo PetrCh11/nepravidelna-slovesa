@@ -3871,16 +3871,24 @@ body.theme-dark .resume-card,
   box-shadow: 0 20px 50px rgba(0,0,0,0.3);
   text-align: center;
   animation: modalPop 0.2s ease;
+  /* Allow tall content (e.g. streak-info) to scroll inside the modal on small
+     screens instead of pushing the close button off the viewport. */
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 @keyframes modalPop {
   from { opacity: 0; transform: scale(0.95) translateY(8px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .modal-close {
-  position: absolute;
-  top: 10px;
-  right: 14px;
-  background: none;
+  position: sticky;
+  top: 0;
+  margin-left: auto;
+  margin-right: -8px;
+  margin-bottom: -32px;
+  background: var(--card-bg, #ffffff);
   border: 0;
   font-size: 1.6rem;
   cursor: pointer;
@@ -3889,7 +3897,11 @@ body.theme-dark .resume-card,
   height: 32px;
   line-height: 1;
   border-radius: 50%;
+  display: block;
+  z-index: 2;
 }
+body.theme-dark .modal-close,
+[data-theme="dark"] .modal-close { background: #1e2024; }
 .modal-close:hover { background: rgba(0,0,0,0.06); color: var(--text); }
 .modal-emoji { font-size: 2.4rem; line-height: 1; margin-bottom: 8px; }
 .modal-title { margin: 0 0 8px; font-size: 1.3rem; font-weight: 800; }
