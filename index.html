@@ -200,10 +200,16 @@
         </div>
         <div id="stats-strip" class="stats-strip"></div>
         <!-- First-time discoverability hint: shows only for users with no progress yet
-             and disappears permanently after the first group click. -->
-        <div id="study-hint" class="study-hint" hidden>
-          <span class="study-hint-text">Vyber si skupinu a začni trénovat</span>
-          <span class="study-hint-arrow" aria-hidden="true">↓</span>
+             and disappears permanently after the first group click. Subtle SVG
+             scribble drawn over the page background — no box, no fill. -->
+        <div id="study-hint" class="study-hint" hidden aria-hidden="true">
+          <span class="study-hint-text">klikni</span>
+          <svg class="study-hint-svg" viewBox="0 0 60 70" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Hand-drawn curve sweeping down toward the grid -->
+            <path d="M 8 6 C 18 18, 38 22, 42 44" />
+            <!-- Arrow head -->
+            <path d="M 36 36 L 42 46 L 50 38" />
+          </svg>
         </div>
         <div id="lesson-groups"></div>
       </div>
