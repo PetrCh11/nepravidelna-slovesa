@@ -5150,3 +5150,61 @@ body.theme-dark .streak-info-badge {
   .streak-info-list li { flex-wrap: wrap; }
   .streak-info-badge { min-width: 0; }
 }
+
+/* ================== First-time study hint ================== */
+/* Shown above the group grid for users with no progress yet.
+   Dismissed permanently on first group click. See renderLessonPicker. */
+.study-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 12px auto 4px;
+  padding: 10px 18px;
+  max-width: max-content;
+  background: linear-gradient(135deg, #fff5d6, #ffe8a8);
+  color: #6b4d00;
+  border: 1.5px dashed #d4a300;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 0.98rem;
+  line-height: 1.3;
+  text-align: center;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  animation: studyHintWake 0.4s ease both;
+}
+.study-hint[hidden] { display: none; }
+.study-hint-text { white-space: nowrap; }
+.study-hint-arrow {
+  font-size: 1.4rem;
+  line-height: 1;
+  animation: studyHintBounce 1.4s ease-in-out 3;
+  /* iteration-count: 3 → stops on its own so it doesn't nag forever */
+}
+@keyframes studyHintWake {
+  from { opacity: 0; transform: rotate(-1.5deg) translateY(-6px); }
+  to   { opacity: 1; transform: rotate(-1.5deg) translateY(0); }
+}
+@keyframes studyHintBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(5px); }
+}
+body.theme-dark .study-hint,
+[data-theme="dark"] .study-hint {
+  background: linear-gradient(135deg, #4a3a10, #3a2d08);
+  color: #ffe79a;
+  border-color: #a07a30;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+@media (max-width: 540px) {
+  .study-hint {
+    font-size: 0.92rem;
+    padding: 9px 14px;
+  }
+  .study-hint-text { white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .study-hint,
+  .study-hint-arrow { animation: none; }
+}

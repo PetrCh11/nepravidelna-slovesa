@@ -901,6 +901,14 @@ function renderLessonPicker() {
   renderResumeCard();
   renderSlabaMistaTile();
   finalizePickerBanners();
+  // First-time hint: visible only to users who have never answered a question
+  // AND haven't dismissed it yet. Cleared on first group click below.
+  const studyHint = $('#study-hint');
+  if (studyHint) {
+    const neverStudied = Object.keys(state.progress || {}).length === 0;
+    const alreadySeen = localStorage.getItem('seenStudyHint') === 'true';
+    studyHint.hidden = !(neverStudied && !alreadySeen);
+  }
   const c = $('#lesson-groups');
   c.innerHTML = '';
   let subIdx = 0;
@@ -979,6 +987,14 @@ function renderLessonPicker() {
         </div>
       `;
       card.addEventListener('click', () => {
+        // Dismiss the first-time study hint permanently — user found the tiles.
+        try {
+          if (localStorage.getItem('seenStudyHint') !== 'true') {
+            localStorage.setItem('seenStudyHint', 'true');
+            const hint = document.getElementById('study-hint');
+            if (hint) hint.hidden = true;
+          }
+        } catch {}
         if (isLocked) { showPaywall(sub); return; }
         // If student already worked on this group, offer "all" vs "problematic"
         const hasPrior = sub.verbs.some((v) => state.progress[v.inf]?.status);
