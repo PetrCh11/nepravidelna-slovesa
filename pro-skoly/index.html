@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Pro učitele a školy | ucseslovesa.cz – nepravidelná slovesa</title>
+  <meta name="description" content="Interaktivní webová aplikace na anglická nepravidelná slovesa pro ZŠ a SŠ. 106 sloves ve 24 výslovnostních skupinách. Pro učitele kód na rok zdarma. Funguje na mobilu i počítači, bez instalace, bez reklam." />
+  <link rel="canonical" href="https://ucseslovesa.cz/pro-skoly/" />
+  <link rel="alternate" hreflang="cs" href="https://ucseslovesa.cz/pro-skoly/" />
+  <meta name="theme-color" content="#5dc9bd" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Nepravidelná slovesa pro Vaši třídu – ucseslovesa.cz" />
+  <meta property="og:description" content="Webová aplikace na trénink anglických nepravidelných sloves pro ZŠ a SŠ. Pro učitele rok zdarma s kódem UCITELE2026." />
+  <meta property="og:url" content="https://ucseslovesa.cz/pro-skoly/" />
+  <meta property="og:locale" content="cs_CZ" />
+  <meta property="og:site_name" content="Nepravidelná slovesa – jednou a provždy" />
+  <meta property="og:image" content="https://ucseslovesa.cz/icon-512.png" />
+  <meta name="twitter:card" content="summary" />
+
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icon-180.png" />
+
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+
+  <link rel="stylesheet" href="/seznam/seznam.css" />
+  <style>
+    /* Teachers landing — page-specific extensions over /seznam/seznam.css */
+    .ts-lede {
+      font-size: 1.1rem;
+      line-height: 1.55;
+      color: #3b454f;
+      margin: 8px 0 24px;
+    }
+    .ts-lede strong { color: #1d2329; }
+
+    /* Benefits grid */
+    .ts-benefits {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin: 20px 0 8px;
+    }
+    .ts-benefit {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.07);
+      border-radius: 14px;
+      padding: 16px 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .ts-benefit-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .ts-benefit-h {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0 0 4px;
+      color: #1d2329;
+    }
+    .ts-benefit p {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      color: #4a5562;
+    }
+
+    /* Steps */
+    .ts-steps {
+      counter-reset: ts-step;
+      padding: 0;
+      list-style: none;
+      margin: 18px 0 0;
+    }
+    .ts-steps li {
+      position: relative;
+      padding: 14px 16px 14px 56px;
+      border-left: 3px solid #5dc9bd;
+      background: linear-gradient(90deg, rgba(93,201,189,0.07), transparent 60%);
+      margin-bottom: 10px;
+      border-radius: 0 12px 12px 0;
+      counter-increment: ts-step;
+    }
+    .ts-steps li::before {
+      content: counter(ts-step);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #5dc9bd, #7c6ff5);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .ts-steps strong { display: block; margin-bottom: 2px; color: #1d2329; }
+    .ts-steps p { margin: 2px 0 0; font-size: 0.94rem; color: #4a5562; line-height: 1.45; }
+
+    /* Promo code box */
+    .ts-promo {
+      background: linear-gradient(135deg, #fff5d6, #ffe8a8);
+      border: 2px dashed #d4a300;
+      border-radius: 18px;
+      padding: 22px 24px;
+      margin: 30px 0;
+      text-align: center;
+    }
+    .ts-promo-eyebrow {
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8a6500;
+      margin: 0 0 8px;
+    }
+    .ts-promo-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #5a4400;
+      margin: 0 0 12px;
+    }
+    .ts-promo-code-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px 8px 8px 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+      max-width: 100%;
+    }
+    .ts-promo-code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #1d2329;
+    }
+    .ts-copy-btn {
+      background: linear-gradient(135deg, #5dc9bd, #7c6ff5);
+      color: #fff;
+      border: 0;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.2s;
+    }
+    .ts-copy-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,111,245,0.35); }
+    .ts-copy-btn.copied { background: #22a06b; }
+    .ts-promo-note {
+      margin: 12px 0 0;
+      font-size: 0.88rem;
+      color: #7a5a2b;
+    }
+    .ts-promo-howto {
+      margin: 14px auto 0;
+      font-size: 0.85rem;
+      color: #6e4a14;
+      max-width: 460px;
+      text-align: left;
+      background: rgba(255,255,255,0.5);
+      border-radius: 10px;
+      padding: 10px 14px;
+    }
+    .ts-promo-howto ol { margin: 4px 0 0; padding-left: 20px; }
+    .ts-promo-howto li { margin: 2px 0; }
+
+    /* Pricing strip */
+    .ts-pricing {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .ts-price {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.07);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+    .ts-price-label { font-size: 0.82rem; color: #6c7783; text-transform: uppercase; letter-spacing: 0.04em; }
+    .ts-price-amount { font-size: 1.3rem; font-weight: 800; color: #1d2329; margin: 4px 0 2px; }
+    .ts-price-note { font-size: 0.82rem; color: #6c7783; }
+    .ts-price.is-free .ts-price-amount { color: #22a06b; }
+
+    /* Bulk contact box */
+    .ts-bulk {
+      background: #f0f7ff;
+      border: 1px solid #c9dcf2;
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin: 24px 0;
+    }
+    .ts-bulk-h {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 6px;
+      color: #1d2329;
+    }
+    .ts-bulk p { margin: 0 0 12px; color: #4a5562; }
+    .ts-bulk a.seo-cta { font-size: 0.9rem; padding: 9px 16px; }
+
+    /* Author note */
+    .ts-author {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px 18px;
+      border: 1px solid rgba(0,0,0,0.07);
+      margin: 22px 0;
+    }
+    .ts-author-emoji { font-size: 1.8rem; line-height: 1; }
+    .ts-author p { margin: 0 0 4px; font-size: 0.94rem; color: #3b454f; line-height: 1.5; }
+    .ts-author strong { color: #1d2329; }
+
+    @media (max-width: 540px) {
+      .ts-promo { padding: 18px 16px; }
+      .ts-promo-title { font-size: 1.1rem; }
+      .ts-promo-code { font-size: 1.05rem; }
+      .ts-promo-code-row { padding: 6px 6px 6px 12px; flex-wrap: wrap; }
+    }
+
+    /* Dark theme is irrelevant here — landing pages are light-only. */
+  </style>
+</head>
+<body>
+  <header class="seo-header">
+    <div class="container">
+      <a class="seo-logo" href="/">
+        <img src="/icon-192.png" alt="" width="40" height="40" />
+        <div class="seo-logo-text">
+          <span class="seo-logo-name">Nepravidelná slovesa</span>
+          <span class="seo-logo-sub">… jednou a provždy.</span>
+        </div>
+      </a>
+      <a class="seo-cta seo-cta-header" href="/" data-track="cta_header_teachers">Spustit aplikaci →</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <article>
+      <nav class="breadcrumb" aria-label="Drobečková navigace">
+        <a href="/">Domů</a> <span aria-hidden="true">›</span>
+        <span aria-current="page">Pro učitele a školy</span>
+      </nav>
+
+      <h1>Nepravidelná slovesa pro Vaši třídu</h1>
+      <p class="ts-lede">
+        Interaktivní webová aplikace, ve které studenti procvičují <strong>106 anglických nepravidelných sloves</strong>
+        rozdělených do <strong>24 výslovnostních skupin</strong>. Funguje na mobilu, tabletu i počítači.
+        Bez instalace, bez reklam, bez nutnosti registrace.
+      </p>
+
+      <!-- Quick promo box near the top — main CTA -->
+      <div class="ts-promo">
+        <p class="ts-promo-eyebrow">Nabídka pro učitele</p>
+        <p class="ts-promo-title">Rok plného přístupu zdarma 🎓</p>
+        <div class="ts-promo-code-row">
+          <span class="ts-promo-code" id="ts-code">UCITELE2026</span>
+          <button class="ts-copy-btn" id="ts-copy" type="button" data-track="teacher_code_copied">Zkopírovat</button>
+        </div>
+        <p class="ts-promo-note">Kód platí do 31. 8. 2027 · limit 10 redempcí · 365 dní přístupu od aktivace</p>
+        <div class="ts-promo-howto">
+          <strong>Jak kód použít:</strong>
+          <ol>
+            <li>Otevřete <a href="/" data-track="teacher_open_app">ucseslovesa.cz</a> a přihlaste se přes Google.</li>
+            <li>Klikněte na libovolnou zamčenou skupinu (🔒) — otevře se okno s nabídkou.</li>
+            <li>V okně klikněte na <em>„🎟️ Mám slevový kód"</em>, vložte <code>UCITELE2026</code> a klikněte <em>Uplatnit</em>.</li>
+            <li>Hotovo — máte rok plný přístup ke všem skupinám.</li>
+          </ol>
+        </div>
+      </div>
+
+      <section>
+        <h2>Co aplikace nabízí</h2>
+        <div class="ts-benefits">
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🧠</span>
+            <h3 class="ts-benefit-h">Spaced repetition</h3>
+            <p>Slovesa, která student plete, se vrací častěji. Ta zvládnutá ustupují do pozadí. Žádné mechanické biflování celé tabulky.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🎨</span>
+            <h3 class="ts-benefit-h">24 výslovnostních skupin</h3>
+            <p>Slovesa rozdělená podle vzorce změny (i-a-u, ought-aught, …). Místo 106 nesouvisejících řádků 24 zapamatovatelných pravidel.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🔊</span>
+            <h3 class="ts-benefit-h">Výslovnost a Car Mode</h3>
+            <p>Audio u každého slovesa (BrE i AmE). „Car Mode" hlasem přečte český překlad a po pauze všechny tři tvary — vhodné pro dojíždějící studenty.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">📱</span>
+            <h3 class="ts-benefit-h">Funguje offline</h3>
+            <p>Webová appka (PWA) — instaluje se z prohlížeče jako klasická appka. Po prvním otevření funguje i bez wifi. Žádný App Store.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🔥</span>
+            <h3 class="ts-benefit-h">Streak a odměny</h3>
+            <p>Denní cvičení odemyká nové skupiny — herní motivace pro studenty. Žádné reklamy, žádné mikrotransakce.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🇨🇿</span>
+            <h3 class="ts-benefit-h">Plně v češtině</h3>
+            <p>Rozhraní, vysvětlení vzorců i mnemotechnické pomůcky v češtině. Cílí na úroveň B1–B2, tedy 2. stupeň ZŠ a SŠ.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Jak to nasadit do třídy</h2>
+        <ol class="ts-steps">
+          <li>
+            <strong>Vyzkoušejte sami (5 minut)</strong>
+            <p>Aktivujte si kód <code>UCITELE2026</code> a projděte 1–2 skupiny. Uvidíte, jak appka vede studenta od první lekce.</p>
+          </li>
+          <li>
+            <strong>Ukažte studentům ve třídě (5 minut)</strong>
+            <p>Promítněte na tabuli, otevřete jednu skupinu (např. <a href="/skupina/i-a-u/">I → A → U</a>). Studenti si appku přidají na plochu telefonu a začnou cvičit.</p>
+          </li>
+          <li>
+            <strong>Zadejte jako domácí úkol</strong>
+            <p>Třeba „do příští hodiny zvládnout streak 7 dní" nebo „dokončit první 3 skupiny". Pokrok student vidí sám, vy nemusíte nic kontrolovat.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Co to stojí studenty</h2>
+        <p>3 výslovnostní skupiny (15 sloves) jsou <strong>úplně zdarma</strong> bez registrace. Pokud student chce všech 106 sloves a Car Mode, volí jednu z:</p>
+        <div class="ts-pricing">
+          <div class="ts-price is-free">
+            <div class="ts-price-label">Zdarma</div>
+            <div class="ts-price-amount">0 Kč</div>
+            <div class="ts-price-note">3 skupiny · 15 sloves</div>
+          </div>
+          <div class="ts-price">
+            <div class="ts-price-label">Měsíčně</div>
+            <div class="ts-price-amount">49 Kč</div>
+            <div class="ts-price-note">7 dní zdarma · lze zrušit</div>
+          </div>
+          <div class="ts-price">
+            <div class="ts-price-label">Ročně</div>
+            <div class="ts-price-amount">299 Kč</div>
+            <div class="ts-price-note">7 dní zdarma · ~25 Kč/měs</div>
+          </div>
+          <div class="ts-price">
+            <div class="ts-price-label">Doživotně</div>
+            <div class="ts-price-amount">449 Kč</div>
+            <div class="ts-price-note">Jednorázově · navždy</div>
+          </div>
+        </div>
+        <p style="font-size:0.9rem;color:#6c7783;margin-top:8px;">
+          Aplikace je tvořena jedním vývojářem v ČR. Žádné reklamy, žádný prodej dat. Premium jen kryje provoz a další vývoj.
+        </p>
+      </section>
+
+      <div class="ts-bulk">
+        <p class="ts-bulk-h">Kódy pro celou třídu nebo školu</p>
+        <p>
+          Pokud byste chtěli kódy pro studenty (jako odměnu, motivační program, příprava na maturitu),
+          domluvíme se individuálně — záleží na počtu studentů a délce, na kterou je potřebujete.
+          Pro neziskové projekty a školy v menších obcích bývá to zdarma.
+        </p>
+        <a class="seo-cta" href="mailto:hello@ucseslovesa.cz?subject=Kódy%20pro%20třídu%20—%20ucseslovesa.cz&amp;body=Dobrý%20den%2C%0A%0Ajsem%20učitel%20angličtiny%20na%20%5Bnázev%20školy%5D%20a%20chtěl%20bych%20se%20domluvit%20na%20přístupu%20pro%20moje%20studenty.%0A%0APočet%20studentů%3A%20%0AOčekávaná%20délka%20používání%3A%20%0A%0ADěkuji%2C%0A%5Bjméno%5D" data-track="teacher_bulk_email">✉️ Napsat o kódech pro třídu</a>
+      </div>
+
+      <section>
+        <h2>Často kladené otázky</h2>
+        <div class="faq">
+          <details class="faq-item">
+            <summary>Musí se studenti registrovat?</summary>
+            <p>
+              <strong>Ne, není to nutné.</strong> Aplikace funguje hned po otevření, pokrok se ukládá v prohlížeči.
+              Pokud se student přihlásí přes Google, jeho pokrok se synchronizuje mezi zařízeními (mobil + počítač).
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Sleduje aplikace data o studentech?</summary>
+            <p>
+              Aplikace používá <strong>Plausible Analytics</strong> — soukromí-šetrnou alternativu Google Analytics.
+              Žádné cookies pro tracking, žádné prodávání dat, žádný profiling. Pokud se student přihlásí, jeho pokrok ve cvičení
+              se ukládá ve Firebase (Google) — pouze pro účely synchronizace mezi zařízeními.
+              <strong>GDPR-friendly.</strong>
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Jak je to s instalací? Musí studenti něco stahovat?</summary>
+            <p>
+              <strong>Ne.</strong> ucseslovesa.cz je <em>Progressive Web App</em> — otevře se v jakémkoli prohlížeči
+              (Chrome, Safari, Edge, Firefox). Studenti si ji můžou přidat na plochu telefonu jako klasickou appku
+              (Safari: tlačítko sdílení → „Přidat na plochu"; Chrome: menu → „Instalovat appku"), ale není to povinné.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Pro jakou úroveň žáků je vhodná?</summary>
+            <p>
+              Cílíme na <strong>2. stupeň ZŠ a SŠ</strong>, tedy úroveň <em>A2 – B2</em>. Slovesa jsou rozdělená do 24 skupin,
+              od těch nejjednodušších (3 stejné tvary, např. <em>put–put–put</em>) po komplexnější (<em>ought–aught</em>, <em>silné změny samohlásek</em>).
+              Rozhraní i vysvětlení vzorců jsou plně v češtině.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Můžu ji použít při výuce ve třídě (např. na interaktivní tabuli)?</summary>
+            <p>
+              Jasně. Otevřete <a href="/">ucseslovesa.cz</a> v prohlížeči na třídním počítači, projděte se studenty jednu skupinu společně.
+              Nebo si nechte studenty na mobilech pracovat individuálně — vy uvidíte celkový pokrok podle toho, kolik mají u sebe streak.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Co když potřebuju kódy pro celou třídu, ne jen pro sebe?</summary>
+            <p>
+              Napište mi na <a href="mailto:hello@ucseslovesa.cz">hello@ucseslovesa.cz</a> — domluvíme se individuálně.
+              Pro státní školy a neziskové iniciativy poskytuju kódy obvykle zdarma. U větších škol (50+ studentů) se bavme o partnerské spolupráci.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Kdo aplikaci vyvíjí?</summary>
+            <p>
+              Aplikaci dělám sám — jsem vývojář z ČR, který chtěl vlastním dětem ulehčit memorování slovíček. Cílem nebylo postavit
+              další generický učební nástroj, ale aplikaci, která reálně využívá poznatky kognitivní psychologie (spaced repetition,
+              chunking, kontextové učení). Pokud byste chtěli o aplikaci dělat článek, prezentaci nebo cokoli dalšího — ozvěte se,
+              rád pomůžu s materiály.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <div class="ts-author">
+        <span class="ts-author-emoji">👋</span>
+        <div>
+          <p><strong>Petr Chamula</strong> — vývojář ucseslovesa.cz</p>
+          <p>Máte připomínky, nápady nebo zájem o spolupráci? Napište mi na <a href="mailto:hello@ucseslovesa.cz">hello@ucseslovesa.cz</a>. Odpovídám obvykle do 1 dne.</p>
+        </div>
+      </div>
+
+      <div class="seo-cta-banner">
+        <div>
+          <strong>Vyzkoušejte aplikaci hned teď</strong>
+          <p>Otevře se okamžitě v prohlížeči. Žádná registrace pro start. Kód <code>UCITELE2026</code> aktivujte v nastavení po přihlášení.</p>
+        </div>
+        <a class="seo-cta" href="/" data-track="cta_bottom_teachers">Spustit aplikaci →</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="seo-footer">
+    <div class="container">
+      <p>© ucseslovesa.cz · <a href="/">Aplikace</a> · <a href="/seznam/">Seznam</a> · <a href="/pro-skoly/">Pro učitele</a> · <a href="mailto:hello@ucseslovesa.cz">✉️ hello@ucseslovesa.cz</a></p>
+      <p class="seo-foot-meta">Aktualizováno: 2026-05-27</p>
+    </div>
+  </footer>
+
+  <script>
+    // Copy promo code to clipboard
+    (function () {
+      const btn = document.getElementById('ts-copy');
+      const codeEl = document.getElementById('ts-code');
+      if (!btn || !codeEl) return;
+      btn.addEventListener('click', async () => {
+        const code = codeEl.textContent.trim();
+        try {
+          await navigator.clipboard.writeText(code);
+        } catch {
+          // Fallback for older browsers / non-secure contexts
+          const range = document.createRange();
+          range.selectNode(codeEl);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          try { document.execCommand('copy'); } catch {}
+          sel.removeAllRanges();
+        }
+        btn.classList.add('copied');
+        btn.textContent = '✓ Zkopírováno';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.textContent = 'Zkopírovat';
+        }, 2000);
+        if (window.plausible) window.plausible('teacher_code_copied');
+      });
+    })();
+
+    // Track CTA clicks via Plausible
+    document.querySelectorAll('[data-track]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const name = el.getAttribute('data-track');
+        if (window.plausible && name) window.plausible(name);
+      });
+    });
+
+    // Fire page-view event
+    if (window.plausible) window.plausible('teacher_lp_view');
+  </script>
+</body>
+</html>
