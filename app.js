@@ -900,6 +900,7 @@ function renderLessonPicker() {
   ensurePickerBanners(); // shared row that holds resume-card + slaba-mista-tile
   renderResumeCard();
   renderSlabaMistaTile();
+  renderTryAppTile();
   finalizePickerBanners();
   const c = $('#lesson-groups');
   c.innerHTML = '';
@@ -2681,6 +2682,50 @@ function renderSlabaMistaTile() {
     <span class="slaba-mista-arrow" aria-hidden="true">▶</span>
   `;
   tile.addEventListener('click', startSlabaMista);
+  row.appendChild(tile);
+}
+
+// First-visit nudge: a single "try the app" tile that lives in the same
+// picker-banners spot as the Boss-mode tile. Shown only when the visitor has no
+// progress at all — once they practice anything it disappears and the Boss-mode
+// tile takes over (the two never coexist). Click scrolls to the section grid
+// and pulses the first group card.
+function renderTryAppTile() {
+  const row = document.querySelector('.lesson-picker .picker-banners') || ensurePickerBanners();
+  if (!row) return;
+  const old = row.querySelector('.try-app-tile');
+  if (old) old.remove();
+  // Only for brand-new visitors: no recorded progress, no resume in flight.
+  const hasProgress = Object.keys(state.progress || {}).length > 0;
+  if (hasProgress || row.querySelector('.resume-card')) return;
+
+  const isPro = state.style === 'pro';
+  const title = isPro ? 'Začni procvičovat' : 'Pojď to zkusit!';
+  const sub = isPro ? 'Začni první skupinou — stačí kliknout' : 'První skupina tě navede, jen klikni';
+
+  const tile = document.createElement('button');
+  tile.type = 'button';
+  tile.className = 'slaba-mista-tile try-app-tile';
+  tile.innerHTML = `
+    <span class="slaba-mista-icon" aria-hidden="true">🚀</span>
+    <span class="slaba-mista-text">
+      <span class="slaba-mista-title">${title}</span>
+      <span class="slaba-mista-sub">${sub}</span>
+    </span>
+    <span class="slaba-mista-arrow" aria-hidden="true">▶</span>
+  `;
+  tile.addEventListener('click', () => {
+    try { track('try_app_tile_clicked', {}); } catch (_) {}
+    const first = document.querySelector('#lesson-groups .group-card');
+    if (!first) return;
+    first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    first.classList.remove('pulse-attention');
+    // Reflow so re-adding the class restarts the animation if clicked again.
+    void first.offsetWidth;
+    first.classList.add('pulse-attention');
+    const stop = () => { first.classList.remove('pulse-attention'); first.removeEventListener('animationend', stop); };
+    first.addEventListener('animationend', stop);
+  });
   row.appendChild(tile);
 }
 

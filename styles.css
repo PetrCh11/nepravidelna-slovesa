@@ -4485,6 +4485,30 @@ body.practicing .app-footer { display: none; }
   text-overflow: ellipsis;
 }
 .slaba-mista-arrow { font-size: 1rem; opacity: 0.85; }
+
+/* First-visit "try the app" tile: same look as Boss-mode but spans the whole
+   banner row (it's the only thing there for a new visitor) and uses an inviting
+   green→teal gradient instead of the warm Boss-mode one. */
+.picker-banners > .try-app-tile { grid-column: 1 / -1; }
+.try-app-tile {
+  background: linear-gradient(135deg, #1fb98b 0%, #2e9bd6 100%);
+  box-shadow: 0 4px 14px rgba(31, 155, 139, 0.30);
+}
+.try-app-tile:hover { box-shadow: 0 8px 22px rgba(31, 155, 139, 0.42); }
+
+/* Attention pulse on the first group card when the try-app tile is clicked. */
+@keyframes try-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(46, 155, 214, 0); }
+  50%      { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(46, 155, 214, 0.28); }
+}
+.group-card.pulse-attention {
+  animation: try-pulse 0.9s ease-in-out 3;
+  position: relative;
+  z-index: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .group-card.pulse-attention { animation: none; outline: 3px solid rgba(46, 155, 214, 0.6); }
+}
 body.auto-driving { overflow: hidden; }
 
 @media (max-width: 480px) {
