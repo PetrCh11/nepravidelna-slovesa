@@ -1832,6 +1832,10 @@ function askStage2Verb(verb, step) {
   const inputs = Array.from(q.querySelectorAll('.quiz-fill-inputs input'));
   const fieldResults = {};
   let finalized = false;
+  // Čas posledního dotyku prstu/myši V RÁMCI stránky. Slouží k rozlišení, čím se
+  // pohnul focus: stiskem "Další" na systémové klávesnici (ta žádný pointerdown
+  // do stránky nepošle) vs. klepnutím prstem na jiné pole (to pointerdown pošle).
+  let lastPointerDownAt = 0;
   const giveUpBtn = q.querySelector('#give-up-btn');
 
   const markField = (inp) => {
@@ -1967,6 +1971,28 @@ function askStage2Verb(verb, step) {
     inp.addEventListener('beforeinput', (e) => {
       if (e.inputType === 'insertLineBreak') advance(e);
     });
+    // Záchytná síť pro klávesnice (např. Samsung), jejichž "Další" tlačítko udělá
+    // nativní skok focusu na další pole BEZ keydown i beforeinput — pak by se
+    // opuštěné pole nikdy nezkontrolovalo. Spustí se JEN když focus přeskočil bez
+    // dotyku v stránce (= stisk "Další"). Když student ťukne prstem jinam,
+    // předchází tomu pointerdown a kontrolu schválně NEspustíme.
+    inp.addEventListener('pointerdown', () => { lastPointerDownAt = Date.now(); });
+    if (!isAtomicCheck) {
+      inp.addEventListener('focusin', () => {
+        if (finalized) return;
+        // Focus se pohnul kvůli dotyku prstem → nekontrolovat, jen přesunout.
+        if (Date.now() - lastPointerDownAt < 700) return;
+        let marked = false;
+        inputs.forEach((other) => {
+          if (other === inp) return;
+          if (other.dataset.form in fieldResults) return;
+          if (other.value.trim() === '') return;
+          markField(other);
+          marked = true;
+        });
+        if (marked && !inputs.some((x) => !(x.dataset.form in fieldResults))) finalize();
+      });
+    }
   });
 
   if (isAtomicCheck) {
