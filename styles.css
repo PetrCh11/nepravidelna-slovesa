@@ -2671,6 +2671,20 @@ body {
   text-decoration-color: rgba(215, 38, 61, 0.55);
   color: rgba(215, 38, 61, 0.78);
 }
+/* Dark mode: the hardcoded saturated #d7263d above is too dark to read on the
+   dark glass background (esp. on mobile). Lighten the wrong-answer text, its
+   strike-through and the field tint so the struck verb stays clearly legible. */
+[data-theme="dark"] .fc-inputs input.wrong,
+[data-theme="dark"] .quiz-fill-inputs input.wrong,
+[data-theme="dark"] .sentence-blank.wrong {
+  border-color: rgba(255, 107, 125, 0.75);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,107,125,0.14));
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 3px rgba(255,107,125,0.22);
+}
+[data-theme="dark"] .quiz-fill-inputs input.wrong {
+  text-decoration-color: rgba(255, 138, 150, 0.7);
+  color: #ff8a96;
+}
 .fill-row { position: relative; }
 .fill-row .field-indicator.wrong {
   position: absolute;
