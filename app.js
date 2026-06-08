@@ -884,6 +884,9 @@ function setView(view) {
   try { localStorage.setItem('lastView', view); } catch (_) {}
   $$('.view').forEach((v) => v.classList.remove('active'));
   target.classList.add('active');
+  // Switching top-level view ends any active practice session — otherwise the
+  // mobile "hidden header" chrome could linger on a non-lesson view.
+  document.body.classList.remove('practicing');
   $('#menu-dropdown').classList.remove('open');
   $('#menu-btn').setAttribute('aria-expanded', 'false');
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -3568,9 +3571,28 @@ function toggleSoundEffects() {
 }
 function toggleMenu() {
   const d = $('#menu-dropdown');
-  const btn = $('#menu-btn');
   const open = d.classList.toggle('open');
-  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  $('#menu-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
+  $('#practice-menu-btn')?.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+// While practicing on mobile the full header is hidden, so the shared
+// #menu-dropdown is reparented to <body> (CSS anchors it under the floating ☰)
+// and restored to the header afterwards. Driven by body.practicing + viewport.
+const _mqMobile = window.matchMedia('(max-width: 600px)');
+function syncPracticeChrome() {
+  const dd = $('#menu-dropdown');
+  if (!dd) return;
+  const wrap = $('.menu-wrap');
+  const useFloating = document.body.classList.contains('practicing') && _mqMobile.matches;
+  if (useFloating) {
+    if (dd.parentElement !== document.body) document.body.appendChild(dd);
+  } else {
+    if (wrap && dd.parentElement !== wrap) wrap.appendChild(dd);
+    dd.classList.remove('open');
+    $('#menu-btn')?.setAttribute('aria-expanded', 'false');
+    $('#practice-menu-btn')?.setAttribute('aria-expanded', 'false');
+  }
 }
 
 // ============================================================
@@ -3961,12 +3983,24 @@ async function init() {
 
   // Menu
   $('#menu-btn').addEventListener('click', toggleMenu);
+  $('#practice-menu-btn')?.addEventListener('click', toggleMenu);
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.menu-wrap')) {
+    // Treat the menu trigger(s) and the dropdown itself as "inside" — the
+    // dropdown may be reparented to <body> while practicing on mobile.
+    if (!e.target.closest('.menu-wrap') &&
+        !e.target.closest('#menu-dropdown') &&
+        !e.target.closest('#practice-menu-btn')) {
       $('#menu-dropdown').classList.remove('open');
       $('#menu-btn').setAttribute('aria-expanded', 'false');
+      $('#practice-menu-btn')?.setAttribute('aria-expanded', 'false');
     }
   });
+  // Keep the floating ☰ / header-menu chrome in sync with practice state and
+  // viewport size (handles rotation / resize across the mobile breakpoint).
+  new MutationObserver(syncPracticeChrome)
+    .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  _mqMobile.addEventListener('change', syncPracticeChrome);
+  syncPracticeChrome();
   // Only menu items with a data-view attribute should route to setView() —
   // other .menu-item buttons (theme toggle, sound toggle, cloud sign-in,
   // billing portal) handle their own action and would crash setView(undefined).
