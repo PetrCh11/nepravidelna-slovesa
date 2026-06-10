@@ -216,7 +216,7 @@ const POS_PRO = [
   'KPI splněny pro dnešek. 📊',
   'As per my previous email... tohle bylo bez chyby! 📩',
   'Skvěle odřízený projekt. 🦾',
-  'Kdo neskáče, není {name}, HOP HOP HOP! 🏒',
+  'Kdo neskáče, není {name}, HOP HOP HOP! ⚽️',
   'V příštím mailu zahraničním kolegům už neuděláš chybu. 👋',
   'Dovolená v zahraničí se začíná vyplácet. ✈️',
   'HR oddělení tleská. 👏',
@@ -252,7 +252,7 @@ const POS_STUDENT = [
   'Trefa do černýho. 🎯',
   'No cap, tohle bylo perfektní. 🙌',
   'Slay! 💅',
-  'Kdo neskáče, není {name}, HOP HOP HOP! 🏒',
+  'Kdo neskáče, není {name}, HOP HOP HOP! ⚽️',
 ];
 const STREAK_PRO = [
   'Tohle je na povýšení ještě před kvartálním hodnocením! 📈',
