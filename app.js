@@ -181,7 +181,7 @@ const state = {
   data: null,
   dialect: localStorage.getItem('dialect') || 'BrE',
   theme: localStorage.getItem('theme') || 'light',
-  style: localStorage.getItem('style') || 'pro', // 'pro' | 'student'
+  style: localStorage.getItem('style') || 'pro', // 'pro' | 'student' | 'hantec'
   currentView: 'lesson',
   lesson: null, // lesson state when active
   quiz: { pool: [], idx: 0, score: 0, total: 0, type: 'mixed', selectedSections: new Set(), review: [] },
@@ -307,6 +307,39 @@ const NEG_STUDENT = [
   'Fake news. 📰',
   'Eeeej, vedle. 🥶',
 ];
+const POS_HANTEC = [
+  'Betelný! 👌',
+  'Seš borec jak hrom. 💪',
+  'Zgómls to jak nic. 🧠',
+  'Tak tomu říkám fachman. 🛠️',
+  'Hokna odvedená na jedničku. ✅',
+  'Na štatlu by ti tleskali. 👏',
+  'Betelně to sype, jen tak dál. 🔥',
+  'Šalina jede a ty taky. 🚋',
+  'Angličtinu gómeš jak málokdo. 🎓',
+  'Kdo neskáče, není {name}, HOP HOP HOP! ⚽️',
+  'Petrov by zazvonil na tvoju počest. 🔔',
+  'To byla čurina, co? Máš to za jedna. 😎',
+];
+const NEG_HANTEC = [
+  'Hmm, tohle negómu. Zkus to ešče raz. 🤔',
+  'Tos trochu zvoral, kámo. Nevadí. 😅',
+  'Ujela ti šalina. Počkej na další a jeď znova. 🚋',
+  'Klídek, aji největší borci se sekajou. 🤝',
+  'To bylo vedle jak ta jedle u Prygla. 🌲',
+  'Švihls to moc hrr. Zkus to v klidu. 🐢',
+  'Tady to drhlo jak stará šalina do kopca. 📉',
+  'Tohle sloveso na tebe vyzrálo. Oplať mu to. 👾',
+];
+const STREAK_HANTEC = [
+  'Jedeš jak šalina bez zastávek! 🚋💨',
+  'Betelná šňůra, kámo! 🔥',
+  'Tak tohle je čistý Brno! 🏙️',
+  'Z tebe bude king anglickýho štatlu. 👑',
+  'Hattrick jak za Zbrojovku! ⚽',
+  'Prygl by se z tebe zvlnil. 🌊',
+  'Gómeš to líp než rodilí Angláni. 🇬🇧',
+];
 
 const TEXTS = {
   // Hero
@@ -346,14 +379,14 @@ const TEXTS = {
   giveup_btn:    { pro: 'Nevím 😭', student: 'Vzdávám 🏳️' },
   giveup_confirm:{ pro: 'Vážně? Klikni znovu 😭', student: 'Fakt? Klikni ještě jednou 😭' },
   // Feedback — combined pass (random pick from phrase pools above)
-  fb_pass_ok:     { pro: POS_PRO, student: POS_STUDENT },
-  fb_pass_redo_ok:{ pro: POS_PRO, student: POS_STUDENT },
-  fb_pass_wrong:  { pro: NEG_PRO, student: NEG_STUDENT },
+  fb_pass_ok:     { pro: POS_PRO, student: POS_STUDENT, hantec: POS_HANTEC },
+  fb_pass_redo_ok:{ pro: POS_PRO, student: POS_STUDENT, hantec: POS_HANTEC },
+  fb_pass_wrong:  { pro: NEG_PRO, student: NEG_STUDENT, hantec: NEG_HANTEC },
   // Feedback — finále
-  fb_finale_ok:   { pro: POS_PRO, student: POS_STUDENT },
-  fb_finale_wrong:{ pro: NEG_PRO, student: NEG_STUDENT },
+  fb_finale_ok:   { pro: POS_PRO, student: POS_STUDENT, hantec: POS_HANTEC },
+  fb_finale_wrong:{ pro: NEG_PRO, student: NEG_STUDENT, hantec: NEG_HANTEC },
   // Streak — 3+ correct in a row (student only; pro reuses positive pool)
-  fb_streak:      { pro: STREAK_PRO, student: STREAK_STUDENT },
+  fb_streak:      { pro: STREAK_PRO, student: STREAK_STUDENT, hantec: STREAK_HANTEC },
   // Results
   results_h2:    { pro: 'Hotovo! 🎉', student: 'Hotovo, válíš! 🎉' },
   stat_green:    { pro: 'zvládnuto', student: 'v kapse' },
@@ -471,6 +504,7 @@ function openToneModal() {
   if (!modal) return;
   const btnPro = document.getElementById('tone-pick-pro');
   const btnStudent = document.getElementById('tone-pick-student');
+  const btnHantec = document.getElementById('tone-pick-hantec');
   if (!btnPro || !btnStudent) return;
   const pick = (chosen) => {
     state.style = chosen;
@@ -481,10 +515,12 @@ function openToneModal() {
     try { cloud.pushSoon && cloud.pushSoon(); } catch (_) {}
     try { track('style_picked', { style: chosen }); } catch (_) {}
     closeToneModal();
-    toast(chosen === 'pro' ? 'Styl: 💼 Pracující' : 'Styl: 🎒 Student', 'success', 2200);
+    const styleLabels = { pro: 'Styl: 💼 Korporátní slang', student: 'Styl: 🎒 Školní prostředí', hantec: 'Styl: 🚋 Brněnský hantec' };
+    toast(styleLabels[chosen] || styleLabels.pro, 'success', 2200);
   };
   btnPro.onclick = () => pick('pro');
   btnStudent.onclick = () => pick('student');
+  if (btnHantec) btnHantec.onclick = () => pick('hantec');
   modal.classList.remove('hidden');
   requestAnimationFrame(() => modal.classList.add('visible'));
 }
@@ -3953,7 +3989,7 @@ async function init() {
     // Resume card visibility depends on cloud-synced activeLesson — re-render below picks it up.
     // Reflect cloud-synced style preference in menu toggle + texts
     const syncedStyle = localStorage.getItem('style');
-    if (syncedStyle === 'pro' || syncedStyle === 'student') {
+    if (syncedStyle === 'pro' || syncedStyle === 'student' || syncedStyle === 'hantec') {
       state.style = syncedStyle;
       $$('.menu-style-btn').forEach((b) => b.classList.toggle('active', b.dataset.style === state.style));
       applyStyleTexts();

@@ -5259,3 +5259,24 @@ body.theme-dark .streak-info-badge {
   backdrop-filter: blur(6px);
 }
 [data-theme="dark"] .modal-backdrop { background: rgba(0, 0, 0, 0.45); }
+
+/* ===== Tone picker: hantec bonus option ===== */
+.tone-option { position: relative; }
+.tone-option-wide {
+  grid-column: 1 / -1;
+  aspect-ratio: auto;
+  padding: 12px 14px;
+}
+.tone-option-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: linear-gradient(135deg, #ff6b35, #ff5c8a);
+  padding: 2px 8px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(255, 92, 60, 0.35);
+}

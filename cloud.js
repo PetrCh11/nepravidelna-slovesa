@@ -95,7 +95,7 @@ function mergeIntoLocal(remote) {
 
   // Communication style preference (Pracující / Student) — synced across devices.
   // Remote wins if local hasn't been set yet (first sign-in on a new device).
-  if (typeof remote.style === 'string' && (remote.style === 'pro' || remote.style === 'student')) {
+  if (typeof remote.style === 'string' && (remote.style === 'pro' || remote.style === 'student' || remote.style === 'hantec')) {
     if (!localStorage.getItem('styleAsked')) {
       localStorage.setItem('style', remote.style);
       localStorage.setItem('styleAsked', 'true');
@@ -205,7 +205,7 @@ export async function clearCloudProgress() {
       activeLessonAt: Date.now(),
       updatedAt: Date.now(),
     };
-    if (style === 'pro' || style === 'student') payload.style = style;
+    if (style === 'pro' || style === 'student' || style === 'hantec') payload.style = style;
     suppressPushOnce = true;
     await setDoc(ref, payload); // no merge → progress map fully replaced with {}
     setSyncStatus('synced');
@@ -238,7 +238,7 @@ async function pushNow() {
     try { activeLesson = JSON.parse(localStorage.getItem('activeLesson') || 'null'); } catch {}
     const activeLessonAt = Number(localStorage.getItem('activeLessonAt') || 0) || 0;
     const payload = { progress, studyDays, updatedAt: Date.now() };
-    if (style === 'pro' || style === 'student') payload.style = style;
+    if (style === 'pro' || style === 'student' || style === 'hantec') payload.style = style;
     if (streakRewards) payload.streakRewards = streakRewards;
     if (activeLessonAt > 0) {
       payload.activeLesson = activeLesson; // either the object or null
