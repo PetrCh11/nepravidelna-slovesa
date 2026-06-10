@@ -990,6 +990,7 @@ function renderLessonPicker() {
       const card = document.createElement('button');
       card.className = 'group-card';
       card.type = 'button';
+      card.dataset.sub = sub.id;
       card.style.setProperty('--sub-hue', hue);
       const progress = subProgress(sub);
       const allMastered = sub.verbs.every((v) => state.progress[v.inf]?.status === 'green');
@@ -1034,6 +1035,48 @@ function renderLessonPicker() {
       if (el.scrollWidth > el.clientWidth + 1) el.classList.add('is-small');
     });
   });
+  maybeHighlightBonusSub();
+}
+
+// One-time nudge: group 1.2.5 is free, but in the picker it sits surrounded by
+// locked cards, so students often miss it. Once both base free groups (1.1.0
+// and 1.2.1) are fully gone through, scroll to the 1.2.5 card and pulse it.
+const BONUS_HINT_KEY = 'bonusSubHintShown';
+function maybeHighlightBonusSub() {
+  if (state.premium) return;
+  if (localStorage.getItem(BONUS_HINT_KEY) === 'true') return;
+  const subById = (id) => {
+    for (const sec of state.data.sections)
+      for (const sub of sec.subsections)
+        if (sub.id === id) return sub;
+    return null;
+  };
+  const isDone = (id) => {
+    const sub = subById(id);
+    return !!sub && sub.verbs.every((v) => state.progress[v.inf]?.status);
+  };
+  if (!isDone('1.1.0') || !isDone('1.2.1')) return;
+  // If the student already started 1.2.5 on their own, no nudge needed.
+  const bonus = subById('1.2.5');
+  if (!bonus || bonus.verbs.some((v) => state.progress[v.inf]?.status)) {
+    localStorage.setItem(BONUS_HINT_KEY, 'true');
+    return;
+  }
+  const card = document.querySelector('.group-card[data-sub="1.2.5"]');
+  // offsetParent is null while the picker (or its view) is hidden — keep the
+  // flag unset so the nudge fires the next time the picker is actually shown.
+  if (!card || !card.offsetParent) return;
+  localStorage.setItem(BONUS_HINT_KEY, 'true');
+  // Re-query inside the timeout: the picker may re-render (cloud sync, style
+  // change) between now and then, which replaces all card elements.
+  setTimeout(() => {
+    const el = document.querySelector('.group-card[data-sub="1.2.5"]');
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('group-card-bonus-pulse');
+    toast('🎁 Tahle skupina je pro tebe odemčená zdarma!', 'success', 4000);
+    setTimeout(() => el.classList.remove('group-card-bonus-pulse'), 6000);
+  }, 450);
 }
 
 function subProgress(sub) {
