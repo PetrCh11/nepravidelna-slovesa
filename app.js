@@ -2722,13 +2722,18 @@ function renderSlabaMistaTile() {
   };
 
   const isPro = state.style === 'pro';
-  const icon = isPro ? '🎯' : '👾';
-  const title = isPro ? 'Dnešní cílovka' : 'Boss mode';
+  const isHantec = state.style === 'hantec';
+  const icon = isPro ? '🎯' : (isHantec ? '🛠️' : '👾');
+  const title = isPro ? 'Dnešní cílovka' : (isHantec ? 'Betelná šichta' : 'Boss mode');
   let sub;
   if (isPro) {
     sub = weakCount > 0
       ? `${weakCount} ${adj(weakCount, 'problémov')} + ${restCount} ${adj(restCount, 'náhodn')}`
       : `${picks.length} ${adj(picks.length, 'náhodn')} · retention check`;
+  } else if (isHantec) {
+    sub = weakCount > 0
+      ? `${weakCount} ${adj(weakCount, 'zvoran')} + ${restCount} z fleku`
+      : `${picks.length} z fleku · prubnem to`;
   } else {
     sub = weakCount > 0
       ? `${weakCount} ${adj(weakCount, 'failnut')} + ${restCount} random`
