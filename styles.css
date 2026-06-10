@@ -5227,3 +5227,35 @@ body.theme-dark .streak-info-badge {
   .streak-info-badge { min-width: 0; }
 }
 
+
+/* ===== Liquid glass: overlays (modaly, toasty, install banner) ===== */
+.modal {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur-lg);
+  backdrop-filter: var(--glass-blur-lg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg);
+}
+.toast {
+  background: rgba(30, 30, 40, 0.72);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset, 0 10px 30px rgba(0,0,0,0.25);
+}
+.toast-success { background: rgba(34, 139, 96, 0.78); }
+.toast-error   { background: rgba(190, 60, 60, 0.80); }
+.toast-info    { background: rgba(50, 90, 160, 0.78); }
+.install-banner {
+  background: linear-gradient(135deg, rgba(93, 201, 189, 0.72), rgba(124, 111, 245, 0.72));
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 2px 12px rgba(0,0,0,0.15);
+}
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.28);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+[data-theme="dark"] .modal-backdrop { background: rgba(0, 0, 0, 0.45); }
