@@ -94,6 +94,7 @@
     align-items: center;
     padding: 5px 14px;
   }
+  .vrow { background: var(--tint-soft); }
   .vrow:nth-child(even) { background: var(--tint); }
   .vinf { display: flex; align-items: center; gap: 9px; }
   .vemoji { font-size: 16px; width: 20px; text-align: center; }
@@ -199,6 +200,7 @@ async function build() {
       card.className = 'group';
       card.style.setProperty('--accent', `hsl(${hue} 65% 45%)`);
       card.style.setProperty('--tint', `hsl(${hue} 70% 96%)`);
+      card.style.setProperty('--tint-soft', `hsl(${hue} 70% 99%)`);
       card.style.setProperty('--c1', '200px');
       card.style.setProperty('--c2', '140px');
       card.style.setProperty('--c3', '150px');
