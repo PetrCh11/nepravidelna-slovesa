@@ -131,20 +131,20 @@
         {
           "id": "2.1.1",
           "rule": "-EE- (popř. -EA-) z infinitivu se mění na -E- v minulém čase a příčestí. Oba tvary končí na –T.",
-          "pattern": "-EE-/-EA- → -E- + -T",
+          "pattern": "EE/EA → E → T",
           "verbs": [
-            {"inf": "feel", "past": "felt", "pp": "felt", "cs": "cítit", "emoji": "❤️"},
-            {"inf": "keep", "past": "kept", "pp": "kept", "cs": "nepřestávat, nechat si", "emoji": "🔒"},
-            {"inf": "leave", "past": "left", "pp": "left", "cs": "odejít, opustit", "emoji": "🚪"},
-            {"inf": "meet", "past": "met", "pp": "met", "cs": "potkat", "emoji": "👋"},
-            {"inf": "sleep", "past": "slept", "pp": "slept", "cs": "spát", "emoji": "😴"},
-            {"inf": "sweep", "past": "swept", "pp": "swept", "cs": "zametat", "emoji": "🧹"}
+            {"inf": "feel", "past": "felt", "pp": "felt", "cs": "cítit", "emoji": "❤️", "hl": {"inf": [1, 3], "past": [[1, 2], [3, 4]], "pp": [[1, 2], [3, 4]]}},
+            {"inf": "keep", "past": "kept", "pp": "kept", "cs": "nepřestávat, nechat si", "emoji": "🔒", "hl": {"inf": [1, 3], "past": [[1, 2], [3, 4]], "pp": [[1, 2], [3, 4]]}},
+            {"inf": "leave", "past": "left", "pp": "left", "cs": "odejít, opustit", "emoji": "🚪", "hl": {"inf": [1, 3], "past": [[1, 2], [3, 4]], "pp": [[1, 2], [3, 4]]}},
+            {"inf": "meet", "past": "met", "pp": "met", "cs": "potkat", "emoji": "👋", "hl": {"inf": [1, 3], "past": [1, 2], "pp": [1, 2]}},
+            {"inf": "sleep", "past": "slept", "pp": "slept", "cs": "spát", "emoji": "😴", "hl": {"inf": [2, 4], "past": [[2, 3], [4, 5]], "pp": [[2, 3], [4, 5]]}},
+            {"inf": "sweep", "past": "swept", "pp": "swept", "cs": "zametat", "emoji": "🧹", "hl": {"inf": [2, 4], "past": [[2, 3], [4, 5]], "pp": [[2, 3], [4, 5]]}}
           ]
         },
         {
           "id": "2.1.2",
           "rule": "-EA- se v pravopisu nemění. V nepravidelných tvarech píšeme -EA-, ale čteme krátce. Minulé tvary jsou zakončeny na –T.",
-          "pattern": "-EA- zůstává, čte se krátce + -T",
+          "pattern": "EA zůstává, čte se krátce → T",
           "verbs": [
             {"inf": "deal", "past": "dealt", "pp": "dealt", "cs": "rozdávat, řešit", "emoji": "🃏"},
             {"inf": "mean", "past": "meant", "pp": "meant", "cs": "znamenat, mínit", "emoji": "💭"}
@@ -153,12 +153,12 @@
         {
           "id": "2.1.3",
           "rule": "Nepravidelné tvary končí na –OUGHT nebo –AUGHT.",
-          "pattern": "→ -OUGHT / -AUGHT",
+          "pattern": "→ OUGHT / AUGHT",
           "verbs": [
             {"inf": "bring", "past": "brought", "pp": "brought", "cs": "přinést", "emoji": "🎒"},
             {"inf": "buy", "past": "bought", "pp": "bought", "cs": "koupit", "emoji": "💳"},
             {"inf": "catch", "past": "caught", "pp": "caught", "cs": "chytit", "emoji": "🥅"},
-            {"inf": "fight", "past": "fought", "pp": "fought", "cs": "bojovat, hádat se", "emoji": "🥊"},
+            {"inf": "fight", "past": "fought", "pp": "fought", "cs": "bojovat, hádat se", "emoji": "🥊", "hl": {"inf": [1, 5], "past": [1, 6], "pp": [1, 6]}},
             {"inf": "seek", "past": "sought", "pp": "sought", "cs": "hledat", "emoji": "🔍"},
             {"inf": "teach", "past": "taught", "pp": "taught", "cs": "vyučovat", "emoji": "👩‍🏫"},
             {"inf": "think", "past": "thought", "pp": "thought", "cs": "myslet, přemýšlet", "emoji": "🤯"}
@@ -167,7 +167,7 @@
         {
           "id": "2.1.4",
           "rule": "Koncové –D z infinitivu se mění na –T v nepravidelných tvarech.",
-          "pattern": "-D → -T",
+          "pattern": "D → T",
           "verbs": [
             {"inf": "bend", "past": "bent", "pp": "bent", "cs": "ohnout (se)", "emoji": "🤸"},
             {"inf": "build", "past": "built", "pp": "built", "cs": "stavět", "emoji": "🏗️"},
@@ -179,7 +179,7 @@
         {
           "id": "2.1.5",
           "rule": "Skupina sloves, jejichž nepravidelné tvary končí na –T. Často mohou být také pravidelná.",
-          "pattern": "→ -T (často i pravidelné)",
+          "pattern": "→ T (často i pravidelné)",
           "verbs": [
             {"inf": "burn", "past": "burnt", "pastAm": "burned", "pp": "burnt", "ppAm": "burned", "cs": "spálit, hořet", "emoji": "🔥"},
             {"inf": "learn", "past": "learnt", "pastAm": "learned", "pp": "learnt", "ppAm": "learned", "cs": "(na)učit se", "emoji": "📚"},
@@ -189,17 +189,17 @@
         {
           "id": "2.2.1",
           "rule": "Infinitivní koncovka –EED se mění na –ED.",
-          "pattern": "-EED → -ED",
+          "pattern": "EED → ED",
           "verbs": [
-            {"inf": "bleed", "past": "bled", "pp": "bled", "cs": "krvácet", "emoji": "🩸"},
-            {"inf": "feed", "past": "fed", "pp": "fed", "cs": "krmit", "emoji": "🍼"},
-            {"inf": "lead", "past": "led", "pp": "led", "cs": "vést", "emoji": "🧭"}
+            {"inf": "bleed", "past": "bled", "pp": "bled", "cs": "krvácet", "emoji": "🩸", "hl": {"inf": [2, 4], "past": [2, 3], "pp": [2, 3]}},
+            {"inf": "feed", "past": "fed", "pp": "fed", "cs": "krmit", "emoji": "🍼", "hl": {"inf": [1, 3], "past": [1, 2], "pp": [1, 2]}},
+            {"inf": "lead", "past": "led", "pp": "led", "cs": "vést", "emoji": "🧭", "hl": {"inf": [1, 3], "past": [1, 2], "pp": [1, 2]}}
           ]
         },
         {
           "id": "2.2.2",
           "rule": "Koncovka –AY se mění na –AID. Výslovnost je pravidelná. Pozor na výslovnost SAID!",
-          "pattern": "-AY → -AID",
+          "pattern": "AY → AID",
           "verbs": [
             {"inf": "lay", "past": "laid", "pp": "laid", "cs": "pokládat, klást", "emoji": "🥚"},
             {"inf": "pay", "past": "paid", "pp": "paid", "cs": "platit", "emoji": "💰"},
@@ -209,7 +209,7 @@
         {
           "id": "2.2.3",
           "rule": "Infinitivní koncovka –ELL se mění na –OLD.",
-          "pattern": "-ELL → -OLD",
+          "pattern": "ELL → OLD",
           "verbs": [
             {"inf": "sell", "past": "sold", "pp": "sold", "cs": "prodat", "emoji": "🏷️"},
             {"inf": "tell", "past": "told", "pp": "told", "cs": "říci", "emoji": "📢"}
@@ -218,7 +218,7 @@
         {
           "id": "2.2.4",
           "rule": "Skupina sloves, jejichž nepravidelné tvary končí na –D. Více pravidel zde není.",
-          "pattern": "→ -D (bez pravidla)",
+          "pattern": "→ D (bez pravidla)",
           "verbs": [
             {"inf": "find", "past": "found", "pp": "found", "cs": "najít", "emoji": "🔎"},
             {"inf": "have", "past": "had", "pp": "had", "cs": "vlastnit", "emoji": "🤝"},
@@ -232,7 +232,7 @@
         {
           "id": "2.3.1",
           "rule": "-I- v infinitivu se mění na -U- v nepravidelných tvarech.",
-          "pattern": "-I- → -U-",
+          "pattern": "I → U",
           "verbs": [
             {"inf": "dig", "past": "dug", "pp": "dug", "cs": "(vy)kopat, (vy)hrabat", "emoji": "⛏️"},
             {"inf": "spin", "past": "spun", "pastAlt": "span", "pp": "spun", "cs": "rotovat, odstředit", "emoji": "🌀"},
@@ -247,9 +247,9 @@
           "verbs": [
             {"inf": "get", "past": "got", "pp": "got", "ppAm": "gotten", "cs": "dostat", "emoji": "📦"},
             {"inf": "hang", "past": "hung", "pastAlt": "hanged", "pp": "hung", "ppAlt": "hanged", "cs": "viset, pověsit", "emoji": "🖼️"},
-            {"inf": "light", "past": "lit", "pastAlt": "lighted", "pp": "lit", "ppAlt": "lighted", "cs": "zapálit, osvětlit", "emoji": "💡"},
+            {"inf": "light", "past": "lit", "pastAlt": "lighted", "pp": "lit", "ppAlt": "lighted", "cs": "zapálit, osvětlit", "emoji": "💡", "hl": {"inf": [1, 4], "past": [1, 2], "pp": [1, 2]}},
             {"inf": "make", "past": "made", "pp": "made", "cs": "udělat, vytvořit", "emoji": "🔨"},
-            {"inf": "shoot", "past": "shot", "pp": "shot", "cs": "(za)střelit, střílet", "emoji": "🏹"},
+            {"inf": "shoot", "past": "shot", "pp": "shot", "cs": "(za)střelit, střílet", "emoji": "🏹", "hl": {"inf": [2, 4], "past": [2, 3], "pp": [2, 3]}},
             {"inf": "sit", "past": "sat", "pp": "sat", "cs": "sednout, sedět", "emoji": "💺"},
             {"inf": "strike", "past": "struck", "pp": "struck", "cs": "zasáhnout, udeřit", "emoji": "⚡"},
             {"inf": "win", "past": "won", "pp": "won", "cs": "zvítězit, vyhrát", "emoji": "🏆"}
