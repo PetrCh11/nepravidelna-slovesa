@@ -77,18 +77,16 @@
     break-inside: avoid;
   }
   .group-head {
-    display: grid;
-    grid-template-columns: var(--c1) var(--c2) var(--c3) 1fr;
-    align-items: end;
     padding: 7px 14px 5px;
     border-bottom: 1px solid var(--border);
   }
-  .group-pattern { font-weight: 700; color: var(--accent); font-size: 14px; }
+  /* Pattern přes celou šířku, vždy na jeden řádek (nezalamuje se do sloupce). */
+  .group-head-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 3px; }
+  .group-pattern { font-weight: 700; color: var(--accent); font-size: 12px; white-space: nowrap; }
   .group-pattern s { text-decoration: line-through; text-decoration-thickness: 2px; }
+  .group-head-cols { display: grid; grid-template-columns: var(--c1) var(--c2) var(--c3) 1fr; align-items: end; }
   .col-label { font-size: 8.5px; letter-spacing: .08em; color: var(--muted); font-weight: 700; text-transform: uppercase; }
-  .group-count { text-align: right; color: var(--accent); font-weight: 700; font-size: 11px; align-self: start; }
-  .head-inf { grid-column: 1; }
-  .head-inf .group-pattern { display: block; margin-bottom: 2px; }
+  .group-count { text-align: right; color: var(--accent); font-weight: 700; font-size: 11px; flex: 0 0 auto; }
 
   .vrow {
     display: grid;
@@ -218,13 +216,16 @@ async function build() {
 
       card.innerHTML = `
         <div class="group-head">
-          <div class="head-inf">
+          <div class="group-head-top">
             <span class="group-pattern mono">${sub.pattern || ''}</span>
-            <span class="col-label">Infinitiv</span>
+            <span class="group-count">${sub.verbs.length}×</span>
           </div>
-          <div class="col-label">Past simple</div>
-          <div class="col-label">Past participle</div>
-          <div class="group-count">${sub.verbs.length}×</div>
+          <div class="group-head-cols">
+            <span class="col-label">Infinitiv</span>
+            <span class="col-label">Past simple</span>
+            <span class="col-label">Past participle</span>
+            <span></span>
+          </div>
         </div>
         ${rows}`;
       doc.appendChild(card);
