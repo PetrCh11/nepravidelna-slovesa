@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>Nepravidelná slovesa — přehled</title>
+<!--
+  Tiskový přehled všech nepravidelných sloves -> PDF.
+  Zdroj dat: /data/verbs.json (stejný jako aplikace). Zvýraznění změn i barvy
+  skupin se počítají STEJNOU logikou jako v app.js (diffRanges + hl override +
+  hue podle pořadí skupiny), takže PDF zůstává automaticky v souladu s appkou.
+
+  Aktualizace PDF po změně dat:  tools/build-pdf.sh
+  (nebo otevřít tuto stránku přes lokální server a vytisknout do PDF).
+-->
+<style>
+  :root {
+    --primary: #ff6b35;
+    --bg: #fdfbf7;
+    --card-bg: #ffffff;
+    --border: #e6e1d8;
+    --ink: #2b2b2b;
+    --muted: #8a8377;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    color: var(--ink);
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .mono { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+
+  @page { size: A4; margin: 11mm 11mm 14mm; }
+
+  /* ---- Header (jen 1. strana) ---- */
+  .doc-header { text-align: center; margin: 2mm 0 7mm; }
+  .doc-domain { color: var(--primary); font-weight: 600; font-size: 12px; letter-spacing: .02em; margin-bottom: 6px; }
+  .doc-title-row { display: inline-flex; align-items: center; gap: 12px; }
+  .doc-logo { width: 46px; height: 46px; border-radius: 12px; display: block; }
+  .doc-title { text-align: left; }
+  .doc-title h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+  .doc-title .sub { color: var(--primary); font-style: italic; font-size: 13px; margin-top: 2px; }
+
+  /* ---- Sekční pruh ---- */
+  .section-band {
+    display: flex; align-items: center; gap: 14px;
+    background: hsl(20 80% 97%);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--primary);
+    border-radius: 14px;
+    padding: 10px 16px;
+    margin: 6mm 0 4mm;
+    break-inside: avoid;
+    break-after: avoid;
+  }
+  .section-band:first-of-type { margin-top: 2mm; }
+  .section-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: hsl(20 85% 93%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex: 0 0 auto;
+  }
+  .section-band h2 { margin: 0; font-size: 18px; font-weight: 800; }
+  .section-band .count { color: var(--muted); font-size: 12.5px; margin-top: 1px; }
+
+  /* ---- Karta skupiny ---- */
+  .group {
+    --accent: hsl(20 65% 45%);
+    --tint: hsl(20 70% 96%);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--accent);
+    border-radius: 12px;
+    margin: 0 0 6px;
+    overflow: hidden;
+    break-inside: avoid;
+  }
+  .group-head {
+    display: grid;
+    grid-template-columns: var(--c1) var(--c2) var(--c3) 1fr;
+    align-items: end;
+    padding: 7px 14px 5px;
+    border-bottom: 1px solid var(--border);
+  }
+  .group-pattern { font-weight: 700; color: var(--accent); font-size: 14px; }
+  .group-pattern s { text-decoration: line-through; text-decoration-thickness: 2px; }
+  .col-label { font-size: 8.5px; letter-spacing: .08em; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+  .group-count { text-align: right; color: var(--accent); font-weight: 700; font-size: 11px; align-self: start; }
+  .head-inf { grid-column: 1; }
+  .head-inf .group-pattern { display: block; margin-bottom: 2px; }
+
+  .vrow {
+    display: grid;
+    grid-template-columns: var(--c1) var(--c2) var(--c3) 1fr;
+    align-items: center;
+    padding: 5px 14px;
+  }
+  .vrow:nth-child(even) { background: var(--tint); }
+  .vinf { display: flex; align-items: center; gap: 9px; }
+  .vemoji { font-size: 16px; width: 20px; text-align: center; }
+  .vform { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+  .vform .vowel { color: var(--accent); font-weight: 800; }
+  .vcs { text-align: right; color: var(--accent); font-style: italic; font-size: 12px; padding-left: 8px; }
+
+  .doc-footer {
+    position: fixed; bottom: 5mm; left: 0; right: 0;
+    text-align: center; color: var(--primary); font-weight: 600; font-size: 11px;
+  }
+</style>
+</head>
+<body>
+<div id="doc"></div>
+<div class="doc-footer">ucseslovesa.cz</div>
+
+<script>
+const SECTION_EMOJI = { '1.0.0': '🎯', '2.0.0': '🌀', '3.0.0': '⚡' };
+
+// ---- Highlight logika (zrcadlo app.js) ----
+function diffRanges(forms) {
+  const arr = forms.map((f) => String(f || ''));
+  const norm = arr.map((s) => s.toLowerCase());
+  if (norm.every((s) => s === norm[0])) return arr.map(() => [0, 0]);
+  let pre = 0;
+  const minLen = Math.min(...arr.map((s) => s.length));
+  while (pre < minLen && arr.every((s) => s[pre].toLowerCase() === arr[0][pre].toLowerCase())) pre++;
+  let suf = 0;
+  while (
+    arr.every((s) => s.length - suf > pre) &&
+    arr.every((s) => s[s.length - 1 - suf].toLowerCase() === arr[0][arr[0].length - 1 - suf].toLowerCase())
+  ) suf++;
+  return arr.map((s) => [pre, s.length - suf]);
+}
+function inferVowels(verb) {
+  const [infR, pastR, ppR] = diffRanges([verb.inf, verb.past, verb.pp]);
+  const hl = verb.hl;
+  if (hl && typeof hl === 'object') {
+    return {
+      infV: hl.inf !== undefined ? hl.inf : infR,
+      pastV: hl.past !== undefined ? hl.past : pastR,
+      ppV: hl.pp !== undefined ? hl.pp : ppR,
+    };
+  }
+  return { infV: infR, pastV: pastR, ppV: ppR };
+}
+function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+function highlightVowel(word, range) {
+  if (!word) return '';
+  if (!Array.isArray(range)) return esc(word);
+  if (range.length === 0) return esc(word);
+  const ranges = Array.isArray(range[0]) ? range : [range];
+  const sorted = ranges
+    .filter((r) => Array.isArray(r) && r.length === 2 && r[0] != null && r[1] != null && r[0] < r[1] && r[0] >= 0 && r[1] <= word.length)
+    .sort((a, b) => a[0] - b[0]);
+  if (sorted.length === 0) return esc(word);
+  let out = '', pos = 0;
+  for (const [s, e] of sorted) {
+    if (s < pos) continue;
+    out += esc(word.slice(pos, s)) + '<span class="vowel">' + esc(word.slice(s, e)) + '</span>';
+    pos = e;
+  }
+  return out + esc(word.slice(pos));
+}
+
+async function build() {
+  const data = await fetch('/data/verbs.json').then((r) => r.json());
+  const doc = document.getElementById('doc');
+  const totalSubs = data.sections.reduce((n, s) => n + s.subsections.length, 0);
+
+  // Hlavička
+  const header = document.createElement('div');
+  header.className = 'doc-header';
+  header.innerHTML = `
+    <div class="doc-domain">ucseslovesa.cz</div>
+    <div class="doc-title-row">
+      <img class="doc-logo" src="/icon-192.png" alt="">
+      <div class="doc-title">
+        <h1>Nepravidelná slovesa</h1>
+        <div class="sub">… jednou a provždy.</div>
+      </div>
+    </div>`;
+  doc.appendChild(header);
+
+  let subIdx = 0;
+  data.sections.forEach((sec) => {
+    const secVerbs = sec.subsections.reduce((n, ss) => n + ss.verbs.length, 0);
+    const band = document.createElement('div');
+    band.className = 'section-band';
+    band.innerHTML = `
+      <div class="section-icon">${SECTION_EMOJI[sec.id] || '📚'}</div>
+      <div>
+        <h2>${esc(sec.title)}</h2>
+        <div class="count">${secVerbs} sloves</div>
+      </div>`;
+    doc.appendChild(band);
+
+    sec.subsections.forEach((sub) => {
+      const hue = Math.round((subIdx / totalSubs) * 360);
+      subIdx++;
+      const card = document.createElement('div');
+      card.className = 'group';
+      card.style.setProperty('--accent', `hsl(${hue} 65% 45%)`);
+      card.style.setProperty('--tint', `hsl(${hue} 70% 96%)`);
+      card.style.setProperty('--c1', '200px');
+      card.style.setProperty('--c2', '140px');
+      card.style.setProperty('--c3', '150px');
+
+      const rows = sub.verbs.map((v) => {
+        const { infV, pastV, ppV } = inferVowels(v);
+        return `
+          <div class="vrow">
+            <div class="vinf"><span class="vemoji">${v.emoji || '·'}</span><span class="vform mono">${highlightVowel(v.inf, infV)}</span></div>
+            <div class="vform mono">${highlightVowel(v.past, pastV)}</div>
+            <div class="vform mono">${highlightVowel(v.pp, ppV)}</div>
+            <div class="vcs">${esc(v.cs || '')}</div>
+          </div>`;
+      }).join('');
+
+      card.innerHTML = `
+        <div class="group-head">
+          <div class="head-inf">
+            <span class="group-pattern mono">${sub.pattern || ''}</span>
+            <span class="col-label">Infinitiv</span>
+          </div>
+          <div class="col-label">Past simple</div>
+          <div class="col-label">Past participle</div>
+          <div class="group-count">${sub.verbs.length}×</div>
+        </div>
+        ${rows}`;
+      doc.appendChild(card);
+    });
+  });
+
+  document.title = 'ready';
+}
+build();
+</script>
+</body>
+</html>
