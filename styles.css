@@ -967,6 +967,19 @@ main { flex: 1; padding: 28px 0 48px; }
   0%, 100% { transform: translateY(0) rotate(-6deg); }
   50%      { transform: translateY(-3px) rotate(6deg); }
 }
+/* Weakened medal: earned, but a once-green verb slipped. Faded + greyed +
+   no bob, so it reads as "almost there" rather than a fresh win — and the
+   gap to the full medal nudges the student to win it back. */
+.group-medal-weak {
+  filter: grayscale(0.7) drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  opacity: 0.5;
+  animation: none;
+  transform: rotate(-6deg) scale(0.9);
+}
+.group-card.group-card-medal-weak {
+  border-left-color: hsl(45 40% 60%);
+  box-shadow: 0 0 0 1px hsl(45 40% 55% / 0.3), 0 4px 12px hsl(45 30% 50% / 0.12);
+}
 /* ----- Macro stats strip ----- */
 .stats-strip {
   display: grid;

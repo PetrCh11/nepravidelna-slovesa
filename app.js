@@ -993,8 +993,17 @@ function renderLessonPicker() {
       card.dataset.sub = sub.id;
       card.style.setProperty('--sub-hue', hue);
       const progress = subProgress(sub);
-      const allMastered = sub.verbs.every((v) => state.progress[v.inf]?.status === 'green');
+      const subProgressEntries = sub.verbs.map((v) => state.progress[v.inf]);
+      const allMastered = subProgressEntries.every((p) => p?.status === 'green');
+      // Weakened medal: the group HAD the medal (everything was green) and the
+      // only thing breaking it now are verbs that slipped out of green. Any
+      // never-mastered verb (no progress / never green / no slip tag) means the
+      // medal was never earned, so no weak medal either.
+      const medalWeak = !allMastered &&
+        subProgressEntries.some((p) => p?.slippedAt) &&
+        subProgressEntries.every((p) => p?.status === 'green' || p?.slippedAt);
       if (allMastered) card.classList.add('group-card-mastered');
+      else if (medalWeak) card.classList.add('group-card-medal-weak');
       const isLocked = !state.premium && !isFreeSub(sub.id);
       if (isLocked) card.classList.add('group-card-locked');
       const previewVerbs = sub.verbs.slice(0, 8);
@@ -1006,6 +1015,7 @@ function renderLessonPicker() {
       `).join('');
       card.innerHTML = `
         ${allMastered ? '<span class="group-medal" title="Všechna slovesa zvládnuta!">🏅</span>' : ''}
+        ${medalWeak ? '<span class="group-medal group-medal-weak" title="Skoro! Jedno sloveso ti uklouzlo — oprav ho a medaile je zpět.">🏅</span>' : ''}
         ${isLocked ? '<span class="group-lock" title="Pouze pro Premium">🔒</span>' : ''}
         <div class="group-card-top">
           <span class="subsection-id">${sub.id}</span>
@@ -2163,12 +2173,18 @@ function finishLesson() {
   L.perVerb.forEach((p, inf) => {
     const prev = state.progress[inf] || {};
     const erred = p.status !== 'green' || !!p.gaveUp;
+    // "Slipped from green": a verb that had been mastered (green) just dropped.
+    // We tag it with a timestamp so it (a) jumps the queue in the next daily
+    // review and (b) keeps the group medal in a weakened state instead of
+    // wiping it. The tag clears the moment the verb is green again.
+    const slipped = p.status !== 'green' && (prev.status === 'green' || prev.slippedAt);
     state.progress[inf] = {
       status: p.status,
       lastSeen: now,
       attempts: (prev.attempts || 0) + 1,
       errors: (prev.errors || 0) + (erred ? 1 : 0),
       lastWrong: erred ? now : (prev.lastWrong || null),
+      slippedAt: slipped ? (prev.slippedAt || now) : null,
     };
   });
   persistProgress();
@@ -2712,7 +2728,12 @@ function selectSlabaMista() {
     // Recency: verbs missed within the last week get a small boost, decays.
     const ageDays = p.lastWrong ? (now - p.lastWrong) / 86400000 : 7;
     const recency = Math.max(0.6, 1.5 - ageDays / 14);
-    return { verb: v, score: errorRate * statusBoost * recency };
+    // A verb that just slipped out of green jumps the queue so the student can
+    // win the group medal back at the next opportunity. errorRate is low for a
+    // freshly-slipped green, so floor the score to keep it competitive.
+    const slipBoost = p.slippedAt ? 4.0 : 1.0;
+    const base = p.slippedAt ? Math.max(errorRate, 0.4) : errorRate;
+    return { verb: v, score: base * statusBoost * recency * slipBoost };
   });
   scored.sort((a, b) => b.score - a.score);
 
