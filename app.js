@@ -4,6 +4,38 @@
 
 import * as cloud from './cloud.js';
 
+// ---- i18n -------------------------------------------------------------------
+// Jazyk UI se čte z <html lang="…">. Česká verze je zdroj pravdy — texty žijí
+// přímo v TEXTS níže. Jazyková mutace dodá window.LANG_PACK (script tag PŘED
+// app.js), který může přepsat libovolný klíč z TEXTS i překlady dat. Postup
+// přidání jazyka: docs/i18n.md.
+const LANG = document.documentElement.lang || 'cs';
+// TTS hlas pro zadání v mateřském jazyce (anglická slovesa mají vlastní výběr hlasu).
+const PROMPT_VOICE = (window.LANG_PACK && window.LANG_PACK.voice) || 'cs-CZ';
+
+// Jazyková mutace může přeložit i data z verbs.json (překlady sloves, patterny
+// a pravidla skupin, názvy sekcí). Mutuje se in-place hned po fetch(), takže
+// zbytek aplikace čte pořád stejná pole (v.cs pak nese překlad daného jazyka).
+function localizeData(data) {
+  const pack = window.LANG_PACK;
+  if (!pack || !pack.data) return;
+  const d = pack.data;
+  data.sections.forEach((sec) => {
+    if (d.sections && d.sections[sec.id]) sec.title = d.sections[sec.id];
+    sec.subsections.forEach((sub) => {
+      const g = d.groups && d.groups[sub.id];
+      if (g) {
+        if (g.pattern) sub.pattern = g.pattern;
+        if (g.rule) sub.rule = g.rule;
+        if (g.title) sub.title = g.title;
+      }
+      sub.verbs.forEach((v) => {
+        if (d.verbs && d.verbs[v.inf]) v.cs = d.verbs[v.inf];
+      });
+    });
+  });
+}
+
 // ---- In-app webview (FB/IG/etc.) handling ----------------------------------
 // Google's signInWithPopup is blocked in embedded webviews ("disallowed_useragent").
 // The early <head> script in index.html sets html.is-inapp-webview + window.__inAppWebview.
@@ -44,6 +76,10 @@ function handleLoginInWebview(source) {
     // Label which app we're in.
     const appName = window.__inAppWebviewName || 'facebook';
     const labelMap = { facebook: 'Facebooku', instagram: 'Instagramu', messenger: 'Messengeru', tiktok: 'TikToku', linkedin: 'LinkedInu', twitter: 'X/Twitteru', other: 'aplikace třetí strany' };
+    // Jazyková mutace může názvy aplikací přepsat (TEXTS/t() tady ještě nejsou k dispozici).
+    if (window.LANG_PACK && window.LANG_PACK.texts && window.LANG_PACK.texts.wv_app_labels) {
+      Object.assign(labelMap, window.LANG_PACK.texts.wv_app_labels);
+    }
     const labelEl = document.getElementById('webview-banner-app');
     if (labelEl) labelEl.textContent = labelMap[appName] || labelMap.other;
     // Android: offer "Open in Chrome" via intent URL.
@@ -63,13 +99,13 @@ function handleLoginInWebview(source) {
       copyBtn.addEventListener('click', async () => {
         try {
           await navigator.clipboard.writeText(location.href);
-          copyBtn.textContent = '✓ Zkopírováno';
-          setTimeout(() => { copyBtn.textContent = 'Zkopírovat odkaz'; }, 2200);
+          copyBtn.textContent = t('wv_copied');
+          setTimeout(() => { copyBtn.textContent = t('wv_copy'); }, 2200);
           try { if (typeof window.plausible === 'function') window.plausible('webview_copy_link_clicked', { props: { app: appName } }); } catch(_){}
         } catch (_) {
           // Fallback: select location bar text not possible; just tell user.
-          copyBtn.textContent = '✗ Nepodařilo se';
-          setTimeout(() => { copyBtn.textContent = 'Zkopírovat odkaz'; }, 2200);
+          copyBtn.textContent = t('wv_copy_fail');
+          setTimeout(() => { copyBtn.textContent = t('wv_copy'); }, 2200);
         }
       });
     }
@@ -102,12 +138,12 @@ const FREE_SUB_IDS = new Set(FREE_SUB_BASE); // kept for backwards-compat; new c
 // maxStreakReached (never lost, even if streak breaks). The first threshold
 // matches the first STREAK_MILESTONES entry by design.
 const STREAK_TROPHIES = [
-  { days: 3,   icon: '🔥', label: '3 dny v řadě' },
-  { days: 7,   icon: '⭐', label: '7 dní — týden v kuse' },
-  { days: 14,  icon: '💎', label: '14 dní — dva týdny' },
-  { days: 30,  icon: '👑', label: '30 dní — měsíc' },
-  { days: 100, icon: '🏆', label: '100 dní — stovka' },
-  { days: 365, icon: '🐉', label: '365 dní — rok' },
+  { days: 3,   icon: '🔥', labelKey: 'trophy_3' },
+  { days: 7,   icon: '⭐', labelKey: 'trophy_7' },
+  { days: 14,  icon: '💎', labelKey: 'trophy_14' },
+  { days: 30,  icon: '👑', labelKey: 'trophy_30' },
+  { days: 100, icon: '🏆', labelKey: 'trophy_100' },
+  { days: 365, icon: '🐉', labelKey: 'trophy_365' },
 ];
 function earnedTrophies(maxStreak) {
   return STREAK_TROPHIES.filter((t) => maxStreak >= t.days);
@@ -468,7 +504,171 @@ const TEXTS = {
   menu_browse:   { pro: '📚 Přehled skupin', student: '📚 Skupiny' },
   menu_fc:       { pro: '🃏 Flashcards', student: '🃏 Karty' },
   menu_quiz:     { pro: '✅ Volný kvíz', student: '✅ Rychlokvíz' },
+
+  // --- i18n: texty dříve zapsané natvrdo v kódu -----------------------------
+  // Prostý řetězec = stejný pro všechny styly. Funkce = parametrizovaný text.
+  // Jazykové mutace tyhle klíče přepisují přes window.LANG_PACK (docs/i18n.md).
+  wv_copied: '✓ Zkopírováno',
+  wv_copy: 'Zkopírovat odkaz',
+  wv_copy_fail: '✗ Nepodařilo se',
+  trophy_3: '3 dny v řadě',
+  trophy_7: '7 dní — týden v kuse',
+  trophy_14: '14 dní — dva týdny',
+  trophy_30: '30 dní — měsíc',
+  trophy_100: '100 dní — stovka',
+  trophy_365: '365 dní — rok',
+  style_names: () => ({ pro: 'Styl: 💼 Korporátní slang', student: 'Styl: 🎒 Školní prostředí', hantec: 'Styl: 🚋 Brněnský hantec' }),
+  tts_missing: '🔊 Nemáš nainstalovaný anglický hlas — slovesa se proto čtou „česky". ',
+  tts_android: 'Android: Nastavení → Jazyk → Text-to-speech → Google → Stáhnout English.',
+  tts_ios: 'iOS: Nastavení → Obecné → Jazyk a oblast → přidat English.',
+  tts_windows: 'Windows: Nastavení → Čas a jazyk → Jazyk → Přidat English.',
+  tts_other: 'Nainstaluj si anglický TTS hlas v systému.',
+  plur_verbs: (n) => (n === 1 ? 'sloveso' : (n >= 2 && n <= 4 ? 'slovesa' : 'sloves')),
+  plur_groups: (n) => (n === 1 ? 'skupina' : (n >= 2 && n <= 4 ? 'skupiny' : 'skupin')),
+  plur_days_row: (n) => (n === 1 ? 'den v řadě' : (n >= 2 && n <= 4 ? 'dny v řadě' : 'dní v řadě')),
+  plur_day: (n) => (n === 1 ? 'den' : (n >= 2 && n <= 4 ? 'dny' : 'dní')),
+  chip_title_mastered: (n) => `Souhrnný test celé sekce — všech ${n} sloves, zamíchaně`,
+  chip_title_default: (n) => `Zamíchaná procházka přes všech ${n} sloves této sekce`,
+  medal_all: 'Všechna slovesa zvládnuta!',
+  medal_weak: 'Skoro! Jedno sloveso ti uklouzlo — oprav ho a medaile je zpět.',
+  lock_premium: 'Pouze pro Premium',
+  bonus_free_toast: '🎁 Tahle skupina je pro tebe odemčená zdarma!',
+  sec_review_pattern: (n) => `Souhrnný test · ${n} ${t('plur_verbs', n)}`,
+  sec_review_label: 'Souhrnný test',
+  sec_review_title: 'Souhrnný test sekce',
+  sec_review_desc: (n) => `Všech ${n} sloves z této sekce v náhodném pořadí. Napíšeš všechny tři tvary, stiskneš Enter — a 1× bez chyby stačí, aby sloveso vypadlo z fronty. Jdeme na to!`,
+  resume_stage1: 'Fáze 1 · Seznámení',
+  resume_stage15: 'Mezifáze · Označ obtížná',
+  resume_stage2: 'Fáze 2 · Psaní',
+  resume_stage_generic: 'rozdělané cvičení',
+  resume_step1: 'v pořadí',
+  resume_step2: 'zamícháno',
+  resume_filtered: (n) => ` · jen problematická (${n})`,
+  resume_dismiss_aria: 'Zavřít hlášku — zapomenout rozdělané cvičení',
+  resume_dismiss_title: 'Zavřít — rozdělané cvičení zapomeneme',
+  resume_title: 'Máš rozdělané cvičení',
+  resume_continue: 'Pokračovat',
+  resume_restart: 'Začít znovu',
+  s1_intro_title: 'Fáze 1 — Seznámení',
+  form_inf: 'infinitiv',
+  form_past: 'past',
+  form_past_full: 'past simple',
+  form_pp: 'past participle',
+  speak_all_title: 'Přehrát všechny tvary',
+  speak_title: 'Přehrát',
+  step_pill_1: '1) studium',
+  step_pill_2: '2) v pořadí',
+  step_pill_3: '3) zamícháno',
+  remaining_of: (n, total) => `zbývá ${n} z ${total}`,
+  remaining: (n) => `zbývá ${n}`,
+  audio_title_on: 'Audio po odpovědi je ZAPNUTO — klikni pro vypnutí',
+  audio_title_off: 'Audio po odpovědi je VYPNUTO — klikni pro zapnutí',
+  check_btn: 'Zkontrolovat',
+  next_btn: 'Další →',
+  pick_btn: 'Vybrat',
+  reset_confirm_cloud: 'Opravdu chceš vynulovat veškerý pokrok? Smaže se i v cloudu (Google účet).\n\nTuto akci nelze vrátit zpět.',
+  reset_confirm: 'Opravdu chceš vynulovat veškerý pokrok?\n\nTuto akci nelze vrátit zpět.',
+  generic_fail: 'Něco se nepovedlo. Zkus to znovu.',
+  start_today: 'začni dnes',
+  stats_mastered_verbs: 'zvládnutých sloves',
+  stats_in_progress: (n) => ` · ${n} v procesu`,
+  stats_trophies_aria: 'Získané trofeje',
+  streak_pill_aria: 'Streak — jak to funguje',
+  stats_mastered_groups: 'zvládnutých skupin',
+  next_weak_batch: 'Další porce slabin →',
+  slaba_icon: { pro: '🎯', student: '👾', hantec: '🛠️' },
+  slaba_tile_title: { pro: 'Dnešní cílovka', student: 'Boss mode', hantec: 'Betelná šichta' },
+  slaba_sub_mixed: {
+    pro:     (w, r) => `${w} ${czAdj(w, 'problémov')} + ${r} ${czAdj(r, 'náhodn')}`,
+    student: (w, r) => `${w} ${czAdj(w, 'failnut')} + ${r} random`,
+    hantec:  (w, r) => `${w} ${czAdj(w, 'zvoran')} + ${r} z fleku`,
+  },
+  slaba_sub_clean: {
+    pro:     (n) => `${n} ${czAdj(n, 'náhodn')} · retention check`,
+    student: (n) => `${n} random · spot check`,
+    hantec:  (n) => `${n} z fleku · prubnem to`,
+  },
+  try_title: { pro: 'Začni procvičovat', student: 'Pojď to zkusit!', hantec: 'Pojď to zkusit!' },
+  try_sub: { pro: 'Začni první skupinou — stačí kliknout', student: 'První skupina tě navede, jen klikni', hantec: 'První skupina tě navede, jen klikni' },
+  slaba_cold: 'Zatím není dost dat — udělej pár lekcí a vrať se. 🌱',
+  slaba_title: 'Slabá místa',
+  slaba_pattern: (n) => `Dnešní porce slabin · ${n} ${t('plur_verbs', n)}`,
+  premium_badge: 'Premium',
+  practice_cta: 'Procvič si to!',
+  flash_hint: 'klikni pro otočení',
+  auto_pick_group: 'Vyber alespoň jednu skupinu sloves.',
+  auto_no_problem: 'Žádná problematická slovesa — všechno máš zvládnuté! 🎉',
+  auto_empty: 'Vybrané skupiny neobsahují žádná slovesa.',
+  auto_exit_btn: '⏏️ Exit',
+  auto_exit_aria: 'Ukončit audio jízdu',
+  auto_stop_btn: '⏸ Stop',
+  auto_stop_aria: 'Pozastavit audio jízdu',
+  auto_shuffled: '🔀 Zamícháno — začínáme 3 kola znovu.',
+  auto_done: '🎉 Hotovo! 3 kola dokončena.',
+  auto_round_toast: (r, total) => `Kolo ${r} / ${total} 🚀`,
+  auto_progress: (r, total, i, n) => `Kolo ${r}/${total} · ${i}/${n}`,
+  auto_zero_groups: '0 skupin',
+  auto_selection: (g, v) => `${g} ${t('plur_groups', g)} · ${v} ${t('plur_verbs', v)}`,
+  quiz_all_chip: 'Vše',
+  quiz_pick_correct: (label) => `Vyber správný tvar (${label})`,
+  quiz_fill_hint: (cs) => `Doplň past simple a past participle · <em>${cs}</em>`,
+  quiz_correct_is: 'Správně:',
+  theme_light: 'Světlý režim',
+  theme_dark: 'Tmavý režim',
+  sounds_on: 'Zvuky odpovědí: zapnuté',
+  sounds_off: 'Zvuky odpovědí: vypnuté',
+  backend_unavailable: 'Backend není dostupný.',
+  login_first: 'Nejdřív se přihlas přes Google.',
+  opening: 'Otevírám…',
+  portal_no_customer: 'Předplatné nemáš přes Stripe (např. promo kód). Není co spravovat.',
+  portal_error: 'Chyba při otevírání portálu: ',
+  account_word: 'účet',
+  sign_out_label: (name) => `Odhlásit (${name})`,
+  sign_in_google: 'Přihlásit se přes Google',
+  signed_in_aria: (name) => `Přihlášen jako ${name}. Kliknutím odhlásit.`,
+  signed_in_title: (name) => `Přihlášen: ${name} — klikni pro odhlášení`,
+  sign_in_short: 'Přihlásit',
+  signing_in: 'Přihlašuji…',
+  login_failed: 'Přihlášení selhalo: ',
+  promo_errors: () => ({
+    not_found: 'Tento kód neznáme. Zkontroluj překlepy.',
+    inactive: 'Kód je deaktivovaný.',
+    expired: 'Kód už vypršel.',
+    exhausted: 'Kód byl vyčerpán — všechna místa obsazená.',
+    already_redeemed: 'Tento kód už jsi jednou uplatnil(a).',
+    invalid_code_format: 'Kód má špatný formát.',
+    no_user: 'Nejdřív se prosím přihlas přes Google.',
+    no_backend: 'Backend není dostupný. Zkus to později.',
+    network: 'Síťová chyba. Zkus to za chvíli.',
+  }),
+  promo_enter: 'Zadej kód.',
+  promo_checking: 'Ověřuji…',
+  promo_error_prefix: 'Chyba: ',
+  promo_ok_msg: 'Kód uplatněn! 🎉 Premium je tvoje.',
+  promo_ok_toast: '🎉 Kód uplatněn — všechny skupiny jsou tvoje!',
+  loading: 'Načítám…',
+  backend_wait: 'Backend zatím není dostupný. Zkus to prosím za chvíli.',
+  checkout_error: 'Chyba při zahájení platby: ',
+  sync_titles: () => ({
+    idle: 'cloud sync vypnutý',
+    'signing-in': 'přihlašování…',
+    syncing: 'synchronizace…',
+    synced: 'synchronizováno',
+    error: 'chyba synchronizace',
+  }),
+  signout_confirm: 'Opravdu se chceš odhlásit?',
+  dialect_ame: 'Varianta: americká (AmE)',
+  dialect_bre: 'Varianta: britská (BrE)',
 };
+
+// Česká koncovka přídavného jména pro počítaná "slovesa" (stř. rod mn. č.):
+// 1 → -é, 2–4 → -á, 0 / 5+ → -ých. Jazykové mutace dodají v packu vlastní
+// verze textů, které tuhle češtinu nepotřebují.
+function czAdj(n, stem) {
+  if (n === 1) return stem + 'é';
+  if (n >= 2 && n <= 4) return stem + 'á';
+  return stem + 'ých';
+}
 
 // Plausible custom event helper — safe to call even if script blocked / not loaded
 function track(eventName, props) {
@@ -479,10 +679,23 @@ function track(eventName, props) {
   } catch {}
 }
 
+// Vrátí definici textu pro klíč — jazyková mutace (window.LANG_PACK.texts) má
+// přednost před českým zdrojem v TEXTS. Hodnota v packu smí být prostý řetězec,
+// funkce, pole (pool) i objekt se stylovými variantami jako v TEXTS.
+function resolveTextEntry(key) {
+  const pack = window.LANG_PACK;
+  if (pack && pack.texts && key in pack.texts) return pack.texts[key];
+  return TEXTS[key];
+}
+
 function t(key, ...args) {
-  const entry = TEXTS[key];
-  if (!entry) return key;
-  let v = entry[state.style] ?? entry.pro;
+  const entry = resolveTextEntry(key);
+  if (entry === undefined || entry === null) return key;
+  // Objekt (a ne pole) = stylové varianty { pro, student, hantec }.
+  // Cokoli jiného (řetězec, funkce, pole) se použije pro všechny styly.
+  let v = (typeof entry === 'object' && !Array.isArray(entry))
+    ? (entry[state.style] ?? entry.pro)
+    : entry;
   if (typeof v === 'function') return v(...args);
   if (Array.isArray(v)) {
     // Phrase pool — pick random. Filter out {name}-templated lines if no signed-in user.
@@ -515,7 +728,7 @@ function openToneModal() {
     try { cloud.pushSoon && cloud.pushSoon(); } catch (_) {}
     try { track('style_picked', { style: chosen }); } catch (_) {}
     closeToneModal();
-    const styleLabels = { pro: 'Styl: 💼 Korporátní slang', student: 'Styl: 🎒 Školní prostředí', hantec: 'Styl: 🚋 Brněnský hantec' };
+    const styleLabels = t('style_names');
     toast(styleLabels[chosen] || styleLabels.pro, 'success', 2200);
   };
   btnPro.onclick = () => pick('pro');
@@ -702,11 +915,11 @@ function _checkEnglishVoiceAvailable() {
   const hasEn = voices.some((v) => (v.lang || '').toLowerCase().startsWith('en'));
   if (hasEn) { _noEnVoiceWarned = true; return; }
   const ua = navigator.userAgent || '';
-  let hint = '🔊 Nemáš nainstalovaný anglický hlas — slovesa se proto čtou „česky". ';
-  if (/Android/i.test(ua)) hint += 'Android: Nastavení → Jazyk → Text-to-speech → Google → Stáhnout English.';
-  else if (/iPad|iPhone|iPod/.test(ua)) hint += 'iOS: Nastavení → Obecné → Jazyk a oblast → přidat English.';
-  else if (/Windows/i.test(ua)) hint += 'Windows: Nastavení → Čas a jazyk → Jazyk → Přidat English.';
-  else hint += 'Nainstaluj si anglický TTS hlas v systému.';
+  let hint = t('tts_missing');
+  if (/Android/i.test(ua)) hint += t('tts_android');
+  else if (/iPad|iPhone|iPod/.test(ua)) hint += t('tts_ios');
+  else if (/Windows/i.test(ua)) hint += t('tts_windows');
+  else hint += t('tts_other');
   if (typeof toast === 'function') toast(hint, 'info', 9000);
   else console.warn('[tts]', hint);
   localStorage.setItem('noEnVoiceWarned', 'true');
@@ -956,8 +1169,8 @@ function renderLessonPicker() {
     const icon = allSecMastered ? '🏆' : '🎲';
     const chipLabel = allSecMastered ? t('chip_mastered') : t('chip_default');
     const chipTitle = allSecMastered
-      ? `Souhrnný test celé sekce — všech ${totalVerbs} sloves, zamíchaně`
-      : `Zamíchaná procházka přes všech ${totalVerbs} sloves této sekce`;
+      ? t('chip_title_mastered', totalVerbs)
+      : t('chip_title_default', totalVerbs);
 
     const h = document.createElement('h3');
     h.className = 'lesson-sec-title';
@@ -1014,16 +1227,16 @@ function renderLessonPicker() {
         </span>
       `).join('');
       card.innerHTML = `
-        ${allMastered ? '<span class="group-medal" title="Všechna slovesa zvládnuta!">🏅</span>' : ''}
-        ${medalWeak ? '<span class="group-medal group-medal-weak" title="Skoro! Jedno sloveso ti uklouzlo — oprav ho a medaile je zpět.">🏅</span>' : ''}
-        ${isLocked ? '<span class="group-lock" title="Pouze pro Premium">🔒</span>' : ''}
+        ${allMastered ? `<span class="group-medal" title="${t('medal_all')}">🏅</span>` : ''}
+        ${medalWeak ? `<span class="group-medal group-medal-weak" title="${t('medal_weak')}">🏅</span>` : ''}
+        ${isLocked ? `<span class="group-lock" title="${t('lock_premium')}">🔒</span>` : ''}
         <div class="group-card-top">
           <span class="subsection-id">${sub.id}</span>
           <span class="subsection-pattern">${sub.pattern}</span>
         </div>
         <div class="group-preview" aria-hidden="true">${previewHtml}</div>
         <div class="group-card-meta">
-          <span>${sub.verbs.length} sloves</span>
+          <span>${sub.verbs.length} ${t('plur_verbs', sub.verbs.length)}</span>
           ${progress.green ? `<span class="dot green" title="${t('stat_green')}: ${progress.green}"></span>${progress.green}` : ''}
           ${progress.yellow ? `<span class="dot yellow" title="${t('stat_yellow')}: ${progress.yellow}"></span>${progress.yellow}` : ''}
           ${progress.red ? `<span class="dot red" title="${t('stat_red')}: ${progress.red}"></span>${progress.red}` : ''}
@@ -1084,7 +1297,7 @@ function maybeHighlightBonusSub() {
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     el.classList.add('group-card-bonus-pulse');
-    toast('🎁 Tahle skupina je pro tebe odemčená zdarma!', 'success', 4000);
+    toast(t('bonus_free_toast'), 'success', 4000);
     setTimeout(() => el.classList.remove('group-card-bonus-pulse'), 6000);
   }, 450);
 }
@@ -1184,9 +1397,9 @@ function openGroupStartChoice(sub) {
     const s = state.progress[v.inf]?.status;
     return s === 'yellow' || s === 'red';
   });
-  $('#gsm-all-count').textContent = `${all} ${all === 1 ? 'sloveso' : (all < 5 ? 'slovesa' : 'sloves')}`;
+  $('#gsm-all-count').textContent = `${all} ${t('plur_verbs', all)}`;
   const pn = problematic.length;
-  $('#gsm-problem-count').textContent = `${pn} ${pn === 1 ? 'sloveso' : (pn < 5 ? 'slovesa' : 'sloves')}`;
+  $('#gsm-problem-count').textContent = `${pn} ${t('plur_verbs', pn)}`;
   const problemBtn = $('#gsm-problem');
   if (pn === 0) {
     problemBtn.classList.add('disabled');
@@ -1227,7 +1440,7 @@ function openSectionReviewChoice(sec) {
   $('#gsm-title').textContent = t('srm_title');
   $('#gsm-all').querySelector('.modal-option-name').textContent = t('gsm_all');
   $('#gsm-problem').querySelector('.modal-option-name').textContent = t('gsm_problem');
-  const sw = (n) => `${n} ${n === 1 ? 'sloveso' : (n < 5 ? 'slovesa' : 'sloves')}`;
+  const sw = (n) => `${n} ${t('plur_verbs', n)}`;
   // Náhodný mix je capnutý na 10 — ukážeme reálnou velikost dávky, ne celé sekce
   const allShown = Math.min(all.length, 10);
   const problemShown = Math.min(problematic.length, 10);
@@ -1248,7 +1461,7 @@ function openSectionReviewChoice(sec) {
     modal.classList.add('hidden');
     // Restore default emoji for the per-group choice modal
     $('#gsm-emoji').textContent = '🔁';
-    $('#gsm-title').textContent = 'Jak budeš procvičovat?';
+    $('#gsm-title').textContent = t('gsm_title');
   };
   $('#gsm-close').onclick = close;
   modal.onclick = (e) => { if (e.target === modal) close(); };
@@ -1283,7 +1496,7 @@ function startSectionReview(sec, customVerbs = null) {
   // Synthetic "sub" used by lesson code: id is sec.id, pattern reflects review mode
   const pseudoSub = {
     id: sec.id,
-    pattern: `Souhrnný test · ${verbs.length} sloves`,
+    pattern: t('sec_review_pattern', verbs.length),
     verbs,
   };
   state.lesson = {
@@ -1308,13 +1521,13 @@ function startSectionReview(sec, customVerbs = null) {
   $('.lesson-results').classList.add('hidden');
   $('.lesson-active').classList.remove('hidden');
   document.body.classList.add('practicing');
-  $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sec.subsections[0].id)} 65% 45%)">${sec.id}</span> 🏆 Souhrnný test`;
+  $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sec.subsections[0].id)} 65% 45%)">${sec.id}</span> 🏆 ${t('sec_review_label')}`;
   document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sec.subsections[0].id));
   // Show a custom intro then jump straight to step 3
   $('#lesson-stage-intro').classList.remove('hidden');
   $('#stage-intro-emoji').textContent = '🏆';
-  $('#stage-intro-title').textContent = 'Souhrnný test sekce';
-  $('#stage-intro-desc').textContent = `Všech ${verbs.length} sloves z této sekce v náhodném pořadí. Napíšeš všechny tři tvary, stiskneš Enter — a 1× bez chyby stačí, aby sloveso vypadlo z fronty. Jdeme na to!`;
+  $('#stage-intro-title').textContent = t('sec_review_title');
+  $('#stage-intro-desc').textContent = t('sec_review_desc', verbs.length);
   $('#lesson-question').innerHTML = '';
   updateStageDots();
   updateLessonBar();
@@ -1426,21 +1639,21 @@ function renderResumeCard() {
   const sub = findSubById(saved.subId);
   if (!sub) { clearActiveLesson(); return; }
   const isLocked = !state.premium && !isFreeSub(sub.id);
-  const stageLabels = { 1: 'Fáze 1 · Seznámení', 1.5: 'Mezifáze · Označ obtížná', 2: 'Fáze 2 · Psaní' };
-  const stageLabel = stageLabels[saved.stage] || 'rozdělané cvičení';
-  const stepLabels = { 1: 'v pořadí', 2: 'zamícháno' };
+  const stageLabels = { 1: t('resume_stage1'), 1.5: t('resume_stage15'), 2: t('resume_stage2') };
+  const stageLabel = stageLabels[saved.stage] || t('resume_stage_generic');
+  const stepLabels = { 1: t('resume_step1'), 2: t('resume_step2') };
   const stepLabel = saved.stage === 2 && saved.stage2Step ? ` · ${stepLabels[saved.stage2Step]}` : '';
   const filteredNote = (saved.verbInfs && saved.verbInfs.length && saved.verbInfs.length < sub.verbs.length)
-    ? ` · jen problematická (${saved.verbInfs.length})`
+    ? t('resume_filtered', saved.verbInfs.length)
     : '';
   const card = document.createElement('div');
   card.className = 'resume-card';
   card.style.setProperty('--sub-hue', hueOf(sub.id));
   card.innerHTML = `
-    <button type="button" class="resume-dismiss" id="resume-dismiss" aria-label="Zavřít hlášku — zapomenout rozdělané cvičení" title="Zavřít — rozdělané cvičení zapomeneme">✕</button>
+    <button type="button" class="resume-dismiss" id="resume-dismiss" aria-label="${t('resume_dismiss_aria')}" title="${t('resume_dismiss_title')}">✕</button>
     <div class="resume-icon">⏯️</div>
     <div class="resume-text">
-      <div class="resume-title">Máš rozdělané cvičení</div>
+      <div class="resume-title">${t('resume_title')}</div>
       <div class="resume-meta">
         <span class="subsection-id">${sub.id}</span>
         <span class="resume-pattern">${sub.pattern}</span>
@@ -1448,8 +1661,8 @@ function renderResumeCard() {
       <div class="resume-stage">${stageLabel}${stepLabel}${filteredNote}</div>
     </div>
     <div class="resume-actions">
-      <button class="btn btn-primary" id="resume-continue">Pokračovat</button>
-      <button class="btn btn-secondary" id="resume-restart">Začít znovu</button>
+      <button class="btn btn-primary" id="resume-continue">${t('resume_continue')}</button>
+      <button class="btn btn-secondary" id="resume-restart">${t('resume_restart')}</button>
     </div>
   `;
   row.appendChild(card);
@@ -1560,7 +1773,7 @@ function scrollLessonTop() {
 function showStageIntro(stage) {
   scrollLessonTop();
   const intros = {
-    1:   { emoji: '👀', title: 'Fáze 1 — Seznámení', desc: t('s1_intro_desc') },
+    1:   { emoji: '👀', title: t('s1_intro_title'), desc: t('s1_intro_desc') },
     1.5: { emoji: '✋', title: t('mh_title'),         desc: t('mh_intro_desc') },
     2:   { emoji: '✍️', title: t('s2_intro_title'),  desc: t('s2_intro_desc') },
   };
@@ -1611,21 +1824,21 @@ function stage1Study() {
         <div class="study-emoji">${v.emoji || '❓'}</div>
         <div class="study-forms">
           <span class="study-form" data-speak="${v.inf}">
-            <span class="study-form-label">infinitiv</span>
+            <span class="study-form-label">${t('form_inf')}</span>
             <span class="study-form-word">${highlightVowel(v.inf, infV)}</span>
           </span>
           <span class="study-arrow">→</span>
           <span class="study-form" data-speak="${phon(past)}">
-            <span class="study-form-label">past</span>
+            <span class="study-form-label">${t('form_past')}</span>
             <span class="study-form-word">${highlightVowel(past, pastV)}</span>
           </span>
           <span class="study-arrow">→</span>
           <span class="study-form" data-speak="${phon(pp)}">
-            <span class="study-form-label">past participle</span>
+            <span class="study-form-label">${t('form_pp')}</span>
             <span class="study-form-word">${highlightVowel(pp, ppV)}</span>
           </span>
         </div>
-        <button class="speak-btn study-speak" data-speak="${v.inf}, ${phon(past)}, ${phon(pp)}" title="Přehrát všechny tvary">🔊</button>
+        <button class="speak-btn study-speak" data-speak="${v.inf}, ${phon(past)}, ${phon(pp)}" title="${t('speak_all_title')}">🔊</button>
         <div class="study-cs">${v.cs}</div>
       </div>
     `;
@@ -1639,7 +1852,7 @@ function stage1Study() {
           <div class="study-hero-eyebrow">${t('s1_eyebrow')}</div>
           <div class="study-hero-title">${t('s1_title')}</div>
         </div>
-        <div class="study-hero-count">${L.verbs.length}<span>sloves</span></div>
+        <div class="study-hero-count">${L.verbs.length}<span>${t('plur_verbs', L.verbs.length)}</span></div>
       </div>
       <div class="study-list">${rowsHtml}</div>
       <div class="study-actions">
@@ -1777,7 +1990,7 @@ function renderStepPills(_ignored) {
   else if (L.stage === 2 && L.stage2Step === 1) activeStep = 2;
   else if (L.stage === 2 && L.stage2Step === 2) activeStep = 3;
   else activeStep = 1;
-  const labels = { 1: '1) studium', 2: '2) v pořadí', 3: '3) zamícháno' };
+  const labels = { 1: t('step_pill_1'), 2: t('step_pill_2'), 3: t('step_pill_3') };
   c.innerHTML = [1, 2, 3].map((s) => {
     let cls = 'step-pill';
     if (s === activeStep) cls += ' active';
@@ -1881,9 +2094,9 @@ function askStage2Verb(verb, step) {
   let progressText;
   const total = L.verbs.length;
   if (step === 1) {
-    progressText = `zbývá ${L.stage2Q.length} z ${total}`;
+    progressText = t('remaining_of', L.stage2Q.length, total);
   } else {
-    progressText = `zbývá ${L.stage2Q.length}`;
+    progressText = t('remaining', L.stage2Q.length);
   }
 
   const tipText = isAtomicCheck ? t('tip_atomic') : t('tip_field');
@@ -1903,7 +2116,7 @@ function askStage2Verb(verb, step) {
     <div class="q-card" style="--sub-hue:${hue}">
       <button type="button" class="audio-toggle ${audioOn ? 'is-on' : 'is-off'}" id="audio-toggle"
         aria-pressed="${audioOn ? 'true' : 'false'}"
-        title="${audioOn ? 'Audio po odpovědi je ZAPNUTO — klikni pro vypnutí' : 'Audio po odpovědi je VYPNUTO — klikni pro zapnutí'}">
+        title="${audioOn ? t('audio_title_on') : t('audio_title_off')}">
         <span class="audio-toggle-icon" aria-hidden="true">${audioOn ? '🔊' : '🔇'}</span>
       </button>
       <div class="q-emoji">${verb.emoji || '❓'}</div>
@@ -1911,12 +2124,12 @@ function askStage2Verb(verb, step) {
       <div class="q-sub">${progressText}</div>
       <div class="enter-tip">${tipText}</div>
       <div class="quiz-fill-inputs">
-        ${fieldHtml('inf', 'infinitiv')}
-        ${fieldHtml('past', 'past simple')}
-        ${fieldHtml('pp', 'past participle')}
+        ${fieldHtml('inf', t('form_inf'))}
+        ${fieldHtml('past', t('form_past_full'))}
+        ${fieldHtml('pp', t('form_pp'))}
       </div>
       <div class="q-feedback"></div>
-      <div class="q-actions">${isAtomicCheck ? '<button class="btn btn-primary" id="s2-check">Zkontrolovat</button>' : ''}</div>
+      <div class="q-actions">${isAtomicCheck ? `<button class="btn btn-primary" id="s2-check">${t('check_btn')}</button>` : ''}</div>
       <button type="button" class="give-up-btn" id="give-up-btn">${t('giveup_btn')}</button>
     </div>
   `;
@@ -2024,7 +2237,7 @@ function askStage2Verb(verb, step) {
     if (checkBtn) checkBtn.classList.add('hidden');
     const next = document.createElement('button');
     next.className = 'next-btn-corner';
-    next.textContent = 'Další →';
+    next.textContent = t('next_btn');
     next.addEventListener('click', stage2Next, { once: true });
     q.querySelector('.q-card').appendChild(next);
     next.focus();
@@ -2103,9 +2316,7 @@ function askStage2Verb(verb, step) {
       audioBtn.classList.toggle('is-on', on);
       audioBtn.classList.toggle('is-off', !on);
       audioBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      audioBtn.title = on
-        ? 'Audio po odpovědi je ZAPNUTO — klikni pro vypnutí'
-        : 'Audio po odpovědi je VYPNUTO — klikni pro zapnutí';
+      audioBtn.title = on ? t('audio_title_on') : t('audio_title_off');
       const icon = audioBtn.querySelector('.audio-toggle-icon');
       if (icon) icon.textContent = on ? '🔊' : '🔇';
       // If the student just turned audio on AFTER finalizing, play the forms now
@@ -2210,7 +2421,7 @@ function finishLesson() {
     freshAgain.removeAttribute('data-tone');
     freshNew.removeAttribute('data-tone');
     if (isReview) {
-      freshAgain.textContent = 'Další porce slabin →';
+      freshAgain.textContent = t('next_weak_batch');
       freshAgain.addEventListener('click', () => {
         // Tear down current lesson, then re-pick a fresh batch
         state.lesson = null;
@@ -2318,8 +2529,7 @@ function openStreakRewardModal(milestoneDay) {
 
   // Header copy (tone-aware).
   $('#srm-title').textContent = t('streak_title_h');
-  const subFn = TEXTS.streak_sub_h?.[state.style] ?? TEXTS.streak_sub_h?.pro;
-  $('#srm-sub').textContent = typeof subFn === 'function' ? subFn(milestoneDay) : `Streak ${milestoneDay} dní 🔥`;
+  $('#srm-sub').textContent = t('streak_sub_h', milestoneDay);
   $('#srm-foot').textContent = t('streak_foot_h');
   $('#srm-emoji').textContent = milestoneDay >= 30 ? '👑' : milestoneDay >= 14 ? '💎' : milestoneDay >= 7 ? '⭐' : '🎁';
 
@@ -2349,13 +2559,13 @@ function openStreakRewardModal(milestoneDay) {
     card.style.setProperty('--sub-hue', hueOf(subId));
     const examples = (sub.verbs || []).slice(0, 3).map((v) => v.inf).join(', ');
     const count = (sub.verbs || []).length;
-    const countLabel = count === 1 ? '1 sloveso' : (count < 5 ? `${count} slovesa` : `${count} sloves`);
+    const countLabel = `${count} ${t('plur_verbs', count)}`;
     const pattern = sub.title || sub.id;
     card.innerHTML = `
       <div class="srm-option-pattern">${pattern}</div>
       <div class="srm-option-count">${sub.id} · ${countLabel}</div>
       <div class="srm-option-examples">${examples}</div>
-      <span class="srm-option-cta">Vybrat</span>
+      <span class="srm-option-cta">${t('pick_btn')}</span>
     `;
     card.addEventListener('click', () => claimMilestone(milestoneDay, subId));
     optsEl.appendChild(card);
@@ -2418,9 +2628,7 @@ function claimMilestone(day, subId) {
 // in-flight lesson. If signed in, also clears the user's Firestore doc.
 async function resetProgress() {
   const signedIn = !!(state.user);
-  const msg = signedIn
-    ? 'Opravdu chceš vynulovat veškerý pokrok? Smaže se i v cloudu (Google účet).\n\nTuto akci nelze vrátit zpět.'
-    : 'Opravdu chceš vynulovat veškerý pokrok?\n\nTuto akci nelze vrátit zpět.';
+  const msg = signedIn ? t('reset_confirm_cloud') : t('reset_confirm');
   if (!confirm(msg)) return;
   try {
     state.progress = {};
@@ -2439,7 +2647,7 @@ async function resetProgress() {
     renderLessonPicker();
   } catch (e) {
     console.error('Reset failed', e);
-    alert('Něco se nepovedlo. Zkus to znovu.');
+    alert(t('generic_fail'));
   }
 }
 
@@ -2552,16 +2760,8 @@ function computeMacroStats() {
   }));
   return { mastered, inProgress, total: all.length, masteredGroups, totalGroups, streak: computeStreak() };
 }
-function plurDays(n) {
-  if (n === 1) return 'den v řadě';
-  if (n >= 2 && n <= 4) return 'dny v řadě';
-  return 'dní v řadě';
-}
-function plurDayWord(n) {
-  if (n === 1) return 'den';
-  if (n >= 2 && n <= 4) return 'dny';
-  return 'dní';
-}
+function plurDays(n) { return t('plur_days_row', n); }
+function plurDayWord(n) { return t('plur_day', n); }
 
 // Inline smart label for the streak pill — communicates the streak reward
 // system without growing the pill (replaces the plain "N dní v řadě" label).
@@ -2572,7 +2772,7 @@ function streakLabelText(streak, maxStreak, pending) {
   // surface the streak number (or the grace warning when at risk).
   if (state.premium) {
     if (pending && streak > 0) return t('streak_label_grace', streak, plurDays(streak));
-    if (streak === 0) return 'začni dnes';
+    if (streak === 0) return t('start_today');
     return `${streak} ${plurDays(streak)}`;
   }
   if (rewardPending) return t('streak_label_pending');
@@ -2596,7 +2796,7 @@ function renderStatsStrip() {
         <span class="stat-pill-icon">🎯</span>
         <span class="stat-pill-num">${s.mastered}<span class="stat-pill-of"> / ${s.total}</span></span>
       </div>
-      <div class="stat-pill-label">zvládnutých sloves${s.inProgress ? ` · ${s.inProgress} v procesu` : ''}</div>
+      <div class="stat-pill-label">${t('stats_mastered_verbs')}${s.inProgress ? t('stats_in_progress', s.inProgress) : ''}</div>
       <div class="stat-pill-bar"><div class="stat-pill-bar-fill" style="width:${pct}%"></div></div>
     </div>
     ${(() => {
@@ -2605,10 +2805,10 @@ function renderStatsStrip() {
       const pending = isStreakPending();
       const labelText = streakLabelText(s.streak, max, pending);
       const trophyHTML = trophies.length
-        ? `<div class="stat-pill-trophies" aria-label="Získané trofeje">${trophies.map((tr) => `<span class="trophy" title="${tr.label}">${tr.icon}</span>`).join('')}</div>`
+        ? `<div class="stat-pill-trophies" aria-label="${t('stats_trophies_aria')}">${trophies.map((tr) => `<span class="trophy" title="${t(tr.labelKey)}">${tr.icon}</span>`).join('')}</div>`
         : '';
       return `
-    <div class="stat-pill stat-pill-streak is-clickable${streakBig}${trophies.length ? ' has-trophies' : ''}${pending ? ' is-pending' : ''}" id="streak-info-open" role="button" tabindex="0" aria-label="Streak — jak to funguje">
+    <div class="stat-pill stat-pill-streak is-clickable${streakBig}${trophies.length ? ' has-trophies' : ''}${pending ? ' is-pending' : ''}" id="streak-info-open" role="button" tabindex="0" aria-label="${t('streak_pill_aria')}">
       <div class="stat-pill-streak-main">
         <div class="stat-pill-head">
           <span class="stat-pill-icon">🔥</span>
@@ -2624,7 +2824,7 @@ function renderStatsStrip() {
         <span class="stat-pill-icon">🏅</span>
         <span class="stat-pill-num">${s.masteredGroups}<span class="stat-pill-of"> / ${s.totalGroups}</span></span>
       </div>
-      <div class="stat-pill-label">zvládnutých skupin</div>
+      <div class="stat-pill-label">${t('stats_mastered_groups')}</div>
       <div class="stat-pill-bar"><div class="stat-pill-bar-fill" style="width:${groupPct}%"></div></div>
     </div>
   `;
@@ -2777,32 +2977,11 @@ function renderSlabaMistaTile() {
   }).length;
   const restCount = picks.length - weakCount;
 
-  // Czech adjective inflection for implied "slovesa" (neuter plural):
-  // 1 → -é, 2–4 → -á, 0 / 5+ → -ých
-  const adj = (n, stem) => {
-    if (n === 1) return stem + 'é';
-    if (n >= 2 && n <= 4) return stem + 'á';
-    return stem + 'ých';
-  };
-
-  const isPro = state.style === 'pro';
-  const isHantec = state.style === 'hantec';
-  const icon = isPro ? '🎯' : (isHantec ? '🛠️' : '👾');
-  const title = isPro ? 'Dnešní cílovka' : (isHantec ? 'Betelná šichta' : 'Boss mode');
-  let sub;
-  if (isPro) {
-    sub = weakCount > 0
-      ? `${weakCount} ${adj(weakCount, 'problémov')} + ${restCount} ${adj(restCount, 'náhodn')}`
-      : `${picks.length} ${adj(picks.length, 'náhodn')} · retention check`;
-  } else if (isHantec) {
-    sub = weakCount > 0
-      ? `${weakCount} ${adj(weakCount, 'zvoran')} + ${restCount} z fleku`
-      : `${picks.length} z fleku · prubnem to`;
-  } else {
-    sub = weakCount > 0
-      ? `${weakCount} ${adj(weakCount, 'failnut')} + ${restCount} random`
-      : `${picks.length} random · spot check`;
-  }
+  const icon = t('slaba_icon');
+  const title = t('slaba_tile_title');
+  const sub = weakCount > 0
+    ? t('slaba_sub_mixed', weakCount, restCount)
+    : t('slaba_sub_clean', picks.length);
 
   const tile = document.createElement('button');
   tile.type = 'button';
@@ -2833,9 +3012,8 @@ function renderTryAppTile() {
   const hasProgress = Object.keys(state.progress || {}).length > 0;
   if (hasProgress || row.querySelector('.resume-card')) return;
 
-  const isPro = state.style === 'pro';
-  const title = isPro ? 'Začni procvičovat' : 'Pojď to zkusit!';
-  const sub = isPro ? 'Začni první skupinou — stačí kliknout' : 'První skupina tě navede, jen klikni';
+  const title = t('try_title');
+  const sub = t('try_sub');
 
   const tile = document.createElement('button');
   tile.type = 'button';
@@ -2866,15 +3044,15 @@ function renderTryAppTile() {
 function startSlabaMista() {
   const picks = selectSlabaMista();
   if (!picks || picks.length === 0) {
-    toast('Zatím není dost dat — udělej pár lekcí a vrať se. 🌱', 'info');
+    toast(t('slaba_cold'), 'info');
     return;
   }
   // Pseudo-sub mimics the regular shape lesson code expects. The isReview
   // flag lets finishLesson swap the result actions accordingly.
   const pseudoSub = {
     id: 'slabaMista',
-    title: 'Slabá místa',
-    pattern: `Dnešní porce slabin · ${picks.length} sloves`,
+    title: t('slaba_title'),
+    pattern: t('slaba_pattern', picks.length),
     rule: '',
     verbs: picks,
     isReview: true,
@@ -2911,12 +3089,12 @@ function renderBrowse() {
         <div class="subsection-head">
           <span class="subsection-id">${sub.id}</span>
           <span class="subsection-pattern">${sub.pattern}</span>
-          ${subLocked ? '<span class="menu-premium-badge">Premium</span>' : ''}
+          ${subLocked ? `<span class="menu-premium-badge">${t('premium_badge')}</span>` : ''}
         </div>
         <p class="subsection-rule">${sub.rule}</p>
         <div class="verb-grid"></div>
         <button type="button" class="practice-cta${subLocked ? ' locked' : ''}" data-sub="${sub.id}">
-          ${subLocked ? '🔒 ' : '🎯 '}Procvič si to!
+          ${subLocked ? '🔒 ' : '🎯 '}${t('practice_cta')}
         </button>
       `;
       const grid = div.querySelector('.verb-grid');
@@ -2948,7 +3126,7 @@ function renderVerbCard(verb) {
     <span class="verb-form" data-speak="${verb.inf}">${highlightVowel(verb.inf, infV)}</span>
     <span class="verb-form" data-speak="${phon(past)}">${highlightVowel(past, pastV)}</span>
     <span class="verb-form" data-speak="${phon(pp)}">${highlightVowel(pp, ppV)}</span>
-    <button class="speak-btn" data-speak="${verb.inf}, ${phon(past)}, ${phon(pp)}" title="Přehrát všechny tvary">🔊</button>
+    <button class="speak-btn" data-speak="${verb.inf}, ${phon(past)}, ${phon(pp)}" title="${t('speak_all_title')}">🔊</button>
     <div class="verb-cs">${verb.cs}${altParts.length ? `<div class="verb-alt">${altParts.join(' · ')}</div>` : ''}</div>
   `;
   card.querySelectorAll('[data-speak]').forEach((el) =>
@@ -2983,12 +3161,12 @@ function renderFlashcards() {
         <div class="fc-sub-head">
           <span class="subsection-id">${sub.id}</span>
           <span class="subsection-pattern">${sub.pattern}</span>
-          ${subLocked ? '<span class="menu-premium-badge">Premium</span>' : ''}
+          ${subLocked ? `<span class="menu-premium-badge">${t('premium_badge')}</span>` : ''}
           <span class="fc-sub-rule">${sub.rule}</span>
         </div>
         <div class="fc-grid"></div>
         <button type="button" class="practice-cta${subLocked ? ' locked' : ''}" data-sub="${sub.id}">
-          ${subLocked ? '🔒 ' : '🎯 '}Procvič si to!
+          ${subLocked ? '🔒 ' : '🎯 '}${t('practice_cta')}
         </button>
       `;
       const grid = subWrap.querySelector('.fc-grid');
@@ -3055,7 +3233,7 @@ function renderAutoSetup() {
     const s = state.progress[v.inf]?.status; return s === 'yellow' || s === 'red';
   });
   const probDesc = $('#auto-scope-problem-desc');
-  if (probDesc) probDesc.textContent = `${problemVerbs.length} sloves`;
+  if (probDesc) probDesc.textContent = `${problemVerbs.length} ${t('plur_verbs', problemVerbs.length)}`;
   // Wire scope radios
   $$('#view-auto input[name="auto-scope"]').forEach((r) => {
     r.checked = r.value === state.autoSetup.scope;
@@ -3111,7 +3289,7 @@ function renderAutoTiles() {
           <span class="auto-tile-pattern">${sub.pattern}</span>
         </div>
         <div class="auto-tile-preview">${previewHtml}</div>
-        <div class="auto-tile-meta">${sub.verbs.length} sloves</div>
+        <div class="auto-tile-meta">${sub.verbs.length} ${t('plur_verbs', sub.verbs.length)}</div>
       `;
       tile.onclick = () => {
         if (state.autoSetup.selectedSubs.has(sub.id)) state.autoSetup.selectedSubs.delete(sub.id);
@@ -3133,8 +3311,8 @@ function updateAutoSelectionCount() {
   const totalVerbs = state.data.sections.flatMap((s) => s.subsections)
     .filter((sub) => picked.has(sub.id))
     .reduce((n, sub) => n + sub.verbs.length, 0);
-  if (picked.size === 0) el.textContent = '0 skupin';
-  else el.textContent = `${picked.size} skupin · ${totalVerbs} sloves`;
+  if (picked.size === 0) el.textContent = t('auto_zero_groups');
+  else el.textContent = t('auto_selection', picked.size, totalVerbs);
 }
 
 function getAutoSelectedVerbs() {
@@ -3162,14 +3340,12 @@ function autoStart() {
     return;
   }
   if (state.autoSetup.scope === 'groups' && state.autoSetup.selectedSubs.size === 0) {
-    toast('Vyber alespoň jednu skupinu sloves.', 'error');
+    toast(t('auto_pick_group'), 'error');
     return;
   }
   const base = getAutoSelectedVerbs();
   if (base.length === 0) {
-    toast(state.autoSetup.scope === 'problem'
-      ? 'Žádná problematická slovesa — všechno máš zvládnuté! 🎉'
-      : 'Vybrané skupiny neobsahují žádná slovesa.', 'error');
+    toast(state.autoSetup.scope === 'problem' ? t('auto_no_problem') : t('auto_empty'), 'error');
     return;
   }
 
@@ -3217,8 +3393,8 @@ function autoPause() {
   const stopBtn = $('#auto-stop');
   const playBtn = $('#auto-play');
   if (stopBtn) {
-    stopBtn.textContent = '⏏️ Exit';
-    stopBtn.setAttribute('aria-label', 'Ukončit audio jízdu');
+    stopBtn.textContent = t('auto_exit_btn');
+    stopBtn.setAttribute('aria-label', t('auto_exit_aria'));
     stopBtn.classList.add('is-exit');
   }
   if (playBtn) playBtn.classList.remove('hidden');
@@ -3232,8 +3408,8 @@ function autoResume() {
   const stopBtn = $('#auto-stop');
   const playBtn = $('#auto-play');
   if (stopBtn) {
-    stopBtn.textContent = '⏸ Stop';
-    stopBtn.setAttribute('aria-label', 'Pozastavit audio jízdu');
+    stopBtn.textContent = t('auto_stop_btn');
+    stopBtn.setAttribute('aria-label', t('auto_stop_aria'));
     stopBtn.classList.remove('is-exit');
   }
   if (playBtn) playBtn.classList.add('hidden');
@@ -3257,8 +3433,8 @@ function autoExit() {
   const stopBtn = $('#auto-stop');
   const playBtn = $('#auto-play');
   if (stopBtn) {
-    stopBtn.textContent = '⏸ Stop';
-    stopBtn.setAttribute('aria-label', 'Pozastavit audio jízdu');
+    stopBtn.textContent = t('auto_stop_btn');
+    stopBtn.setAttribute('aria-label', t('auto_stop_aria'));
     stopBtn.classList.remove('is-exit');
   }
   if (playBtn) playBtn.classList.add('hidden');
@@ -3294,7 +3470,7 @@ function autoShuffleRemaining() {
   (autoSession.timers || []).forEach(clearTimeout);
   autoSession.timers = [];
   try { window.speechSynthesis.cancel(); } catch {}
-  toast('🔀 Zamícháno — začínáme 3 kola znovu.', 'info', 2000);
+  toast(t('auto_shuffled'), 'info', 2000);
   autoTickNext();
 }
 
@@ -3311,7 +3487,7 @@ function speakCs(text) {
     if (!('speechSynthesis' in window) || autoSession?.aborted || autoSession?.paused) return resolve();
     try { window.speechSynthesis.cancel(); } catch {}
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'cs-CZ';
+    u.lang = PROMPT_VOICE;
     u.rate = autoSession?.tempo?.rateCs || 0.95;
     u.onend = () => resolve();
     u.onerror = () => resolve();
@@ -3338,14 +3514,14 @@ async function autoTickNext() {
   if (autoSession.index >= autoSession.verbs.length) {
     // Round finished. Move to next round, or finish if 3 done.
     if (autoSession.round >= autoSession.totalRounds) {
-      toast('🎉 Hotovo! 3 kola dokončena.', 'success', 4000);
+      toast(t('auto_done'), 'success', 4000);
       setTimeout(() => autoStop(), 2000);
       return;
     }
     autoSession.round++;
     autoSession.index = 0;
     autoSession.verbs = autoSession.baseVerbs.slice();
-    toast(`Kolo ${autoSession.round} / ${autoSession.totalRounds} 🚀`, 'info', 1800);
+    toast(t('auto_round_toast', autoSession.round, autoSession.totalRounds), 'info', 1800);
     // Brief breath before next round
     scheduleAuto(() => autoTickNext(), 1500);
     return;
@@ -3364,7 +3540,7 @@ function updateAutoProgress() {
   if (!autoSession) return;
   const el = $('#auto-progress');
   if (!el) return;
-  el.textContent = `Kolo ${autoSession.round}/${autoSession.totalRounds} · ${autoSession.index + 1}/${autoSession.verbs.length}`;
+  el.textContent = t('auto_progress', autoSession.round, autoSession.totalRounds, autoSession.index + 1, autoSession.verbs.length);
 }
 
 async function renderAutoVerb(verb) {
@@ -3421,7 +3597,7 @@ function renderFlashCard(verb, side) {
       <div class="flash-face flash-front">
         <div class="flash-emoji">${verb.emoji || '❓'}</div>
         <div class="flash-cs">${verb.cs}</div>
-        <div class="flash-hint">klikni pro otočení</div>
+        <div class="flash-hint">${t('flash_hint')}</div>
       </div>
       <div class="flash-face flash-back">
         <div class="flash-forms">
@@ -3429,7 +3605,7 @@ function renderFlashCard(verb, side) {
           <span>${highlightVowel(past, pastV)}</span>
           <span>${highlightVowel(pp, ppV)}</span>
         </div>
-        <button class="speak-btn flash-speak" data-speak="${verb.inf}, ${phon(past)}, ${phon(pp)}" title="Přehrát">🔊</button>
+        <button class="speak-btn flash-speak" data-speak="${verb.inf}, ${phon(past)}, ${phon(pp)}" title="${t('speak_title')}">🔊</button>
       </div>
     </div>
   `;
@@ -3457,7 +3633,7 @@ function renderSectionChips(container, selectedSet) {
   container.innerHTML = '';
   const allChip = document.createElement('button');
   allChip.className = 'chip meta active';
-  allChip.textContent = 'Vše';
+  allChip.textContent = t('quiz_all_chip');
   allChip.addEventListener('click', () => {
     selectedSet.clear();
     container.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c === allChip));
@@ -3516,10 +3692,10 @@ function quizRender() {
     card.innerHTML = `
       <div class="q-emoji">${verb.emoji || '❓'}</div>
       <div class="q-prompt">${verb.inf} <button class="speak-btn" data-speak="${verb.inf}">🔊</button></div>
-      <div class="q-hint">Vyber správný tvar (${askLabel})</div>
+      <div class="q-hint">${t('quiz_pick_correct', askLabel)}</div>
       <div class="quiz-options-list"></div>
       <div class="quiz-feedback"></div>
-      <div class="quiz-next-row"><button class="btn btn-primary hidden" id="quiz-next">Další →</button></div>
+      <div class="quiz-next-row"><button class="btn btn-primary hidden" id="quiz-next">${t('next_btn')}</button></div>
     `;
     const list = card.querySelector('.quiz-options-list');
     options.forEach((opt) => {
@@ -3543,13 +3719,13 @@ function quizRender() {
     card.innerHTML = `
       <div class="q-emoji">${verb.emoji || '❓'}</div>
       <div class="q-prompt">${verb.inf} <button class="speak-btn" data-speak="${verb.inf}">🔊</button></div>
-      <div class="q-hint">Doplň past simple a past participle · <em>${verb.cs}</em></div>
+      <div class="q-hint">${t('quiz_fill_hint', verb.cs)}</div>
       <div class="quiz-fill-inputs">
         <input data-form="past" placeholder="past simple" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" enterkeyhint="next" inputmode="text" />
         <input data-form="pp" placeholder="past participle" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" enterkeyhint="done" inputmode="text" />
       </div>
       <div class="quiz-feedback"></div>
-      <div class="quiz-next-row"><button class="btn btn-primary" id="quiz-check">Zkontrolovat</button><button class="btn btn-primary hidden" id="quiz-next">Další →</button></div>
+      <div class="quiz-next-row"><button class="btn btn-primary" id="quiz-check">${t('check_btn')}</button><button class="btn btn-primary hidden" id="quiz-next">${t('next_btn')}</button></div>
     `;
     const fillInputs = Array.from(card.querySelectorAll('.quiz-fill-inputs input'));
     const submitFill = () => {
@@ -3603,7 +3779,7 @@ function handleQuizAnswer(ok, verb, qText, aText) {
     fb.className = 'quiz-feedback correct';
   } else {
     state.quiz.streak = 0;
-    fb.innerHTML = `❌ ${t('fb_pass_wrong')}<br><span style="font-size:0.9em;opacity:0.85">Správně: <strong>${verb.inf} – ${past} – ${pp}</strong></span>`;
+    fb.innerHTML = `❌ ${t('fb_pass_wrong')}<br><span style="font-size:0.9em;opacity:0.85">${t('quiz_correct_is')} <strong>${verb.inf} – ${past} – ${pp}</strong></span>`;
     fb.className = 'quiz-feedback wrong';
   }
   state.quiz.review.push({ ok, q: qText, a: aText, verb });
@@ -3649,7 +3825,7 @@ function applyTheme() {
   const mi = $('#theme-toggle-menu-icon');
   const ml = $('#theme-toggle-menu-label');
   if (mi) mi.textContent = state.theme === 'dark' ? '☀️' : '🌙';
-  if (ml) ml.textContent = state.theme === 'dark' ? 'Světlý režim' : 'Tmavý režim';
+  if (ml) ml.textContent = state.theme === 'dark' ? t('theme_light') : t('theme_dark');
 }
 function toggleTheme() {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
@@ -3665,7 +3841,7 @@ function applySoundEffectsUI() {
   const on = !!state.soundEffects;
   if (btn) btn.setAttribute('aria-pressed', on ? 'true' : 'false');
   if (ic) ic.textContent = on ? '🔔' : '🔕';
-  if (lb) lb.textContent = on ? 'Zvuky odpovědí: zapnuté' : 'Zvuky odpovědí: vypnuté';
+  if (lb) lb.textContent = on ? t('sounds_on') : t('sounds_off');
 }
 function toggleSoundEffects() {
   state.soundEffects = !state.soundEffects;
@@ -3721,12 +3897,12 @@ function updatePortalBtn() {
 }
 
 async function openCustomerPortal() {
-  if (!BACKEND_URL) { toast('Backend není dostupný.', 'error'); return; }
+  if (!BACKEND_URL) { toast(t('backend_unavailable'), 'error'); return; }
   const user = cloud.getCurrentUser();
-  if (!user) { toast('Nejdřív se přihlas přes Google.', 'error'); return; }
+  if (!user) { toast(t('login_first'), 'error'); return; }
   const btn = $('#settings-portal');
   const origHtml = btn?.innerHTML;
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span>Otevírám…</span>'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span>${t('opening')}</span>`; }
   try {
     const resp = await fetch(`${BACKEND_URL}/create-portal-session`, {
       method: 'POST',
@@ -3738,13 +3914,13 @@ async function openCustomerPortal() {
     });
     const data = await resp.json().catch(() => ({}));
     if (resp.status === 404 && data.error === 'no_customer') {
-      toast('Předplatné nemáš přes Stripe (např. promo kód). Není co spravovat.', 'info', 6000);
+      toast(t('portal_no_customer'), 'info', 6000);
       return;
     }
     if (!resp.ok || !data.url) throw new Error(data.error || 'unknown');
     window.location.href = data.url;
   } catch (e) {
-    toast('Chyba při otevírání portálu: ' + (e.message || e), 'error');
+    toast(t('portal_error') + (e.message || e), 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
   }
@@ -3756,11 +3932,11 @@ function updateCloudUI(user) {
   const btn = $('#cloud-btn');
   if (label && btn) {
     if (user) {
-      const name = user.displayName || user.email || 'účet';
-      label.textContent = `Odhlásit (${name})`;
+      const name = user.displayName || user.email || t('account_word');
+      label.textContent = t('sign_out_label', name);
       btn.classList.add('signed-in');
     } else {
-      label.textContent = 'Přihlásit se přes Google';
+      label.textContent = t('sign_in_google');
       btn.classList.remove('signed-in');
     }
   }
@@ -3770,16 +3946,16 @@ function updateCloudUI(user) {
   if (gBtn && gLabel) {
     if (user) {
       // Show short first name + signed-in style
-      const first = (user.displayName || user.email || 'účet').split(' ')[0].split('@')[0];
+      const first = (user.displayName || user.email || t('account_word')).split(' ')[0].split('@')[0];
       gLabel.textContent = first.length > 12 ? first.slice(0, 12) + '…' : first;
       gBtn.classList.add('signed-in');
-      gBtn.setAttribute('aria-label', `Přihlášen jako ${user.displayName || user.email}. Kliknutím odhlásit.`);
-      gBtn.title = `Přihlášen: ${user.displayName || user.email} — klikni pro odhlášení`;
+      gBtn.setAttribute('aria-label', t('signed_in_aria', user.displayName || user.email));
+      gBtn.title = t('signed_in_title', user.displayName || user.email);
     } else {
-      gLabel.textContent = 'Přihlásit';
+      gLabel.textContent = t('sign_in_short');
       gBtn.classList.remove('signed-in');
-      gBtn.setAttribute('aria-label', 'Přihlásit se přes Google');
-      gBtn.title = 'Přihlásit se přes Google';
+      gBtn.setAttribute('aria-label', t('sign_in_google'));
+      gBtn.title = t('sign_in_google');
     }
   }
 }
@@ -3807,15 +3983,15 @@ function showPaywall(sub) {
   signBtn.onclick = async () => {
     if (handleLoginInWebview('paywall')) return;
     signBtn.disabled = true;
-    signBtn.textContent = 'Přihlašuji…';
+    signBtn.textContent = t('signing_in');
     try {
       await cloud.signIn();
       refreshSignInState();
     } catch (e) {
-      toast('Přihlášení selhalo: ' + (e?.message || e), 'error');
+      toast(t('login_failed') + (e?.message || e), 'error');
     } finally {
       signBtn.disabled = false;
-      signBtn.textContent = 'Přihlásit se přes Google';
+      signBtn.textContent = t('sign_in_google');
     }
   };
   m.querySelectorAll('.paywall-option').forEach((btn) => {
@@ -3842,25 +4018,19 @@ function showPaywall(sub) {
   promoInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); promoSubmit.click(); } };
 }
 
-const PROMO_ERRORS = {
-  not_found: 'Tento kód neznáme. Zkontroluj překlepy.',
-  inactive: 'Kód je deaktivovaný.',
-  expired: 'Kód už vypršel.',
-  exhausted: 'Kód byl vyčerpán — všechna místa obsazená.',
-  already_redeemed: 'Tento kód už jsi jednou uplatnil(a).',
-  invalid_code_format: 'Kód má špatný formát.',
-  no_user: 'Nejdřív se prosím přihlas přes Google.',
-  no_backend: 'Backend není dostupný. Zkus to později.',
-  network: 'Síťová chyba. Zkus to za chvíli.',
-};
+// Chybové hlášky promo kódů žijí v TEXTS.promo_errors (kvůli jazykovým mutacím).
+function promoError(code) {
+  const map = t('promo_errors');
+  return map && typeof map === 'object' ? map[code] : null;
+}
 
 async function redeemPromo(rawCode, ctx) {
   const code = String(rawCode || '').trim().toUpperCase();
-  if (!code) { ctx.setMsg('Zadej kód.', 'error'); return; }
-  if (!BACKEND_URL) { ctx.setMsg(PROMO_ERRORS.no_backend, 'error'); return; }
+  if (!code) { ctx.setMsg(t('promo_enter'), 'error'); return; }
+  if (!BACKEND_URL) { ctx.setMsg(promoError('no_backend'), 'error'); return; }
   const user = cloud.getCurrentUser();
   if (!user) {
-    ctx.setMsg(PROMO_ERRORS.no_user, 'error');
+    ctx.setMsg(promoError('no_user'), 'error');
     // Open inline sign-in in paywall
     const signin = ctx.modal.querySelector('#paywall-signin');
     if (signin) signin.classList.remove('hidden');
@@ -3869,7 +4039,7 @@ async function redeemPromo(rawCode, ctx) {
   ctx.promoSubmit.disabled = true;
   ctx.promoInput.disabled = true;
   const origLabel = ctx.promoSubmit.textContent;
-  ctx.promoSubmit.textContent = 'Ověřuji…';
+  ctx.promoSubmit.textContent = t('promo_checking');
   ctx.setMsg('', null);
   try {
     const resp = await fetch(`${BACKEND_URL}/redeem-code`, {
@@ -3879,7 +4049,7 @@ async function redeemPromo(rawCode, ctx) {
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
-      ctx.setMsg(PROMO_ERRORS[data.error] || ('Chyba: ' + (data.error || resp.status)), 'error');
+      ctx.setMsg(promoError(data.error) || (t('promo_error_prefix') + (data.error || resp.status)), 'error');
       return;
     }
     // Success — flip local state and close paywall. Mirror the expiry from the
@@ -3895,8 +4065,8 @@ async function redeemPromo(rawCode, ctx) {
     applyPremiumUI();
     updatePortalBtn();
     track('promo_redeemed', { code });
-    ctx.setMsg('Kód uplatněn! 🎉 Premium je tvoje.', 'success');
-    toast('🎉 Kód uplatněn — všechny skupiny jsou tvoje!', 'success', 5000);
+    ctx.setMsg(t('promo_ok_msg'), 'success');
+    toast(t('promo_ok_toast'), 'success', 5000);
     setTimeout(() => {
       ctx.modal.classList.add('hidden');
       renderLessonPicker();
@@ -3904,7 +4074,7 @@ async function redeemPromo(rawCode, ctx) {
       renderFlashcards();
     }, 1200);
   } catch (e) {
-    ctx.setMsg(PROMO_ERRORS.network, 'error');
+    ctx.setMsg(promoError('network'), 'error');
   } finally {
     ctx.promoSubmit.disabled = false;
     ctx.promoInput.disabled = false;
@@ -3935,7 +4105,7 @@ async function startCheckout(plan, btn) {
   if (!price) return;
   track('checkout_started', { plan });
   if (!BACKEND_URL) {
-    toast('Backend zatím není dostupný. Zkus to prosím za chvíli.', 'error');
+    toast(t('backend_wait'), 'error');
     return;
   }
   const user = cloud.getCurrentUser();
@@ -3946,7 +4116,7 @@ async function startCheckout(plan, btn) {
     return;
   }
   const orig = btn?.innerHTML;
-  if (btn) { btn.disabled = true; btn.innerHTML = 'Načítám…'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = t('loading'); }
   try {
     const resp = await fetch(`${BACKEND_URL}/create-checkout-session`, {
       method: 'POST',
@@ -3963,7 +4133,7 @@ async function startCheckout(plan, btn) {
     if (data.url) window.location.href = data.url;
     else throw new Error(data.error || 'unknown error');
   } catch (e) {
-    toast('Chyba při zahájení platby: ' + e.message, 'error');
+    toast(t('checkout_error') + e.message, 'error');
     if (btn) { btn.disabled = false; btn.innerHTML = orig; }
   }
 }
@@ -3989,13 +4159,7 @@ function updateSyncStatus(status) {
   const dot = $('#cloud-status');
   if (!dot) return;
   dot.dataset.status = status;
-  const titles = {
-    idle: 'cloud sync vypnutý',
-    'signing-in': 'přihlašování…',
-    syncing: 'synchronizace…',
-    synced: 'synchronizováno',
-    error: 'chyba synchronizace',
-  };
+  const titles = t('sync_titles');
   dot.title = titles[status] || status;
 }
 
@@ -4007,6 +4171,7 @@ async function init() {
   applyTheme();
   applyPremiumUI();
   state.data = await fetch('data/verbs.json').then((r) => r.json());
+  localizeData(state.data); // jazyková mutace může přepsat překlady/patterny
 
   $('#verb-count').textContent = flattenVerbs(state.data).length;
 
@@ -4071,15 +4236,15 @@ async function init() {
   $('#settings-portal')?.addEventListener('click', openCustomerPortal);
   $('#google-btn')?.addEventListener('click', () => {
     if (cloud.getCurrentUser()) {
-      if (confirm('Opravdu se chceš odhlásit?')) cloud.signOutNow();
+      if (confirm(t('signout_confirm'))) cloud.signOutNow();
     } else {
       if (handleLoginInWebview('header_btn')) return;
-      cloud.signIn().catch((e) => toast('Přihlášení selhalo: ' + (e?.message || e), 'error'));
+      cloud.signIn().catch((e) => toast(t('login_failed') + (e?.message || e), 'error'));
     }
   });
   $('#cloud-btn').addEventListener('click', () => {
     if (cloud.getCurrentUser()) {
-      if (confirm('Opravdu se chceš odhlásit?')) cloud.signOutNow();
+      if (confirm(t('signout_confirm'))) cloud.signOutNow();
     } else {
       if (handleLoginInWebview('menu_cloud')) return;
       cloud.signIn();
@@ -4164,10 +4329,10 @@ async function init() {
     const label = $('#dialect-toggle-menu-label');
     if (state.dialect === 'AmE') {
       if (icon) icon.textContent = '🇺🇸';
-      if (label) label.textContent = 'Varianta: americká (AmE)';
+      if (label) label.textContent = t('dialect_ame');
     } else {
       if (icon) icon.textContent = '🇬🇧';
-      if (label) label.textContent = 'Varianta: britská (BrE)';
+      if (label) label.textContent = t('dialect_bre');
     }
   }
   function setDialect(value) {
