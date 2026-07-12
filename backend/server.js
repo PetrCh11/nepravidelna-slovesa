@@ -106,7 +106,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 app.use(express.json());
 
 app.post('/create-checkout-session', async (req, res) => {
-  const { priceId, uid, mode, returnUrl, email } = req.body || {};
+  const { priceId, uid, mode, returnUrl, email, locale } = req.body || {};
   if (!priceId || !uid || !mode || !returnUrl) {
     return res.status(400).json({ error: 'missing params (priceId, uid, mode, returnUrl)' });
   }
@@ -138,7 +138,8 @@ app.post('/create-checkout-session', async (req, res) => {
       }),
       ...(email ? { customer_email: email } : {}),
       allow_promotion_codes: true,
-      locale: 'cs',
+      // Checkout UI language: language mutations send their own (e.g. 'pl').
+      locale: ['cs', 'pl'].includes(locale) ? locale : 'cs',
     });
     res.json({ url: session.url });
   } catch (e) {

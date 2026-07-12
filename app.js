@@ -202,6 +202,10 @@ const STRIPE_PRICES = {
   yearly:   { id: 'price_1TYOVlK1GA1fPMpOONV6P92W', mode: 'subscription' }, // 249 Kč/year (live)
   monthly:  { id: 'price_1TYOX3K1GA1fPMpO7yLM6x8i', mode: 'subscription' }, // 49 Kč/mo (live)
 };
+// Jazyková mutace může dodat vlastní Stripe ceny v lokální měně (docs/i18n.md).
+if (window.LANG_PACK && window.LANG_PACK.stripePrices) {
+  Object.assign(STRIPE_PRICES, window.LANG_PACK.stripePrices);
+}
 
 // Effective premium check. Stripe payers: premium=true with no expiry → always active.
 // Promo redemptions (teacher codes etc.) may set premiumExpiresAt — once past, the
@@ -4127,6 +4131,7 @@ async function startCheckout(plan, btn) {
         mode: price.mode,
         returnUrl: window.location.origin + window.location.pathname,
         email: user.email,
+        locale: LANG, // jazyk Stripe Checkoutu; backend má whitelist s fallbackem na 'cs'
       }),
     });
     const data = await resp.json();

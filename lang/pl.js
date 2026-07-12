@@ -91,6 +91,15 @@
 
   window.LANG_PACK = {
     voice: 'pl-PL',
+    // PLN ceník — odkomentovat, až v Stripe dashboardu vzniknou PLN prices
+    // (Product catalog → přidat ceny v PLN ke stávajícím produktům). Zároveň
+    // přepsat zobrazené částky v pl/index.html (.paywall-option-price) a klíče
+    // pw_plan1_note / pw_plan2_note / pw_plan_yearly_note níže.
+    // stripePrices: {
+    //   lifetime: { id: 'price_…PLN…', mode: 'payment' },
+    //   yearly:   { id: 'price_…PLN…', mode: 'subscription' },
+    //   monthly:  { id: 'price_…PLN…', mode: 'subscription' },
+    // },
     texts: {
       // Hero
       hero_h2: '106 czasowników i 24 grupy według wzorców. Załapiesz wzorzec → masz całą grupę.',
