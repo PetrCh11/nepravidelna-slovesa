@@ -91,14 +91,12 @@
 
   window.LANG_PACK = {
     voice: 'pl-PL',
-    // PLN ceník: 9,99 zł/mies. · 49,99 zł/rok · 89,99 zł lifetime.
-    // Odkomentovat až s reálnými price ID (Stripe → Product catalog → přidat
-    // PLN cenu ke stávajícím produktům). Do té doby checkout účtuje CZK.
-    // stripePrices: {
-    //   lifetime: { id: 'price_TODO_LIFETIME_PLN', mode: 'payment' },      // 89,99 zł
-    //   yearly:   { id: 'price_TODO_YEARLY_PLN', mode: 'subscription' },   // 49,99 zł/rok
-    //   monthly:  { id: 'price_TODO_MONTHLY_PLN', mode: 'subscription' },  // 9,99 zł/mies.
-    // },
+    // PLN ceník — live Stripe prices (ověřeno proti checkoutu 2026-07-12).
+    stripePrices: {
+      lifetime: { id: 'price_1TsQVcK1GA1fPMpO4R1U3f9r', mode: 'payment' },      // 89,99 zł
+      yearly:   { id: 'price_1TsQULK1GA1fPMpO9h6Jglu4', mode: 'subscription' }, // 49,99 zł/rok
+      monthly:  { id: 'price_1TsQTNK1GA1fPMpOiIhQTUEp', mode: 'subscription' }, // 9,99 zł/mies.
+    },
     texts: {
       // Hero
       hero_h2: '106 czasowników i 24 grupy według wzorców. Załapiesz wzorzec → masz całą grupę.',

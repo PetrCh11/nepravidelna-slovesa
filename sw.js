@@ -17,7 +17,7 @@ const ASSETS = [
   './pl/',
   './pl/index.html',
   './pl/manifest.json',
-  './lang/pl.js?v=2',
+  './lang/pl.js?v=3',
 ];
 
 self.addEventListener('install', (e) => {
