@@ -1,5 +1,5 @@
 // Simple cache-first service worker for offline PWA use
-const CACHE = 'slovesa-v170';
+const CACHE = 'slovesa-v171';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,11 @@ const ASSETS = [
   './icon-180.png',
   './icon-192.png',
   './icon-512.png',
+  // Polská mutace (docs/i18n.md)
+  './pl/',
+  './pl/index.html',
+  './pl/manifest.json',
+  './lang/pl.js',
 ];
 
 self.addEventListener('install', (e) => {
@@ -36,6 +41,6 @@ self.addEventListener('fetch', (e) => {
         caches.open(CACHE).then((c) => c.put(request, copy));
       }
       return resp;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => caches.match(new URL(request.url).pathname.startsWith('/pl/') ? './pl/index.html' : './index.html')))
   );
 });
