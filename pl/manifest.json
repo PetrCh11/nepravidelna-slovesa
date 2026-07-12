@@ -1,0 +1,32 @@
+{
+  "name": "Czasowniki nieregularne – raz na zawsze",
+  "short_name": "Czasowniki",
+  "description": "Naucz się 106 angielskich czasowników nieregularnych raz na zawsze — sprytny system poprowadzi cię od poznania do pełnego opanowania.",
+  "start_url": "/pl/",
+  "scope": "/pl/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#5dc9bd",
+  "theme_color": "#5dc9bd",
+  "lang": "pl",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

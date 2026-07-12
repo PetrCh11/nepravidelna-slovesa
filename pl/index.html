@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Polská mutace žije v /pl/, ale sdílí assety s rootem (app.js, styles.css,
+       data/, sw.js). <base href="/"> zajistí, že se všechny relativní cesty —
+       včetně fetch('data/verbs.json') a register('sw.js') uvnitř app.js —
+       resolvují od rootu domény. Odkazy specifické pro /pl/ proto musí být
+       zapsané s prefixem pl/ (viz manifest níže). -->
+  <base href="/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <title>Czasowniki nieregularne – raz na zawsze</title>
+  <meta name="description" content="Naucz się 106 angielskich czasowników nieregularnych raz na zawsze. Sprytny system poprowadzi cię od poznania do pełnego opanowania — bez wkuwania, według wzorców wymowy." />
+  <meta name="theme-color" content="#5dc9bd" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Czasowniki" />
+  <link rel="manifest" href="pl/manifest.json" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Jazykový pack — musí se načíst PŘED app.js (docs/i18n.md) -->
+  <script src="lang/pl.js"></script>
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+  <!-- In-app webview detection (FB/IG/Messenger/TikTok/LinkedIn/Twitter/Line/WeChat/GSA).
+       Google OAuth (signInWithPopup) is blocked in these embedded browsers with
+       `disallowed_useragent`, so users can't sign in. We mark <html> early so the
+       banner can render without flicker; the rest is wired up in app.js. -->
+  <script>
+    (function(){
+      try {
+        var ua = navigator.userAgent || '';
+        var re = /FBAN|FBAV|FB_IAB|FBIOS|Instagram|MessengerLite|Messenger\/|Line\/|MicroMessenger|GSA\/|Twitter|LinkedInApp|TikTok|musical_ly|Pinterest/i;
+        if (re.test(ua)) {
+          document.documentElement.classList.add('is-inapp-webview');
+          window.__inAppWebview = true;
+          // Best-effort label for analytics
+          var label = 'other';
+          if (/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)) label = 'facebook';
+          else if (/Instagram/i.test(ua)) label = 'instagram';
+          else if (/Messenger/i.test(ua)) label = 'messenger';
+          else if (/TikTok|musical_ly/i.test(ua)) label = 'tiktok';
+          else if (/LinkedInApp/i.test(ua)) label = 'linkedin';
+          else if (/Twitter/i.test(ua)) label = 'twitter';
+          window.__inAppWebviewName = label;
+        }
+      } catch(_) {}
+    })();
+  </script>
+</head>
+<body>
+  <!-- In-app webview banner: shown only when running inside Facebook/Instagram/etc. -->
+  <div id="webview-banner" class="webview-banner" role="region" aria-label="Otwórz w przeglądarce" hidden>
+    <div class="webview-banner-inner">
+      <span class="webview-banner-icon" aria-hidden="true">📱</span>
+      <div class="webview-banner-text">
+        <strong>Logowanie tutaj nie działa.</strong>
+        <span class="webview-banner-sub">Jesteś w <span id="webview-banner-app">Facebooku</span>. Otwórz link w <b>Safari / Chrome</b> (stuknij <b>⋯</b> w prawym górnym rogu → <b>„Otwórz w przeglądarce”</b>). Potem zalogujesz się przez Google.</span>
+      </div>
+      <div class="webview-banner-actions">
+        <button id="webview-banner-copy" class="btn btn-primary btn-sm" type="button">Skopiuj link</button>
+        <button id="webview-banner-open" class="btn btn-secondary btn-sm" type="button" hidden>Otwórz w Chrome</button>
+        <button id="webview-banner-close" class="webview-banner-close" type="button" aria-label="Zamknij">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PWA install banner (Android: native prompt, iOS: instructions modal) -->
+  <div id="install-banner" class="install-banner hidden" role="region" aria-label="Zainstaluj aplikację">
+    <div class="install-banner-inner">
+      <span class="install-banner-icon" aria-hidden="true">📲</span>
+      <div class="install-banner-text">
+        <strong>Pobierz apkę</strong>
+        <span>Dodaj ją do ekranu głównego — działa też offline.</span>
+      </div>
+      <button id="install-btn" class="install-banner-cta" type="button">Zainstaluj</button>
+      <button id="install-dismiss" class="install-banner-close" type="button" aria-label="Zamknij na tydzień">✕</button>
+    </div>
+  </div>
+
+  <!-- „Dlaczego ta metoda jest najlepsza?” — science explainer modal -->
+  <div id="why-modal" class="why-modal hidden" role="dialog" aria-modal="true" aria-labelledby="why-title">
+    <div class="why-backdrop"></div>
+    <div class="why-card">
+      <button id="why-close" class="why-close" type="button" aria-label="Zamknij">✕</button>
+      <h2 id="why-title">Dlaczego ta metoda jest najlepsza?</h2>
+      <p class="why-lede">Ta apka dzieli czasowniki na grupy według zmiany, która w nich zachodzi. Psychologia poznawcza i neurolingwistyka mają niezbite dowody na to, że ta metoda jest <strong>dramatycznie skuteczniejsza</strong> niż klasyczne wkuwanie w kolejności alfabetycznej.</p>
+      <p class="why-sub">Oto 3 główne naukowe filary aplikacji:</p>
+
+      <h3>1. Zasada „chunkingu” (grupowanie poznawcze)</h3>
+      <p>Twórca psychologii poznawczej <strong>George Miller</strong> udowodnił, że ludzka pamięć krótkotrwała jest w stanie utrzymać naraz tylko ograniczoną liczbę informacji (tzw. liczba Millera: <em>7 ± 2 elementy</em>).</p>
+      <p>Alfabetyczna lista zmusza mózg do traktowania każdego czasownika jako osobnej, izolowanej informacji. Gdy uczysz się <em>bring, buy, catch</em>, to dla mózgu 3 różne zadania.</p>
+      <p>Nauka według wzorców łączy czasowniki w jeden „chunk”. Mózg nie zapisuje 5 różnych słów, tylko <strong>jeden wzorzec dźwiękowy</strong> (np. <em>-ought / -ought</em>). Pamięć natychmiast się zwalnia i mózg przyswaja wielokrotnie więcej słów w krótszym czasie.</p>
+
+      <h3>2. Mózg kocha „rodziny fonologiczne” (sound families)</h3>
+      <p>Współczesne badania lingwistyczne (tzw. <em>connectionist models</em>, np. Joan Bybee czy Rumelhart i McClelland) pokazują, że nasz mózg nie układa czasowników nieregularnych w pamięci jak słownik, tylko <strong>według dźwięku i rymu</strong>.</p>
+      <p>Gdy uczymy się schematu <em>sing – sang – sung</em>, mózg tworzy silną ścieżkę neuronową. Gdy potem dostanie słowo <em>ring</em>, podświadomie „wskakuje” na ten sam tor i poprawnie wyprowadza <em>rang – rung</em>.</p>
+      <p>Aplikacja nie robi właściwie nic innego, niż serwowanie danych dokładnie w tym formacie, w jakim mózg jest naturalnie zaprogramowany je zapisywać. Idzie mózgowi „z włosem”.</p>
+
+      <h3>3. Eliminacja interferencji pamięciowej (pułapka podręczników)</h3>
+      <p>Gdy uczysz się słów alfabetycznie (<em>bear, beat, become, begin, bend</em>), w mózgu dochodzi do tzw. <strong>interferencji proaktywnej</strong> — wcześniejsza informacja miesza się z następną. Słowa zaczynają się na tę samą literę, ale zmieniają się zupełnie inaczej. Efekt to wewnętrzny chaos: na sprawdzianie wahasz się, czy czas przeszły od <em>swim</em> to „swam” czy „swimmed”.</p>
+      <p>Podział według zmian (<em>cut – cut – cut</em>, <em>hurt – hurt – hurt</em>) całkowicie usuwa ten chaos. Mózg przełącza się w tryb <strong>rozpoznawania wzorców</strong> (pattern recognition) — ewolucyjnie naszą najsilniejszą broń w nauce.</p>
+
+      <h3>Bonus: co jeszcze?</h3>
+      <p>Do tego wszystko podzieliliśmy na <strong>grupy odróżnione kolorami</strong>, żeby wesprzeć osoby z pamięcią fotograficzną. Dodaliśmy <strong>audio</strong>, żeby nikt nie popełniał błędów w wymowie. Jest też <strong>Tryb samochodowy</strong> — świetny pomocnik dla ludzi pracujących w trasie. I mnóstwo innych rzeczy.</p>
+
+      <h3>A co dalej?</h3>
+      <p>Pracujemy nad powtórkami według <strong>krzywej zapominania Ebbinghausa</strong> i innymi świetnymi funkcjami. Więc… <em>stay tuned!</em> 🎧</p>
+    </div>
+  </div>
+
+  <!-- iOS install instructions modal -->
+  <div id="ios-install-modal" class="ios-install-modal hidden" role="dialog" aria-modal="true" aria-labelledby="ios-install-title">
+    <div class="ios-install-backdrop"></div>
+    <div class="ios-install-card">
+      <button id="ios-install-close" class="ios-install-close" type="button" aria-label="Zamknij">✕</button>
+      <h3 id="ios-install-title">Dodaj do ekranu głównego</h3>
+      <ol class="ios-install-steps">
+        <li>Stuknij na dole ikonę <strong>Udostępnij</strong> <span class="ios-share-glyph" aria-hidden="true">⎘</span></li>
+        <li>Na liście znajdź <strong>Do ekranu głównego</strong></li>
+        <li>W prawym górnym rogu potwierdź <strong>Dodaj</strong></li>
+      </ol>
+      <p class="ios-install-hint">Aplikacja działa potem także bez internetu i wygląda jak natywna apka.</p>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <div class="container header-inner">
+      <h1 class="logo"><button id="logo-home" class="logo-btn" type="button" aria-label="Na stronę główną"><img class="logo-img" src="icon-192.png" alt="" /><span class="logo-text"><span class="logo-line1">Czasowniki nieregularne</span><span class="logo-line2">... raz na zawsze.</span></span></button></h1>
+      <div class="header-controls">
+        <label class="dialect-switch" title="Angielski brytyjski vs. amerykański">
+          <select id="dialect-select" aria-label="Wariant angielskiego">
+            <option value="BrE">🇬🇧 BrE</option>
+            <option value="AmE">🇺🇸 AmE</option>
+          </select>
+        </label>
+        <button id="google-btn" class="google-btn" type="button" aria-label="Zaloguj się przez Google">
+          <svg class="google-logo" viewBox="0 0 18 18" aria-hidden="true">
+            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.26c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+          </svg>
+          <span class="google-btn-label" id="google-btn-label">Zaloguj</span>
+        </button>
+        <button id="streak-reward-btn" class="icon-btn streak-reward-btn hidden" aria-label="Odbierz nagrodę za serię" type="button" title="Masz nieodebraną nagrodę">🎁<span class="streak-reward-dot" aria-hidden="true"></span></button>
+        <button id="theme-toggle" class="icon-btn" aria-label="Przełącz tryb ciemny">🌙</button>
+        <div class="menu-wrap">
+          <button id="menu-btn" class="icon-btn" aria-label="Menu" aria-expanded="false">☰</button>
+          <div id="menu-dropdown" class="menu-dropdown" role="menu">
+            <button class="menu-item" data-view="lesson" role="menuitem" data-tone="menu_lesson">🎓 Lekcje</button>
+            <button class="menu-item" data-view="browse" role="menuitem" data-tone="menu_browse">📚 Przegląd grup</button>
+            <button class="menu-item" data-view="flashcards" role="menuitem" data-tone="menu_fc">🃏 Fiszki</button>
+            <button class="menu-item" data-view="quiz" role="menuitem" data-tone="menu_quiz">✅ Szybki quiz</button>
+            <button class="menu-item" data-view="auto" role="menuitem">🚗 Tryb samochodowy <span class="menu-premium-badge">Premium</span></button>
+            <hr class="menu-divider" />
+            <button class="menu-item" id="theme-toggle-menu" role="menuitem" type="button">
+              <span id="theme-toggle-menu-icon">🌙</span>
+              <span id="theme-toggle-menu-label">Tryb ciemny</span>
+            </button>
+            <button class="menu-item" id="sound-toggle-menu" role="menuitem" type="button" aria-pressed="true">
+              <span id="sound-toggle-menu-icon">🔔</span>
+              <span id="sound-toggle-menu-label">Dźwięki odpowiedzi: włączone</span>
+            </button>
+            <button class="menu-item menu-item-mobile" id="dialect-toggle-menu" role="menuitem" type="button">
+              <span id="dialect-toggle-menu-icon">🇬🇧</span>
+              <span id="dialect-toggle-menu-label">Wariant: brytyjski (BrE)</span>
+            </button>
+            <div class="menu-style-row" role="group" aria-label="Styl apki">
+              <span class="menu-style-label">Styl:</span>
+              <div class="menu-style-options">
+                <button class="menu-style-btn" data-style="pro" type="button">💼 Korpo</button>
+                <button class="menu-style-btn" data-style="student" type="button">🎓 Szkoła</button>
+              </div>
+            </div>
+            <hr class="menu-divider" />
+            <button class="menu-item" id="settings-btn" role="menuitem" type="button">
+              ⚙️ Ustawienia
+            </button>
+            <button class="menu-item menu-cloud" id="cloud-btn" role="menuitem">
+              <span class="cloud-line">
+                <span class="cloud-icon">☁️</span>
+                <span class="cloud-label" id="cloud-label">Zaloguj się przez Google</span>
+              </span>
+              <span class="cloud-status" id="cloud-status" data-status="idle"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Floating menu trigger shown only while practicing on mobile -->
+  <button id="practice-menu-btn" class="practice-menu-btn icon-btn" type="button" aria-label="Menu" aria-expanded="false">☰</button>
+
+  <main class="container">
+    <!-- LESSON VIEW (default) -->
+    <section id="view-lesson" class="view active">
+      <!-- Step 0: pick group -->
+      <div class="lesson-picker">
+        <button id="why-btn" class="why-link" type="button" aria-haspopup="dialog">Dlaczego ta metoda jest najlepsza?</button>
+        <div class="intro intro-hero">
+          <h2 data-tone-html="hero_h2_html"><span class="hero-facts">106 czasowników i 24 grupy według wzorców.</span><span class="hero-slogan">Załapiesz wzorzec <span class="hero-arrow">→</span> masz całą grupę.</span></h2>
+        </div>
+        <div id="stats-strip" class="stats-strip"></div>
+        <div id="lesson-groups"></div>
+      </div>
+
+      <!-- Step 1-3: active lesson -->
+      <div class="lesson-active hidden">
+        <div class="lesson-topbar">
+          <button id="lesson-exit" class="btn-link">← Wstecz</button>
+          <div class="lesson-group-label" id="lesson-group-label"></div>
+          <div class="lesson-stage-spacer"></div>
+        </div>
+        <div class="lesson-progress">
+          <div class="verb-chips" id="verb-chips"></div>
+          <div class="lesson-bar"><div class="lesson-bar-fill" id="lesson-bar-fill"></div></div>
+          <div class="step-pills" id="step-pills"></div>
+        </div>
+        <div class="lesson-stage-intro hidden" id="lesson-stage-intro">
+          <div class="stage-intro-emoji" id="stage-intro-emoji">🃏</div>
+          <h3 id="stage-intro-title">Faza 1</h3>
+          <p id="stage-intro-desc">opis</p>
+          <button id="stage-intro-start" class="btn btn-primary">Zaczynamy</button>
+        </div>
+        <div class="lesson-question" id="lesson-question"></div>
+      </div>
+
+      <!-- Step 4: results -->
+      <div class="lesson-results hidden">
+        <h2 data-tone="results_h2">Gotowe! 🎉</h2>
+        <div class="results-summary" id="results-summary"></div>
+        <h3>Twój wynik</h3>
+        <div class="results-list" id="results-list"></div>
+        <div class="results-actions">
+          <button id="results-again" class="btn btn-primary" data-tone="res_again">Powtórz tylko te oporne</button>
+          <button id="results-new" class="btn btn-secondary" data-tone="res_new">Nowa lekcja</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- BROWSE VIEW -->
+    <section id="view-browse" class="view">
+      <div class="intro">
+        <h2>Przegląd grup wymowy</h2>
+        <p>Każda grupa ma wspólny wzorzec. Kliknij słowo, aby usłyszeć wymowę 🔊.</p>
+      </div>
+      <div id="sections-list"></div>
+    </section>
+
+    <!-- FLASHCARDS VIEW -->
+    <section id="view-flashcards" class="view">
+      <div class="intro">
+        <h2>Fiszki</h2>
+        <p>Kliknij kartę, a się odwróci. Karty są podzielone według grup.</p>
+        <div class="fc-toolbar">
+          <label class="fc-side-toggle">
+            Strona domyślna:
+            <select id="fc-side">
+              <option value="cs" selected>po polsku → po angielsku</option>
+              <option value="en">po angielsku → po polsku</option>
+            </select>
+          </label>
+          <button id="fc-flip-all" class="btn btn-ghost">Odwróć wszystkie</button>
+        </div>
+      </div>
+      <div id="fc-sections"></div>
+    </section>
+
+    <!-- AUTO (driving) VIEW -->
+    <section id="view-auto" class="view">
+      <div class="auto-setup">
+        <div class="intro intro-hero">
+          <h2>🚗 Tryb samochodowy</h2>
+          <p class="hero-lead">Bezpieczne ćwiczenie w trakcie jazdy. Aplikacja przeczyta polskie tłumaczenie → pauza → potem na głos wszystkie trzy angielskie formy. <strong>Uruchom przed jazdą.</strong></p>
+        </div>
+
+        <div class="auto-section">
+          <h3 class="auto-section-title">Co testować?</h3>
+          <div class="auto-scope-options">
+            <label class="auto-scope-option">
+              <input type="radio" name="auto-scope" value="problem" />
+              <span class="auto-scope-card">
+                <span class="auto-scope-title">🟡🔴 Tylko oporne</span>
+                <span class="auto-scope-desc" id="auto-scope-problem-desc">0 czasowników</span>
+              </span>
+            </label>
+            <label class="auto-scope-option">
+              <input type="radio" name="auto-scope" value="groups" checked />
+              <span class="auto-scope-card">
+                <span class="auto-scope-title">📚 Według grup</span>
+                <span class="auto-scope-desc">Wybierz konkretne grupy poniżej</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="auto-section" id="auto-tiles-section">
+          <h3 class="auto-section-title">
+            <span>Grupy czasowników</span>
+            <span class="auto-selection-count" id="auto-selection-count">0 wybranych</span>
+          </h3>
+          <div class="auto-tiles" id="auto-tiles"></div>
+        </div>
+
+        <div class="auto-section auto-section-grid">
+          <div class="auto-field-block">
+            <h3 class="auto-section-title">Tryb</h3>
+            <div class="auto-radio-group" id="auto-mode">
+              <label class="auto-radio">
+                <input type="radio" name="auto-mode" value="test" checked />
+                <span class="auto-radio-card">
+                  <span class="auto-radio-name">🧠 Test</span>
+                  <span class="auto-radio-desc">Po polsku → pauza → formy</span>
+                </span>
+              </label>
+              <label class="auto-radio">
+                <input type="radio" name="auto-mode" value="listen" />
+                <span class="auto-radio-card">
+                  <span class="auto-radio-name">🎧 Słuchanie</span>
+                  <span class="auto-radio-desc">Czyta wszystko bez pauzy</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="auto-field-block">
+            <h3 class="auto-section-title">Tempo</h3>
+            <div class="auto-radio-group auto-radio-row" id="auto-tempo">
+              <label class="auto-radio"><input type="radio" name="auto-tempo" value="slow" /><span class="auto-radio-pill">🐢 Wolne</span></label>
+              <label class="auto-radio"><input type="radio" name="auto-tempo" value="normal" checked /><span class="auto-radio-pill">🚶 Normalne</span></label>
+              <label class="auto-radio"><input type="radio" name="auto-tempo" value="fast" /><span class="auto-radio-pill">🏃 Szybkie</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="auto-duration-note" id="auto-duration-note">Każda grupa przejdzie 3× w kółko.</div>
+
+        <button class="btn btn-primary auto-start-btn" id="auto-start" type="button">▶ Rozpocznij jazdę audio</button>
+        <p class="auto-warn">⚠️ Uruchom przed jazdą. Nie patrz na ekran za kierownicą. Aplikacja działa sama.</p>
+      </div>
+
+      <!-- Fullscreen driving overlay -->
+      <div class="auto-stage hidden" id="auto-stage" aria-live="polite">
+        <div class="auto-stage-bg"></div>
+        <div class="auto-stage-top">
+          <div class="auto-progress" id="auto-progress">0 / 0</div>
+          <button class="auto-shuffle-btn" id="auto-shuffle" type="button" title="Wymieszaj i zacznij 3 rundy od nowa">🔀 Wymieszaj</button>
+          <div class="auto-progress-spacer"></div>
+        </div>
+        <div class="auto-stage-content">
+          <div class="auto-cs" id="auto-cs"></div>
+          <div class="auto-forms" id="auto-forms">
+            <div class="auto-form-item" data-form="inf"></div>
+            <div class="auto-form-item" data-form="past"></div>
+            <div class="auto-form-item" data-form="pp"></div>
+          </div>
+        </div>
+        <div class="auto-stage-bottom">
+          <button class="auto-play-btn hidden" id="auto-play" type="button" aria-label="Kontynuuj jazdę audio">▶ Play</button>
+          <button class="auto-stop-btn" id="auto-stop" type="button" aria-label="Wstrzymaj jazdę audio">⏸ Stop</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ VIEW -->
+    <section id="view-quiz" class="view">
+      <div class="quiz-setup">
+        <h2>Szybki quiz</h2>
+        <p>Szybki test z dowolnych grup.</p>
+        <div id="quiz-filter" class="filter-chips"></div>
+        <div class="quiz-options">
+          <label>Liczba pytań:
+            <select id="quiz-count">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+              <option value="0">wszystkie</option>
+            </select>
+          </label>
+          <label>Typ pytań:
+            <select id="quiz-type">
+              <option value="mixed">Mieszane</option>
+              <option value="mc">Wybór (a/b/c/d)</option>
+              <option value="fill">Uzupełnianie</option>
+            </select>
+          </label>
+        </div>
+        <button id="quiz-start" class="btn btn-primary">Rozpocznij quiz</button>
+      </div>
+      <div class="quiz-play hidden">
+        <div class="quiz-progress">
+          <div class="quiz-counter"><span id="quiz-current">1</span> / <span id="quiz-total">10</span></div>
+          <div class="quiz-score">Wynik: <span id="quiz-score">0</span></div>
+        </div>
+        <div class="quiz-bar"><div class="quiz-bar-fill" id="quiz-bar-fill"></div></div>
+        <div class="quiz-card" id="quiz-card"></div>
+      </div>
+      <div class="quiz-done hidden">
+        <h3>Quiz ukończony! 🏆</h3>
+        <p>Twój wynik: <strong id="quiz-final">—</strong></p>
+        <div id="quiz-review" class="quiz-review"></div>
+        <button id="quiz-restart" class="btn btn-primary">Spróbuj jeszcze raz</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Paywall modal -->
+  <div class="paywall-backdrop hidden" id="paywall" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
+    <div class="paywall">
+      <button class="paywall-close" id="paywall-close" aria-label="Zamknij">×</button>
+      <div class="paywall-emoji">🔓</div>
+      <h2 class="paywall-title" id="paywall-title" data-tone="pw_title">Odblokuj wszystkie czasowniki 🔓</h2>
+      <p class="paywall-sub" data-tone-html="pw_sub">Za darmo masz 3 grupy (15 czasowników). Premium otwiera wszystkie <strong>106 czasowników</strong> w 24 grupach oraz <strong>🚗 Tryb samochodowy</strong> do ćwiczenia w aucie.</p>
+      <div class="paywall-trial-banner">🎁 <strong>7 dni za darmo</strong> przy planie miesięcznym i rocznym — bez zobowiązań, anulujesz w każdej chwili.</div>
+      <div class="paywall-signin hidden" id="paywall-signin">
+        <p class="paywall-signin-text">📌 Przed zakupem zaloguj się — powiążemy premium z twoim kontem i będzie działać także na innych urządzeniach.</p>
+        <button class="btn btn-primary paywall-signin-btn" id="paywall-signin-btn">Zaloguj się przez Google</button>
+      </div>
+      <div class="paywall-options">
+        <button class="paywall-option" data-plan="monthly">
+          <div class="paywall-option-name">Miesięcznie</div>
+          <div class="paywall-option-price">49 CZK<span class="paywall-period">/mies.</span></div>
+          <div class="paywall-option-note" data-tone="pw_plan2_note">7 dni za darmo · potem 49 CZK/mies. · anulujesz w każdej chwili</div>
+        </button>
+        <button class="paywall-option paywall-option-primary paywall-option-highlight" data-plan="yearly">
+          <span class="paywall-badge">⭐ Najkorzystniej</span>
+          <div class="paywall-option-name">Rocznie</div>
+          <div class="paywall-option-price">249 CZK<span class="paywall-period">/rok</span></div>
+          <div class="paywall-option-note" data-tone="pw_plan_yearly_note">7 dni za darmo · potem 249 CZK/rok · oszczędzasz 57 %</div>
+        </button>
+        <button class="paywall-option" data-plan="lifetime">
+          <div class="paywall-option-name">Na zawsze</div>
+          <div class="paywall-option-price">449 CZK</div>
+          <div class="paywall-option-note" data-tone="pw_plan1_note">jednorazowo, bez odnawiania</div>
+        </button>
+      </div>
+      <p class="paywall-fineprint">Synchronizacja w chmurze + Fiszki + Szybki quiz pozostają za darmo. · <a href="mailto:hello@ucseslovesa.cz" style="color:inherit;">Pytania? Napisz do nas.</a></p>
+      <div class="paywall-promo">
+        <button class="paywall-promo-toggle" type="button" id="paywall-promo-toggle">🎟️ Mam kod rabatowy →</button>
+        <div class="paywall-promo-form hidden" id="paywall-promo-form">
+          <input type="text" id="paywall-promo-input" placeholder="wpisz kod" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+          <button class="btn btn-primary" id="paywall-promo-submit" type="button">Aktywuj</button>
+          <div class="paywall-promo-msg" id="paywall-promo-msg"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Streak reward modal: pick one of three curated groups (or wildcard at day 30) -->
+  <div class="modal-backdrop hidden" id="streak-reward-modal" role="dialog" aria-modal="true" aria-labelledby="srm-title">
+    <div class="modal modal-wide">
+      <button class="modal-close" id="srm-close" aria-label="Zamknij">×</button>
+      <div class="modal-emoji" id="srm-emoji">🎁</div>
+      <h2 class="modal-title" id="srm-title">Twoja nagroda — wybieraj!</h2>
+      <p class="modal-sub" id="srm-sub">Masz za sobą 7 dni z rzędu. 🔥</p>
+      <div class="srm-options" id="srm-options"></div>
+      <p class="srm-footnote" id="srm-foot">Wybrana grupa będzie twoja na zawsze. Nawet jeśli przerwiesz serię.</p>
+    </div>
+  </div>
+
+  <!-- Streak info modal: tiers + grace period explanation -->
+  <div class="modal-backdrop hidden" id="streak-info-modal" role="dialog" aria-modal="true" aria-labelledby="sim-title">
+    <div class="modal modal-wide">
+      <button class="modal-close" id="sim-close" aria-label="Zamknij">×</button>
+      <div class="modal-emoji">🔥</div>
+      <h2 class="modal-title" id="sim-title">Seria — jak to działa</h2>
+      <p class="modal-sub">Za każdy dzień ćwiczeń rośnie twoja seria. Im dłuższa, tym lepsze nagrody.</p>
+
+      <div class="streak-info-section">
+        <h3 class="streak-info-h">🎁 Nagrody za wytrwałość</h3>
+        <ul class="streak-info-list">
+          <li><span class="streak-info-badge">🔥 3 dni</span> wybierz <strong>1 z 3</strong> nowych grup czasowników</li>
+          <li><span class="streak-info-badge">⭐ 7 dni</span> wybierz <strong>1 z 3</strong> kolejnych grup</li>
+          <li><span class="streak-info-badge">💎 14 dni</span> wybierz <strong>1 z 3</strong> kolejnych grup</li>
+          <li><span class="streak-info-badge">👑 30 dni</span> dzika karta — wybierz <strong>dowolną</strong> pozostałą grupę</li>
+          <li><span class="streak-info-badge">🏆 100 / 🐉 365</span> dodatkowe trofea (zostają, nawet gdy seria się przerwie)</li>
+        </ul>
+        <p class="streak-info-note">Wybrana grupa jest twoja na stałe — nawet gdyby seria się urwała.</p>
+      </div>
+
+      <div class="streak-info-section">
+        <h3 class="streak-info-h">⏳ Okres łaski (grace period)</h3>
+        <p class="streak-info-p">Jeśli dziś zapomnisz poćwiczyć, ale wczoraj ćwiczyłeś(-aś), seria trzyma się <strong>aż do dzisiejszej północy</strong>. Zdąż dziś choć z krótką lekcją, a seria będzie uratowana.</p>
+        <p class="streak-info-p">Jeśli i dziś nic nie zrobisz, po północy seria spada do 0. Trofea i zdobyte grupy jednak zostają.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings modal: progress reset, subscription management -->
+  <div class="modal-backdrop hidden" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal">
+      <button class="modal-close" id="settings-close" aria-label="Zamknij">×</button>
+      <div class="modal-emoji">⚙️</div>
+      <h2 class="modal-title" id="settings-title">Ustawienia</h2>
+      <div class="settings-list">
+        <button class="settings-item hidden" id="settings-portal" type="button">
+          <span class="settings-item-icon">💳</span>
+          <span class="settings-item-text">
+            <span class="settings-item-name">Zarządzaj subskrypcją</span>
+            <span class="settings-item-desc">Faktury, karta płatnicza, anulowanie</span>
+          </span>
+        </button>
+        <button class="settings-item settings-item-danger" id="settings-reset" type="button">
+          <span class="settings-item-icon">🗑️</span>
+          <span class="settings-item-text">
+            <span class="settings-item-name">Wyzeruj postęp</span>
+            <span class="settings-item-desc">Usunie wszystkie opanowane czasowniki i serię dni</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group-start choice modal: "all verbs" vs "only problematic" -->
+  <div class="modal-backdrop hidden" id="group-start-modal" role="dialog" aria-modal="true" aria-labelledby="gsm-title">
+    <div class="modal">
+      <button class="modal-close" id="gsm-close" aria-label="Zamknij">×</button>
+      <div class="modal-emoji" id="gsm-emoji">🔁</div>
+      <h2 class="modal-title" id="gsm-title">Jak chcesz ćwiczyć?</h2>
+      <p class="modal-sub" id="gsm-sub">Tę grupę już znasz. Wybieraj.</p>
+      <div class="modal-options" id="gsm-options">
+        <button class="modal-option modal-option-primary" id="gsm-problem">
+          <div class="modal-option-name" data-tone="gsm_problem">Tylko te oporne</div>
+          <div class="modal-option-count" id="gsm-problem-count">— czasowników</div>
+          <div class="modal-option-note">Żółte 🟡 + czerwone 🔴</div>
+        </button>
+        <button class="modal-option" id="gsm-all">
+          <div class="modal-option-name" data-tone="gsm_all">Wszystkie czasowniki</div>
+          <div class="modal-option-count" id="gsm-all-count">— czasowników</div>
+          <div class="modal-option-note">Cała lekcja od początku</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- First-login style picker (Korpo ↔ Szkoła) -->
+  <div class="tone-modal hidden" id="tone-modal" role="dialog" aria-modal="true" aria-labelledby="tone-modal-title">
+    <div class="tone-backdrop"></div>
+    <div class="tone-card">
+      <div class="tone-emoji">👋</div>
+      <h2 id="tone-modal-title">Jak apka ma cię chwalić?</h2>
+      <p class="tone-sub">Możesz to później w każdej chwili zmienić w menu.</p>
+      <div class="tone-choice">
+        <button class="tone-option" id="tone-pick-pro" type="button">
+          <span class="tone-option-emoji">💼</span>
+          <span class="tone-option-name">Korpo-slang</span>
+          <span class="tone-option-preview">„Approved bez uwag! ✅”</span>
+        </button>
+        <button class="tone-option" id="tone-pick-student" type="button">
+          <span class="tone-option-emoji">🎒</span>
+          <span class="tone-option-name">Szkolny klimat</span>
+          <span class="tone-option-preview">„No cap, to było perfekcyjne. 🙌”</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notifications -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <footer class="app-footer">
+    <div class="container">
+      <p>Czasowniki nieregularne · <span id="verb-count">—</span> czasowników · <a href="mailto:hello@ucseslovesa.cz" class="footer-link">✉️ kontakt</a></p>
+    </div>
+  </footer>
+
+  <script src="app.js" type="module"></script>
+  <script src="celebrate.js" defer></script>
+  <script src="install.js" defer></script>
+  <script>
+    // „Dlaczego ta metoda jest najlepsza?" modal
+    (function () {
+      var modal = document.getElementById('why-modal');
+      var openBtn = document.getElementById('why-btn');
+      var closeBtn = document.getElementById('why-close');
+      var backdrop = modal && modal.querySelector('.why-backdrop');
+      if (!modal || !openBtn) return;
+      function open() {
+        modal.classList.remove('hidden');
+        requestAnimationFrame(function () { modal.classList.add('visible'); });
+        try { if (typeof window.plausible === 'function') window.plausible('why_modal_opened'); } catch (_) {}
+      }
+      function close() {
+        modal.classList.remove('visible');
+        setTimeout(function () { modal.classList.add('hidden'); }, 200);
+      }
+      openBtn.addEventListener('click', open);
+      if (closeBtn) closeBtn.addEventListener('click', close);
+      if (backdrop) backdrop.addEventListener('click', close);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.classList.contains('visible')) close();
+      });
+    })();
+  </script>
+</body>
+</html>
