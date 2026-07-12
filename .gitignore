@@ -2,5 +2,8 @@
 .claude/
 node_modules/
 
+# Build polské mutace pro czasowniki.pl (tools/build-pl.sh)
+dist-pl/
+
 # Lokální tracking oslovených škol (osobní údaje — NEcommitovat)
 docs/oslovene-skoly.md
