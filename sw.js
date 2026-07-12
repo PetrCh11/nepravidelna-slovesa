@@ -13,11 +13,11 @@ const ASSETS = [
   './icon-180.png',
   './icon-192.png',
   './icon-512.png',
-  // Polská mutace (docs/i18n.md)
+  // Polská mutace (docs/i18n.md) — ?v musí odpovídat script tagu v pl/index.html
   './pl/',
   './pl/index.html',
   './pl/manifest.json',
-  './lang/pl.js',
+  './lang/pl.js?v=2',
 ];
 
 self.addEventListener('install', (e) => {

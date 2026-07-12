@@ -19,8 +19,9 @@
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="icon" type="image/png" href="icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
-  <!-- Jazykový pack — musí se načíst PŘED app.js (docs/i18n.md) -->
-  <script src="lang/pl.js"></script>
+  <!-- Jazykový pack — musí se načíst PŘED app.js (docs/i18n.md).
+       ?v=N bumpni při každé změně packu (cache busting; stejný ?v patří do sw.js ASSETS). -->
+  <script src="lang/pl.js?v=2"></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
   <script>
@@ -426,18 +427,18 @@
       <div class="paywall-options">
         <button class="paywall-option" data-plan="monthly">
           <div class="paywall-option-name">Miesięcznie</div>
-          <div class="paywall-option-price">49 CZK<span class="paywall-period">/mies.</span></div>
-          <div class="paywall-option-note" data-tone="pw_plan2_note">7 dni za darmo · potem 49 CZK/mies. · anulujesz w każdej chwili</div>
+          <div class="paywall-option-price">9,99 zł<span class="paywall-period">/mies.</span></div>
+          <div class="paywall-option-note" data-tone="pw_plan2_note">7 dni za darmo · potem 9,99 zł/mies. · anulujesz w każdej chwili</div>
         </button>
         <button class="paywall-option paywall-option-primary paywall-option-highlight" data-plan="yearly">
           <span class="paywall-badge">⭐ Najkorzystniej</span>
           <div class="paywall-option-name">Rocznie</div>
-          <div class="paywall-option-price">249 CZK<span class="paywall-period">/rok</span></div>
-          <div class="paywall-option-note" data-tone="pw_plan_yearly_note">7 dni za darmo · potem 249 CZK/rok · oszczędzasz 57 %</div>
+          <div class="paywall-option-price">49,99 zł<span class="paywall-period">/rok</span></div>
+          <div class="paywall-option-note" data-tone="pw_plan_yearly_note">7 dni za darmo · potem 49,99 zł/rok · oszczędzasz 58 %</div>
         </button>
         <button class="paywall-option" data-plan="lifetime">
           <div class="paywall-option-name">Na zawsze</div>
-          <div class="paywall-option-price">449 CZK</div>
+          <div class="paywall-option-price">89,99 zł</div>
           <div class="paywall-option-note" data-tone="pw_plan1_note">jednorazowo, bez odnawiania</div>
         </button>
       </div>

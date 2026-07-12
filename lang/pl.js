@@ -91,14 +91,13 @@
 
   window.LANG_PACK = {
     voice: 'pl-PL',
-    // PLN ceník — odkomentovat, až v Stripe dashboardu vzniknou PLN prices
-    // (Product catalog → přidat ceny v PLN ke stávajícím produktům). Zároveň
-    // přepsat zobrazené částky v pl/index.html (.paywall-option-price) a klíče
-    // pw_plan1_note / pw_plan2_note / pw_plan_yearly_note níže.
+    // PLN ceník: 9,99 zł/mies. · 49,99 zł/rok · 89,99 zł lifetime.
+    // Odkomentovat až s reálnými price ID (Stripe → Product catalog → přidat
+    // PLN cenu ke stávajícím produktům). Do té doby checkout účtuje CZK.
     // stripePrices: {
-    //   lifetime: { id: 'price_…PLN…', mode: 'payment' },
-    //   yearly:   { id: 'price_…PLN…', mode: 'subscription' },
-    //   monthly:  { id: 'price_…PLN…', mode: 'subscription' },
+    //   lifetime: { id: 'price_TODO_LIFETIME_PLN', mode: 'payment' },      // 89,99 zł
+    //   yearly:   { id: 'price_TODO_YEARLY_PLN', mode: 'subscription' },   // 49,99 zł/rok
+    //   monthly:  { id: 'price_TODO_MONTHLY_PLN', mode: 'subscription' },  // 9,99 zł/mies.
     // },
     texts: {
       // Hero
@@ -166,8 +165,8 @@
       pw_title: 'Odblokuj wszystkie czasowniki 🔓',
       pw_sub: 'Za darmo masz 3 grupy (15 czasowników). Premium otwiera wszystkie <strong>106 czasowników</strong> w 24 grupach oraz <strong>🚗 Tryb samochodowy</strong> do ćwiczenia w aucie.',
       pw_plan1_note: 'jednorazowo, bez odnawiania',
-      pw_plan2_note: '7 dni za darmo · potem 49 CZK/mies. · anulujesz w każdej chwili',
-      pw_plan_yearly_note: '7 dni za darmo · potem 249 CZK/rok · oszczędzasz 57 %',
+      pw_plan2_note: '7 dni za darmo · potem 9,99 zł/mies. · anulujesz w każdej chwili',
+      pw_plan_yearly_note: '7 dni za darmo · potem 49,99 zł/rok · oszczędzasz 58 %',
       // Toasty
       toast_resume: 'Wracamy tam, gdzie skończyłeś(-aś). 👍',
       toast_pay_ok: '🎉 Gotowe! Premium aktywuje się w kilka sekund. (Przy 7-dniowym okresie próbnym pierwsza płatność zejdzie dopiero za tydzień.)',
