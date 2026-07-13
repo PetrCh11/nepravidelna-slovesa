@@ -14,9 +14,9 @@ cd "$(dirname "$0")/.."
 rm -rf dist-pl
 mkdir -p dist-pl
 
-# 1) sdílené assety
+# 1) sdílené assety (ikony bere polské — pl/icon-*.png → root icon-*.png)
 cp app.js cloud.js celebrate.js install.js styles.css dist-pl/
-cp icon-180.png icon-192.png icon-512.png dist-pl/
+cp pl/icon-180.png pl/icon-192.png pl/icon-512.png dist-pl/
 cp -R data lang dist-pl/
 
 # 2) index.html — pryč <base href="/"> (včetně vysvětlujícího komentáře),
@@ -26,18 +26,20 @@ import re
 src = open('pl/index.html', encoding='utf-8').read()
 src = re.sub(r'\n  <!-- Polská mutace žije v /pl/.*?<base href="/" />', '', src, flags=re.S)
 src = src.replace('href="pl/manifest.json"', 'href="manifest.json"')
+src = src.replace('pl/icon-', 'icon-')
 open('dist-pl/index.html', 'w', encoding='utf-8').write(src)
 PY
 
-# 3) manifest — start_url a scope na root
-sed 's|"/pl/"|"/"|g' pl/manifest.json > dist-pl/manifest.json
+# 3) manifest — start_url/scope na root, ikony /pl/icon-* na /icon-*
+sed 's|"/pl/|"/|g' pl/manifest.json > dist-pl/manifest.json
 
 # 4) sw.js — bez /pl/ položek, jednoduchý fallback, vlastní jméno cache
 python3 - <<'PY'
 src = open('sw.js', encoding='utf-8').read()
 src = src.replace("const CACHE = 'slovesa-", "const CACHE = 'slovesa-pl-")
 for line in ["  // Polská mutace (docs/i18n.md) — ?v musí odpovídat script tagu v pl/index.html\n",
-             "  './pl/',\n", "  './pl/index.html',\n", "  './pl/manifest.json',\n"]:
+             "  './pl/',\n", "  './pl/index.html',\n", "  './pl/manifest.json',\n",
+             "  './pl/icon-180.png',\n", "  './pl/icon-192.png',\n", "  './pl/icon-512.png',\n"]:
     assert line in src, 'sw.js se změnil, uprav build-pl.sh: ' + line.strip()
     src = src.replace(line, '')
 old_fb = "caches.match(new URL(request.url).pathname.startsWith('/pl/') ? './pl/index.html' : './index.html')"
