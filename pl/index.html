@@ -2,6 +2,9 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
+  <!-- Polská verze žije na vlastní doméně czasowniki.pl; /pl/ na ucseslovesa.cz
+       jen přesměrovává (na czasowniki.pl je podmínka neškodná — hostname nesedí). -->
+  <script>if (location.hostname.indexOf('ucseslovesa.cz') !== -1) location.replace('https://czasowniki.pl/');</script>
   <!-- Polská mutace žije v /pl/, ale sdílí assety s rootem (app.js, styles.css,
        data/, sw.js). <base href="/"> zajistí, že se všechny relativní cesty —
        včetně fetch('data/verbs.json') a register('sw.js') uvnitř app.js —
@@ -11,6 +14,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
   <title>Czasowniki nieregularne – raz na zawsze</title>
   <meta name="description" content="Naucz się 106 angielskich czasowników nieregularnych raz na zawsze. Sprytny system poprowadzi cię od poznania do pełnego opanowania — bez wkuwania, według wzorców wymowy." />
+  <link rel="canonical" href="https://czasowniki.pl/" />
+  <link rel="alternate" hreflang="pl" href="https://czasowniki.pl/" />
+  <link rel="alternate" hreflang="cs" href="https://ucseslovesa.cz/" />
+  <link rel="alternate" hreflang="x-default" href="https://ucseslovesa.cz/" />
   <meta name="theme-color" content="#5dc9bd" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
