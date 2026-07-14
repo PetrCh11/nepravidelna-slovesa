@@ -48,22 +48,8 @@ src = src.replace(old_fb, "caches.match('./index.html')")
 open('dist-pl/sw.js', 'w', encoding='utf-8').write(src)
 PY
 
-# 5) doména + roboti + sitemap
+# 5) doména + SEO stránky (lista/, grupa/*, sitemap.xml, robots.txt)
 printf 'czasowniki.pl\n' > dist-pl/CNAME
-printf 'User-agent: *\nAllow: /\n\nSitemap: https://czasowniki.pl/sitemap.xml\n' > dist-pl/robots.txt
-cat > dist-pl/sitemap.xml <<XML
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  <url>
-    <loc>https://czasowniki.pl/</loc>
-    <lastmod>$(date +%Y-%m-%d)</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="pl" href="https://czasowniki.pl/" />
-    <xhtml:link rel="alternate" hreflang="cs" href="https://ucseslovesa.cz/" />
-  </url>
-</urlset>
-XML
+python3 tools/build-seo-pl.py
 
 echo "OK: dist-pl/ sestaveno ($(find dist-pl -type f | wc -l | tr -d ' ') souborů)"
