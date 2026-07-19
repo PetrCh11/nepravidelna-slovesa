@@ -689,6 +689,7 @@ const TEXTS = {
   teacher_instr_choice: 'Zakroužkuj správnou dvojici tvarů (past simple – past participle).',
   teacher_groups_label: 'Skupiny: ',
   teacher_groups_mix: (g) => `mix z ${g} skupin`,
+  teacher_domain: 'ucseslovesa.cz',
   teacher_footer: 'ucseslovesa.cz — appka, se kterou se tvoje třída naučí nepravidelná slovesa',
   teacher_key_correct: 'Správné odpovědi (u sloves s více tvary platí kterýkoli uvedený):',
 };
@@ -4332,7 +4333,7 @@ function teacherGroupsLine(subs) {
 function teacherDocHeader(s, titleKey, variantLabel, subs) {
   return `
     <div class="tt-doc-header">
-      <div class="tt-domain">ucseslovesa.cz</div>
+      <div class="tt-domain">${t('teacher_domain')}</div>
       <div class="tt-title-row">
         ${s.color ? '<img class="tt-logo" src="icon-192.png" alt="" />' : ''}
         <div class="tt-title-block">

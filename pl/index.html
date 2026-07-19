@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="styles.css" />
   <!-- Jazykový pack — musí se načíst PŘED app.js (docs/i18n.md).
        ?v=N bumpni při každé změně packu (cache busting; stejný ?v patří do sw.js ASSETS). -->
-  <script src="lang/pl.js?v=3"></script>
+  <script src="lang/pl.js?v=4"></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
   <script>
@@ -166,6 +166,7 @@
             <button class="menu-item" data-view="flashcards" role="menuitem" data-tone="menu_fc">🃏 Fiszki</button>
             <button class="menu-item" data-view="quiz" role="menuitem" data-tone="menu_quiz">✅ Szybki quiz</button>
             <button class="menu-item" data-view="auto" role="menuitem">🚗 Tryb samochodowy <span class="menu-premium-badge">Premium</span></button>
+            <button class="menu-item" data-view="teacher" role="menuitem">🧑‍🏫 Tryb nauczyciela</button>
             <hr class="menu-divider" />
             <button class="menu-item" id="theme-toggle-menu" role="menuitem" type="button">
               <span id="theme-toggle-menu-icon">🌙</span>
@@ -415,6 +416,63 @@
         <p>Twój wynik: <strong id="quiz-final">—</strong></p>
         <div id="quiz-review" class="quiz-review"></div>
         <button id="quiz-restart" class="btn btn-primary">Spróbuj jeszcze raz</button>
+      </div>
+    </section>
+
+    <section id="view-teacher" class="view">
+      <div class="intro intro-hero">
+        <h2>🧑‍🏫 Tryb nauczyciela</h2>
+        <p class="hero-lead">Wybierz grupy czasowników, ustaw typ testu i wydrukuj sprawdzian razem z kluczem do oceniania. Za darmo dla wszystkich nauczycieli.</p>
+      </div>
+
+      <div class="teacher-setup">
+        <div class="teacher-block">
+          <h3 class="teacher-block-title">1️⃣ Co sprawdzić?</h3>
+          <div id="teacher-groups"></div>
+        </div>
+
+        <div class="teacher-block">
+          <h3 class="teacher-block-title">2️⃣ Ustawienia testu</h3>
+          <div class="teacher-options">
+            <label class="teacher-opt-row">Liczba czasowników w teście:
+              <input type="number" id="tt-count" min="3" max="106" value="20" />
+            </label>
+            <div class="teacher-opt-group" role="radiogroup" aria-label="Typ testu">
+              <span class="teacher-opt-label">Typ testu:</span>
+              <label class="teacher-radio"><input type="radio" name="tt-type" value="inf2" checked /> Bezokolicznik → uzupełnij 2 formy <span class="teacher-radio-note">(klasyczny sprawdzian)</span></label>
+              <label class="teacher-radio"><input type="radio" name="tt-type" value="cs3" /> Po polsku → uzupełnij 3 formy <span class="teacher-radio-note">(trudniejszy)</span></label>
+              <label class="teacher-radio"><input type="radio" name="tt-type" value="missing" /> Losowa brakująca forma <span class="teacher-radio-note">(w każdym wierszu brakuje innej)</span></label>
+              <label class="teacher-radio"><input type="radio" name="tt-type" value="choice" /> Wybór z możliwości <span class="teacher-radio-note">(zakreślanie, szybkie ocenianie)</span></label>
+            </div>
+            <div class="teacher-opt-group">
+              <label class="teacher-check teacher-check-strong">
+                <span class="teacher-check-strong-text">Dwie wersje (A + B) <span class="teacher-radio-note">— przeciw ściąganiu</span></span>
+                <input type="checkbox" id="tt-variants" />
+              </label>
+            </div>
+            <label class="teacher-check" id="tt-cs-row"><input type="checkbox" id="tt-cs" checked /> Pokaż polskie tłumaczenie jako podpowiedź</label>
+            <div class="teacher-opt-group" role="radiogroup" aria-label="Wygląd wydruku">
+              <span class="teacher-opt-label">Wygląd wydruku:</span>
+              <label class="teacher-radio"><input type="radio" name="tt-color" value="bw" checked /> 🖤 Czarno-biały <span class="teacher-radio-note">(oszczędza toner)</span></label>
+              <label class="teacher-radio"><input type="radio" name="tt-color" value="color" /> 🎨 Kolorowy</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="teacher-actions">
+          <button id="teacher-generate" class="btn btn-primary">📝 Wygeneruj test</button>
+          <span id="teacher-count-info" class="teacher-count-info"></span>
+        </div>
+
+        <div id="teacher-result" class="teacher-result" hidden>
+          <div class="teacher-print-btns">
+            <button id="teacher-print-test" class="btn btn-primary">🖨️ Wydrukuj test</button>
+            <button id="teacher-print-key" class="btn btn-ghost">🖨️ Wydrukuj klucz</button>
+            <button id="teacher-reshuffle" class="btn btn-ghost">🔀 Wymieszaj ponownie</button>
+          </div>
+          <p class="teacher-print-hint">Podgląd testu — drukowanie odbywa się przez okno przeglądarki (zapis do PDF też działa).</p>
+          <div id="teacher-preview" class="teacher-preview"></div>
+        </div>
       </div>
     </section>
   </main>

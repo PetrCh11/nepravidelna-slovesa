@@ -335,6 +335,37 @@
       signout_confirm: 'Na pewno chcesz się wylogować?',
       dialect_ame: 'Wariant: amerykański (AmE)',
       dialect_bre: 'Wariant: brytyjski (BrE)',
+
+      // ---- Teacher mode (generator testów) ----------------------------------
+      teacher_pick_all: 'zaznacz wszystko',
+      teacher_pick_none: 'wyczyść',
+      teacher_selected: function (n, g) {
+        return 'Wybrano: ' + n + ' ' + plVerbs(n) + ' · ' + g + ' ' + plGroups(g);
+      },
+      teacher_none_selected: 'Wybierz co najmniej jedną grupę czasowników.',
+      teacher_test_title: 'Czasowniki nieregularne — test',
+      teacher_key_title: 'Czasowniki nieregularne — klucz dla nauczyciela',
+      teacher_variant: function (v) { return 'Wariant ' + v; },
+      // dvojtečky na konci: kód je pro tiskové boxy odřezává (.replace(/:$/,''))
+      teacher_name: 'Imię i nazwisko:',
+      teacher_class: 'Klasa:',
+      teacher_date: 'Data:',
+      teacher_score: 'Punkty:',
+      teacher_grade: 'Ocena:',
+      teacher_col_num: 'Nr',
+      teacher_col_inf: 'Bezokolicznik',
+      teacher_col_past: 'Past simple',
+      teacher_col_pp: 'Past participle',
+      teacher_col_cs: 'Po polsku',
+      teacher_instr_inf2: 'Uzupełnij czas przeszły (past simple) i imiesłów bierny (past participle).',
+      teacher_instr_cs3: 'Uzupełnij wszystkie trzy formy czasownika na podstawie polskiego tłumaczenia.',
+      teacher_instr_missing: 'Uzupełnij brakującą formę w każdym wierszu.',
+      teacher_instr_choice: 'Zakreśl poprawną parę form (past simple – past participle).',
+      teacher_domain: 'czasowniki.pl',
+      teacher_groups_label: 'Grupy: ',
+      teacher_groups_mix: function (g) { return 'mieszanka z ' + g + ' grup'; },
+      teacher_footer: 'czasowniki.pl — aplikacja, z którą twoja klasa nauczy się czasowników nieregularnych',
+      teacher_key_correct: 'Poprawne odpowiedzi (przy czasownikach z kilkoma formami każda z podanych jest poprawna):',
     },
 
     // ---- Překlady dat (localizeData v app.js) -------------------------------
