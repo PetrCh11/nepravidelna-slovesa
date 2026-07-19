@@ -156,6 +156,7 @@
             <button class="menu-item" data-view="flashcards" role="menuitem" data-tone="menu_fc">🃏 Flashcards</button>
             <button class="menu-item" data-view="quiz" role="menuitem" data-tone="menu_quiz">✅ Volný kvíz</button>
             <button class="menu-item" data-view="auto" role="menuitem">🚗 Car mode <span class="menu-premium-badge">Premium</span></button>
+            <button class="menu-item" data-view="teacher" role="menuitem">🧑‍🏫 Teacher mode</button>
             <hr class="menu-divider" />
             <button class="menu-item" id="theme-toggle-menu" role="menuitem" type="button">
               <span id="theme-toggle-menu-icon">🌙</span>
@@ -409,6 +410,64 @@
         <button id="quiz-restart" class="btn btn-primary">Zkusit znovu</button>
       </div>
     </section>
+
+    <!-- TEACHER MODE VIEW -->
+    <section id="view-teacher" class="view">
+      <div class="intro intro-hero">
+        <h2>🧑‍🏫 Teacher mode</h2>
+        <p class="hero-lead">Vyberte skupiny sloves, nastavte typ testu a vytiskněte písemku i s klíčem pro opravu. Zdarma pro všechny učitele.</p>
+      </div>
+
+      <div class="teacher-setup">
+        <div class="teacher-block">
+          <h3 class="teacher-block-title">1️⃣ Co prozkoušet?</h3>
+          <div id="teacher-groups"></div>
+        </div>
+
+        <div class="teacher-block">
+          <h3 class="teacher-block-title">2️⃣ Nastavení testu</h3>
+          <div class="teacher-options">
+            <label class="teacher-opt-row">Počet sloves v testu:
+              <input type="number" id="tt-count" min="3" max="106" value="20" />
+            </label>
+            <div class="teacher-opt-group" role="radiogroup" aria-label="Typ testu">
+              <span class="teacher-opt-label">Typ testu:</span>
+              <label class="teacher-radio"><input type="radio" name="tt-type" value="inf2" checked /> Infinitiv → doplň 2 tvary <span class="teacher-radio-note">(klasická písemka)</span></label>
+              <label class="teacher-radio"><input type="radio" name="tt-type" value="cs3" /> Česky → doplň 3 tvary <span class="teacher-radio-note">(těžší)</span></label>
+              <label class="teacher-radio"><input type="radio" name="tt-type" value="missing" /> Náhodný chybějící tvar <span class="teacher-radio-note">(v každém řádku chybí jiný)</span></label>
+              <label class="teacher-radio"><input type="radio" name="tt-type" value="choice" /> Výběr z možností <span class="teacher-radio-note">(zakroužkuj, rychlá oprava)</span></label>
+            </div>
+            <div class="teacher-opt-group">
+              <label class="teacher-check teacher-check-strong">
+                <span class="teacher-check-strong-text">Dvě varianty (A + B) <span class="teacher-radio-note">— proti opisování</span></span>
+                <input type="checkbox" id="tt-variants" />
+              </label>
+            </div>
+            <label class="teacher-check" id="tt-cs-row"><input type="checkbox" id="tt-cs" checked /> Zobrazit český překlad jako nápovědu</label>
+            <div class="teacher-opt-group" role="radiogroup" aria-label="Vzhled tisku">
+              <span class="teacher-opt-label">Vzhled tisku:</span>
+              <label class="teacher-radio"><input type="radio" name="tt-color" value="bw" checked /> 🖤 Černobílý <span class="teacher-radio-note">(šetří toner)</span></label>
+              <label class="teacher-radio"><input type="radio" name="tt-color" value="color" /> 🎨 Barevný</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="teacher-actions">
+          <button id="teacher-generate" class="btn btn-primary">📝 Vygenerovat test</button>
+          <span id="teacher-count-info" class="teacher-count-info"></span>
+        </div>
+
+        <div id="teacher-result" class="teacher-result" hidden>
+          <div class="teacher-print-btns">
+            <button id="teacher-print-test" class="btn btn-primary">🖨️ Vytisknout test</button>
+            <button id="teacher-print-key" class="btn btn-ghost">🖨️ Vytisknout klíč</button>
+            <button id="teacher-reshuffle" class="btn btn-ghost">🔀 Zamíchat znovu</button>
+          </div>
+          <p class="teacher-print-hint">Náhled testu — tisk proběhne přes dialog prohlížeče (uložit jako PDF funguje také).</p>
+          <div id="teacher-preview" class="teacher-preview"></div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- Paywall modal -->
@@ -605,5 +664,9 @@
       });
     })();
   </script>
+
+  <!-- Teacher mode: tiskový kontejner — na obrazovce skrytý, při tisku jediný
+       viditelný obsah stránky (viz @media print ve styles.css) -->
+  <div id="print-area" aria-hidden="true"></div>
 </body>
 </html>

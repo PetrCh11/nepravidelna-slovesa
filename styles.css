@@ -5310,3 +5310,183 @@ body.theme-dark .streak-info-badge {
       0 8px 28px hsl(var(--sub-hue) 70% 50% / 0.35);
   }
 }
+
+/* ============================================================
+   TEACHER MODE — generátor testů
+   ============================================================ */
+
+.teacher-setup { display: flex; flex-direction: column; gap: 20px; }
+
+.teacher-block {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+.teacher-block-title { margin: 0 0 14px; font-size: 1.05rem; }
+
+.teacher-sec-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: 14px 0 8px;
+}
+.teacher-sec-head:first-child { margin-top: 0; }
+.teacher-sec-name { font-weight: 700; font-size: 0.92rem; color: var(--text-muted); }
+.teacher-mini-btn {
+  border: 1px solid var(--border); background: var(--bg-elev); color: var(--text-muted);
+  border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; cursor: pointer;
+}
+.teacher-mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.teacher-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px;
+}
+.teacher-group {
+  display: flex; align-items: flex-start; gap: 8px;
+  border: 1.5px solid rgba(74, 144, 226, 0.45); border-radius: var(--radius-sm);
+  padding: 8px 10px; cursor: pointer; background: var(--bg);
+  transition: border-color 0.15s, background 0.15s;
+}
+.teacher-group:hover { border-color: var(--accent); }
+.teacher-group:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.teacher-group input { accent-color: var(--accent); margin-top: 2px; }
+.teacher-group-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.teacher-group-top { display: flex; align-items: center; gap: 8px; }
+.teacher-group-pattern { font-weight: 600; font-size: 0.86rem; flex: 1; min-width: 0; }
+.teacher-group-verbs { font-size: 0.7rem; line-height: 1.35; color: var(--text-muted); }
+.teacher-group-count {
+  font-size: 0.75rem; color: var(--text-muted); background: var(--bg);
+  border-radius: 999px; padding: 1px 7px; border: 1px solid var(--border);
+}
+
+.teacher-options { display: flex; flex-direction: column; gap: 14px; }
+.teacher-opt-row { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.teacher-opt-row input[type="number"] {
+  width: 70px; padding: 6px 8px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--bg-elev); color: var(--text);
+  font: inherit;
+}
+.teacher-opt-group { display: flex; flex-direction: column; gap: 6px; }
+.teacher-opt-label { font-weight: 600; }
+.teacher-radio, .teacher-check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.teacher-radio input, .teacher-check input { accent-color: var(--accent); }
+.teacher-radio-note { color: var(--text-muted); font-size: 0.85rem; }
+
+/* Učitelský mód je modrý — odlišení od (oranžové) studentské části */
+#view-teacher .btn-primary { background: var(--accent); }
+#view-teacher .btn-primary:hover { background: #3a7bc8; }
+#view-teacher .intro-hero {
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--accent);
+  border-radius: var(--radius);
+}
+.teacher-block { border-left: 4px solid var(--accent); }
+.teacher-block-title { color: var(--accent); }
+.teacher-check-strong { font-weight: 700; }
+.teacher-check-strong .teacher-radio-note { font-weight: 400; }
+
+.teacher-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.teacher-count-info { color: var(--text-muted); font-size: 0.9rem; }
+
+.teacher-print-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.teacher-print-hint { color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 14px; }
+
+/* Náhled: stránky testu jako "papíry" pod sebou */
+.teacher-preview { display: flex; flex-direction: column; gap: 18px; }
+.teacher-preview .tt-page {
+  border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  max-width: 760px; width: 100%;
+}
+
+/* ---------- Stránka testu — design sladěný s PDF přehledem ---------- */
+/* Záměrně natvrdo světlé barvy: papír je vždy bílý, i v tmavém režimu appky */
+.tt-page {
+  background: #ffffff; color: #2b2b2b;
+  padding: 30px 34px; border-radius: 14px;
+  font-family: var(--font);
+  font-size: 14px; line-height: 1.4;
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.tt-doc-header { text-align: center; margin-bottom: 6px; }
+.tt-domain { color: #ff6b35; font-weight: 600; font-size: 11px; letter-spacing: 0.02em; margin-bottom: 4px; }
+.tt-title-row { display: inline-flex; align-items: center; gap: 10px; }
+.tt-logo { width: 38px; height: 38px; border-radius: 10px; }
+.tt-title-block { text-align: left; }
+.tt-title-block h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
+.tt-sub { color: #ff6b35; font-style: italic; font-size: 11.5px; margin-top: 1px; }
+
+.tt-meta { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin: 12px 0 4px; }
+.tt-meta-cell {
+  position: relative; min-height: 38px; padding: 5px 10px;
+  border: 1px solid #e6e1d8; border-radius: 10px; background: #ffffff;
+}
+.tt-meta-label { font-size: 8.5px; letter-spacing: 0.08em; color: #8a8377; font-weight: 700; text-transform: uppercase; }
+.tt-color .tt-meta-cell { background: hsl(24 80% 97%); border-color: #f2cdb6; }
+.tt-instr { margin: 8px 0 10px; font-style: italic; font-size: 12.5px; color: #8a8377; }
+
+/* Karta s řádky sloves — stejný jazyk jako karty skupin v PDF */
+.tt-card, .tt-choices {
+  border: 1px solid #e6e1d8;
+  border-left: 5px solid #ff6b35;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.tt-card-head { padding: 6px 14px 5px; border-bottom: 1px solid #e6e1d8; background: hsl(20 80% 97%); }
+.tt-cols-head, .tt-row { display: grid; grid-template-columns: var(--tt-cols); gap: 10px; align-items: center; }
+.tt-col-label { font-size: 8.5px; letter-spacing: 0.08em; color: #8a8377; font-weight: 700; text-transform: uppercase; }
+.tt-row { padding: 5px 14px; background: #ffffff; }
+.tt-color .tt-row:nth-child(even) { background: hsl(24 80% 96%); }
+.tt-color .tt-choice-row:nth-child(even) { background: hsl(24 80% 96%); }
+.tt-cnum { color: #8a8377; font-size: 11px; text-align: right; padding-right: 2px; }
+.tt-vinf { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.tt-emoji { font-size: 15px; font-style: normal; }
+.tt-vform { font-weight: 700; font-size: 14px; }
+.tt-vcs { color: #e85a2a; font-weight: 700; font-size: 12.5px; }
+.tt-row .tt-vcs { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.tt-write { display: block; height: 1.7em; background: #ffffff; border: 1px solid #d9d2c6; border-radius: 7px; }
+
+/* Výběr z možností */
+.tt-choice-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+  padding: 7px 14px; flex-wrap: wrap;
+  background: #ffffff;
+}
+.tt-choice-q { min-width: 180px; }
+.tt-choice-q b { font-weight: 700; }
+.tt-choice-opts { display: inline-flex; gap: 18px; flex-wrap: wrap; font-size: 13.5px; }
+
+.tt-scorebar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 340px; margin-top: 14px; }
+.tt-foot { margin-top: 14px; text-align: center; color: #ff6b35; font-weight: 600; font-size: 10.5px; }
+.tt-key-variant { margin: 12px 0 6px; font-size: 15px; }
+.tt-key-correct { font-weight: 700; font-size: 13.5px; }
+.tt-key .tt-row { padding: 4px 14px; }
+
+/* Černobílá varianta: stejný layout, šedá zebra, žádné barvy (šetří toner) */
+.tt-bw .tt-domain, .tt-bw .tt-sub, .tt-bw .tt-foot { color: #555555; }
+.tt-bw .tt-card, .tt-bw .tt-choices { border-left-color: #444444; }
+.tt-bw .tt-card-head { background: #f2f2f2; }
+.tt-bw .tt-row, .tt-bw .tt-choice-row { background: #ffffff; }
+.tt-bw .tt-row:nth-child(even), .tt-bw .tt-choice-row:nth-child(even) { background: #f4f4f4; }
+.tt-bw .tt-vcs { color: #333333; }
+.tt-bw .tt-meta-cell { border-color: #aaaaaa; }
+.tt-bw .tt-write { border-color: #999999; }
+
+/* ---------- Tisk ---------- */
+#print-area { display: none; }
+
+@media print {
+  body.printing > *:not(#print-area) { display: none !important; }
+  body.printing #print-area { display: block; }
+  body.printing { background: #ffffff !important; }
+  #print-area .tt-page {
+    border: none; box-shadow: none; border-radius: 0;
+    max-width: none; width: auto;
+    padding: 0;
+    page-break-after: always;
+  }
+  #print-area .tt-page:last-child { page-break-after: auto; }
+  #print-area .tt-row, #print-area .tt-card-head, #print-area .tt-choice-row { break-inside: avoid; }
+  @page { margin: 13mm 12mm; }
+}

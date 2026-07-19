@@ -663,6 +663,34 @@ const TEXTS = {
   signout_confirm: 'Opravdu se chceš odhlásit?',
   dialect_ame: 'Varianta: americká (AmE)',
   dialect_bre: 'Varianta: britská (BrE)',
+
+  // --- Teacher mode (generátor testů) ---
+  teacher_pick_all: 'vybrat vše',
+  teacher_pick_none: 'zrušit',
+  teacher_selected: (n, g) =>
+    `Vybráno: ${n} ${n === 1 ? 'sloveso' : n >= 2 && n <= 4 ? 'slovesa' : 'sloves'} · ${g} ${g === 1 ? 'skupina' : g >= 2 && g <= 4 ? 'skupiny' : 'skupin'}`,
+  teacher_none_selected: 'Vyber aspoň jednu skupinu sloves.',
+  teacher_test_title: 'Nepravidelná slovesa — test',
+  teacher_key_title: 'Nepravidelná slovesa — klíč pro učitele',
+  teacher_variant: (v) => `Varianta ${v}`,
+  teacher_name: 'Jméno:',
+  teacher_class: 'Třída:',
+  teacher_date: 'Datum:',
+  teacher_score: 'Body:',
+  teacher_grade: 'Známka:',
+  teacher_col_num: '№',
+  teacher_col_inf: 'Infinitiv',
+  teacher_col_past: 'Past simple',
+  teacher_col_pp: 'Past participle',
+  teacher_col_cs: 'Česky',
+  teacher_instr_inf2: 'Doplň minulý čas (past simple) a příčestí minulé (past participle).',
+  teacher_instr_cs3: 'Doplň všechny tři tvary slovesa podle českého překladu.',
+  teacher_instr_missing: 'Doplň chybějící tvar v každém řádku.',
+  teacher_instr_choice: 'Zakroužkuj správnou dvojici tvarů (past simple – past participle).',
+  teacher_groups_label: 'Skupiny: ',
+  teacher_groups_mix: (g) => `mix z ${g} skupin`,
+  teacher_footer: 'ucseslovesa.cz — appka, se kterou se tvoje třída naučí nepravidelná slovesa',
+  teacher_key_correct: 'Správné odpovědi (u sloves s více tvary platí kterýkoli uvedený):',
 };
 
 // Česká koncovka přídavného jména pro počítaná "slovesa" (stř. rod mn. č.):
@@ -1146,7 +1174,7 @@ function setView(view) {
 }
 
 // Valid views that can be restored on reload. Keep in sync with #view-* sections.
-const RESTORABLE_VIEWS = new Set(['lesson', 'browse', 'flashcards', 'quiz', 'auto']);
+const RESTORABLE_VIEWS = new Set(['lesson', 'browse', 'flashcards', 'quiz', 'auto', 'teacher']);
 
 // ============================================================
 // LESSON (guided 3-stage flow)
@@ -4169,6 +4197,286 @@ function updateSyncStatus(status) {
 }
 
 // ============================================================
+// TEACHER MODE — generátor tisknutelných testů
+// ============================================================
+
+const teacher = {
+  selected: new Set(), // ids vybraných skupin (sub.id)
+  pages: null,         // poslední vygenerovaný test: { tests: [html], key: html }
+};
+
+function teacherSelectedSubs() {
+  const out = [];
+  state.data.sections.forEach((sec) =>
+    sec.subsections.forEach((sub) => { if (teacher.selected.has(sub.id)) out.push(sub); })
+  );
+  return out;
+}
+
+function updateTeacherCount() {
+  const subs = teacherSelectedSubs();
+  const n = subs.reduce((a, s) => a + s.verbs.length, 0);
+  $('#teacher-count-info').textContent = subs.length ? t('teacher_selected', n, subs.length) : '';
+}
+
+function renderTeacherSetup() {
+  const c = $('#teacher-groups');
+  if (!c) return;
+  c.innerHTML = '';
+  state.data.sections.forEach((sec) => {
+    const head = document.createElement('div');
+    head.className = 'teacher-sec-head';
+    head.innerHTML = `
+      <span class="teacher-sec-name">${sec.id} · ${sec.title}</span>
+      <span class="teacher-sec-btns">
+        <button type="button" class="teacher-mini-btn" data-act="all">${t('teacher_pick_all')}</button>
+        <button type="button" class="teacher-mini-btn" data-act="none">${t('teacher_pick_none')}</button>
+      </span>`;
+    c.appendChild(head);
+    const grid = document.createElement('div');
+    grid.className = 'teacher-grid';
+    sec.subsections.forEach((sub) => {
+      const label = document.createElement('label');
+      label.className = 'teacher-group';
+      label.innerHTML = `
+        <input type="checkbox" data-sub="${sub.id}" ${teacher.selected.has(sub.id) ? 'checked' : ''} />
+        <span class="teacher-group-main">
+          <span class="teacher-group-top">
+            <span class="teacher-group-pattern">${sub.pattern}</span>
+            <span class="teacher-group-count">${sub.verbs.length}</span>
+          </span>
+          <span class="teacher-group-verbs">${sub.verbs.map((v) => v.inf).join(', ')}</span>
+        </span>`;
+      grid.appendChild(label);
+    });
+    c.appendChild(grid);
+    const setAll = (on) => {
+      sec.subsections.forEach((sub) => { if (on) teacher.selected.add(sub.id); else teacher.selected.delete(sub.id); });
+      grid.querySelectorAll('input').forEach((i) => { i.checked = on; });
+      updateTeacherCount();
+    };
+    head.querySelector('[data-act="all"]').addEventListener('click', () => setAll(true));
+    head.querySelector('[data-act="none"]').addEventListener('click', () => setAll(false));
+  });
+  c.addEventListener('change', (e) => {
+    const id = e.target && e.target.dataset ? e.target.dataset.sub : null;
+    if (!id) return;
+    if (e.target.checked) teacher.selected.add(id); else teacher.selected.delete(id);
+    updateTeacherCount();
+  });
+  updateTeacherCount();
+
+  // Překlad je u typu "česky → 3 tvary" vždy v zadání — checkbox nedává smysl
+  $$('input[name="tt-type"]').forEach((r) => r.addEventListener('change', () => {
+    $('#tt-cs-row').style.display = r.value === 'cs3' && r.checked ? 'none' : '';
+  }));
+
+  $('#teacher-generate').addEventListener('click', () => teacherGenerate());
+  $('#teacher-reshuffle').addEventListener('click', () => teacherGenerate());
+  $('#teacher-print-test').addEventListener('click', () => teacherPrint('test'));
+  $('#teacher-print-key').addEventListener('click', () => teacherPrint('key'));
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('printing');
+    $('#print-area').innerHTML = '';
+  });
+}
+
+function teacherSettings() {
+  const type = (document.querySelector('input[name="tt-type"]:checked') || {}).value || 'inf2';
+  return {
+    count: Math.max(3, Math.min(106, parseInt($('#tt-count').value, 10) || 20)),
+    type,
+    variants: $('#tt-variants').checked,
+    // U "česky → 3 tvary" je překlad součástí zadání vždy
+    showCs: type === 'cs3' ? true : $('#tt-cs').checked,
+    color: (document.querySelector('input[name="tt-color"]:checked') || {}).value === 'color',
+  };
+}
+
+// Všechny platné tvary pro klíč (learnt / learned, gotten…)
+function ttForms(v, which) {
+  const forms = [v[which]];
+  [v[which + 'Alt'], v[which + 'Am']].forEach((f) => { if (f && !forms.includes(f)) forms.push(f); });
+  return forms.join(' / ');
+}
+
+// Pseudopravidelný tvar jako distraktor (beginned, cutted — typická žákovská chyba)
+function ttRegular(inf) {
+  return inf.endsWith('e') ? inf + 'd' : inf + 'ed';
+}
+
+function teacherBuildVariant(pool, s) {
+  const verbs = shuffle(pool).slice(0, Math.min(s.count, pool.length));
+  return verbs.map((v) => {
+    const row = { v };
+    if (s.type === 'missing') {
+      row.blank = ['inf', 'past', 'pp'][Math.floor(Math.random() * 3)];
+    } else if (s.type === 'choice') {
+      const correct = `${v.past} – ${v.pp}`;
+      const reg = ttRegular(v.inf);
+      const opts = [correct];
+      [`${reg} – ${reg}`, v.past !== v.pp ? `${v.pp} – ${v.past}` : `${v.past} – ${reg}`, `${v.inf} – ${reg}`]
+        .forEach((d) => { if (opts.length < 3 && !opts.includes(d)) opts.push(d); });
+      row.opts = shuffle(opts);
+      row.correct = row.opts.indexOf(correct);
+    }
+    return row;
+  });
+}
+
+function teacherGroupsLine(subs) {
+  if (subs.length > 8) return t('teacher_groups_label') + t('teacher_groups_mix', subs.length);
+  return t('teacher_groups_label') + subs.map((s) => s.pattern).join(' · ');
+}
+
+function teacherDocHeader(s, titleKey, variantLabel, subs) {
+  return `
+    <div class="tt-doc-header">
+      <div class="tt-domain">ucseslovesa.cz</div>
+      <div class="tt-title-row">
+        ${s.color ? '<img class="tt-logo" src="icon-192.png" alt="" />' : ''}
+        <div class="tt-title-block">
+          <h1>${t(titleKey)}${variantLabel ? ` — ${t('teacher_variant', variantLabel)}` : ''}</h1>
+          <div class="tt-sub">${teacherGroupsLine(subs)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function teacherCols(s) {
+  const cols = [{ key: 'num', label: '' }];
+  if (s.type === 'cs3') cols.push({ key: 'cs', label: t('teacher_col_cs') });
+  cols.push(
+    { key: 'inf', label: t('teacher_col_inf') },
+    { key: 'past', label: t('teacher_col_past') },
+    { key: 'pp', label: t('teacher_col_pp') }
+  );
+  if (s.showCs && s.type !== 'cs3') cols.push({ key: 'cs', label: t('teacher_col_cs') });
+  return cols;
+}
+
+function teacherCard(cols, rowsHtml) {
+  const colsCss = cols.map((c) => (c.key === 'num' ? '26px' : '1fr')).join(' ');
+  return `
+    <div class="tt-card" style="--tt-cols:${colsCss}">
+      <div class="tt-card-head"><div class="tt-cols-head">${cols.map((c) => `<span class="tt-col-label">${c.label}</span>`).join('')}</div></div>
+      ${rowsHtml.join('')}
+    </div>`;
+}
+
+function teacherRow(cols, r, i, total, s, isKey) {
+  const v = r.v;
+  const emoji = `<span class="tt-emoji">${v.emoji}</span>`;
+  // Když je infinitiv v testu prázdný (cs3 / missing), obrázek putuje k češtině
+  const infBlank = !isKey && (s.type === 'cs3' || (s.type === 'missing' && r.blank === 'inf'));
+  const cells = cols.map((c) => {
+    if (c.key === 'num') return `<span class="tt-cnum">${i + 1}.</span>`;
+    if (c.key === 'cs') return `<span class="tt-vcs">${infBlank ? emoji : ''}${v.cs}</span>`;
+    // Slovesné tvary: v testu se podle typu vynechávají, v klíči jsou všechny
+    const isBlank = !isKey && (s.type === 'cs3' || (s.type === 'missing' ? r.blank === c.key : c.key !== 'inf'));
+    if (isBlank) return '<span class="tt-write"></span>';
+    const form = isKey ? ttForms(v, c.key) : v[c.key];
+    return `<span class="tt-vinf">${c.key === 'inf' ? emoji : ''}<b class="tt-vform">${form}</b></span>`;
+  });
+  return `<div class="tt-row">${cells.join('')}</div>`;
+}
+
+function teacherTestPage(rows, s, subs, variantLabel) {
+  const total = rows.length;
+  let body;
+  if (s.type === 'choice') {
+    body = `<div class="tt-choices">${rows.map((r, i) => `
+      <div class="tt-choice-row">
+        <span class="tt-choice-q">${i + 1}. <span class="tt-emoji">${r.v.emoji}</span><b>${r.v.inf}</b>${s.showCs ? ` <span class="tt-vcs">(${r.v.cs})</span>` : ''}</span>
+        <span class="tt-choice-opts">${r.opts.map((o, j) => `<span>${'abc'[j]})&nbsp;${o}</span>`).join('')}</span>
+      </div>`).join('')}</div>`;
+  } else {
+    const cols = teacherCols(s);
+    body = teacherCard(cols, rows.map((r, i) => teacherRow(cols, r, i, total, s, false)));
+  }
+  return `
+  <div class="tt-page ${s.color ? 'tt-color' : 'tt-bw'}">
+    ${teacherDocHeader(s, 'teacher_test_title', variantLabel, subs)}
+    <div class="tt-meta">
+      <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_name').replace(/:$/, '')}</span></span>
+      <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_class').replace(/:$/, '')}</span></span>
+      <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_date').replace(/:$/, '')}</span></span>
+    </div>
+    <p class="tt-instr">${t('teacher_instr_' + s.type)}</p>
+    ${body}
+    <div class="tt-scorebar">
+      <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_score').replace(/:$/, '')}</span></span>
+      <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_grade').replace(/:$/, '')}</span></span>
+    </div>
+    <div class="tt-foot">${t('teacher_footer')}</div>
+  </div>`;
+}
+
+function teacherKeyPage(variants, s, subs) {
+  const blocks = variants.map(({ label, rows }) => {
+    const total = rows.length;
+    let card;
+    if (s.type === 'choice') {
+      const cols = [
+        { key: 'num', label: '' },
+        { key: 'inf', label: t('teacher_col_inf') },
+        { key: 'ok', label: '✔' },
+        { key: 'cs', label: t('teacher_col_cs') },
+      ];
+      card = teacherCard(cols, rows.map((r, i) => `
+        <div class="tt-row">
+          <span class="tt-cnum">${i + 1}.</span>
+          <span class="tt-vinf"><span class="tt-emoji">${r.v.emoji}</span><b class="tt-vform">${r.v.inf}</b></span>
+          <span class="tt-key-correct">${'abc'[r.correct]}) ${r.opts[r.correct]}</span>
+          <span class="tt-vcs">${r.v.cs}</span>
+        </div>`));
+    } else {
+      const cols = [
+        { key: 'num', label: '' },
+        { key: 'inf', label: t('teacher_col_inf') },
+        { key: 'past', label: t('teacher_col_past') },
+        { key: 'pp', label: t('teacher_col_pp') },
+        { key: 'cs', label: t('teacher_col_cs') },
+      ];
+      card = teacherCard(cols, rows.map((r, i) => teacherRow(cols, r, i, total, s, true)));
+    }
+    return `${label ? `<h3 class="tt-key-variant">${t('teacher_variant', label)}</h3>` : ''}${card}`;
+  }).join('');
+  return `
+  <div class="tt-page tt-key ${s.color ? 'tt-color' : 'tt-bw'}">
+    ${teacherDocHeader(s, 'teacher_key_title', null, subs)}
+    <p class="tt-instr">${t('teacher_key_correct')}</p>
+    ${blocks}
+    <div class="tt-foot">${t('teacher_footer')}</div>
+  </div>`;
+}
+
+function teacherGenerate() {
+  const subs = teacherSelectedSubs();
+  if (!subs.length) { toast(t('teacher_none_selected'), 'error'); return; }
+  const s = teacherSettings();
+  const pool = subs.flatMap((sub) => sub.verbs);
+  const labels = s.variants ? ['A', 'B'] : [null];
+  const variants = labels.map((label) => ({ label, rows: teacherBuildVariant(pool, s) }));
+  teacher.pages = {
+    tests: variants.map((v) => teacherTestPage(v.rows, s, subs, v.label)),
+    key: teacherKeyPage(variants, s, subs),
+  };
+  const result = $('#teacher-result');
+  $('#teacher-preview').innerHTML = teacher.pages.tests.join('') + teacher.pages.key;
+  result.hidden = false;
+  result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  track('teacher_test_generated', { type: s.type, verbs: String(Math.min(s.count, pool.length)) });
+}
+
+function teacherPrint(kind) {
+  if (!teacher.pages) return;
+  $('#print-area').innerHTML = kind === 'key' ? teacher.pages.key : teacher.pages.tests.join('');
+  document.body.classList.add('printing');
+  window.print();
+}
+
+// ============================================================
 // Init
 // ============================================================
 
@@ -4184,6 +4492,7 @@ async function init() {
   renderBrowse();
   renderFlashcards();
   renderAutoSetup();
+  renderTeacherSetup();
   renderSectionChips($('#quiz-filter'), state.quiz.selectedSections);
   renderStatsStrip();
   // Backfill: if a user upgrades to this build with an already-running streak,
