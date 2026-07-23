@@ -4558,15 +4558,26 @@ body.practicing .app-footer { display: none; }
 }
 .slaba-mista-arrow { font-size: 1rem; opacity: 0.85; }
 
-/* First-visit "try the app" tile: same look as Boss-mode but spans the whole
-   banner row (it's the only thing there for a new visitor) and uses an inviting
-   green→teal gradient instead of the warm Boss-mode one. */
-.picker-banners > .try-app-tile { grid-column: 1 / -1; }
+/* First-visit "try the app" tile: inviting green→teal gradient. Není přes celou
+   šířku — vycentrované pod prostředním pilířem (streak) a jen o kousek širší než
+   jeden sloupec statistik. Grid má 3 sloupce s gap 10px → šířka sloupce je
+   (100% - 20px)/3; přidáme ~52px, ať je znatelně, ale ne rušivě širší. */
+.picker-banners > .try-app-tile {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: calc((100% - 20px) / 3 + 52px);
+  max-width: 100%;
+}
 .try-app-tile {
   background: linear-gradient(135deg, #1fb98b 0%, #2e9bd6 100%);
   box-shadow: 0 4px 14px rgba(31, 155, 139, 0.30);
 }
 .try-app-tile:hover { box-shadow: 0 8px 22px rgba(31, 155, 139, 0.42); }
+/* Na úzké obrazovce (banners = jeden sloupec) zpět na plnou šířku. Musí být
+   ZA pravidlem výše, aby při shodné specificitě vyhrálo i uvnitř media query. */
+@media (max-width: 600px) {
+  .picker-banners > .try-app-tile { width: 100%; }
+}
 
 /* Attention pulse on the first group card when the try-app tile is clicked. */
 @keyframes try-pulse {
