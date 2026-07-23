@@ -260,6 +260,12 @@ app.post('/create-portal-session', async (req, res) => {
     });
     res.json({ url: session.url });
   } catch (e) {
+    // Stored customer no longer exists in this Stripe account (deleted, or a
+    // leftover test-mode id under live keys). Degrade to the friendly
+    // "nothing to manage" path instead of surfacing a raw Stripe error.
+    if (e?.code === 'resource_missing' || e?.statusCode === 404) {
+      return res.status(404).json({ error: 'no_customer' });
+    }
     console.error('Portal create failed:', e);
     res.status(500).json({ error: e.message });
   }
