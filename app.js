@@ -1169,9 +1169,20 @@ function setView(view) {
   // Switching top-level view ends any active practice session — otherwise the
   // mobile "hidden header" chrome could linger on a non-lesson view.
   document.body.classList.remove('practicing');
+  markActiveMenuItem();
   $('#menu-dropdown').classList.remove('open');
   $('#menu-btn').setAttribute('aria-expanded', 'false');
   window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+// Zvýrazní v menu položku odpovídající aktuálnímu view (state.currentView).
+function markActiveMenuItem() {
+  $$('.menu-item[data-view]').forEach((b) => {
+    const isActive = b.dataset.view === state.currentView;
+    b.classList.toggle('menu-item-active', isActive);
+    if (isActive) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
 }
 
 // Valid views that can be restored on reload. Keep in sync with #view-* sections.
@@ -3886,6 +3897,7 @@ function toggleSoundEffects() {
 function toggleMenu() {
   const d = $('#menu-dropdown');
   const open = d.classList.toggle('open');
+  if (open) markActiveMenuItem();
   $('#menu-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
   $('#practice-menu-btn')?.setAttribute('aria-expanded', open ? 'true' : 'false');
 }

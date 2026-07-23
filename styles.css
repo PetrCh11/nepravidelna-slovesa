@@ -232,6 +232,13 @@ body.theme-dark .google-btn.signed-in,
   border-radius: var(--radius-sm);
 }
 .menu-item:hover { background: var(--accent-soft); }
+/* Aktuální stránka: barevný proužek vlevo + zvýrazněné pozadí a tučnější text */
+.menu-item-active {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+  font-weight: 700;
+}
+.menu-item-active:hover { background: var(--accent-soft); }
 .dialect-switch select {
   padding: 6px 10px;
   border-radius: var(--radius-sm);
