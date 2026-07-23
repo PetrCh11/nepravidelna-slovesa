@@ -458,25 +458,26 @@ const TEXTS = {
   // Streak pill label — inline smart text on the existing label row.
   // Desktop carries the full hint; mobile gets a shorter version of the same idea.
   streak_label_zero:    {
-    pro:     '<span class="streak-lbl-d">začni dnes · 🎁 3 dny v řadě = nová skupina zdarma</span><span class="streak-lbl-m">🎁 3 dny = nová skupina</span>',
-    student: '<span class="streak-lbl-d">začni dnes · 🎁 3 dny v řadě = nová skupina zdarma</span><span class="streak-lbl-m">🎁 3 dny = nová skupina</span>',
+    pro:     '<span class="streak-lbl-d">🎁 ještě 3 dny v řadě = nová skupina zdarma</span><span class="streak-lbl-m">ještě 3 dny = nová skupina</span>',
+    student: '<span class="streak-lbl-d">🎁 ještě 3 dny v řadě = nová skupina zdarma</span><span class="streak-lbl-m">ještě 3 dny = nová skupina</span>',
   },
   streak_label_pending: { pro: '🎁 nečerpaná odměna — vyber si',
                           student: '🎁 odměna čeká! vyber si ✨' },
   // Grace period: today missing, but yesterday studied — streak is still
   // visible but at risk of breaking at midnight.
   streak_label_grace:   {
-    pro:     (n, word) => `<span class="streak-lbl-d">${n} ${word} · ⏳ dodělej dnes, jinak streak končí</span><span class="streak-lbl-m">⏳ dodělej dnes</span>`,
-    student: (n, word) => `<span class="streak-lbl-d">${n} ${word} · ⏳ rychle dnes, ať to neztratíš!</span><span class="streak-lbl-m">⏳ rychle dnes!</span>`,
+    pro:     '<span class="streak-lbl-d">⏳ dodělej dnes, jinak streak končí</span><span class="streak-lbl-m">⏳ dodělej dnes</span>',
+    student: '<span class="streak-lbl-d">⏳ rychle dnes, ať to neztratíš!</span><span class="streak-lbl-m">⏳ rychle dnes!</span>',
   },
   streak_label_maxed:   {
-    pro:     (n, word) => `${n} ${word} · 👑 vše zvládnuto`,
-    student: (n, word) => `${n} ${word} · 👑 vše! 🐉`,
+    pro:     '👑 vše zvládnuto',
+    student: '👑 vše! 🐉',
   },
   streak_label_progress: {
-    pro:     (n, nWord, r, rWord) => `${n} ${nWord} · 🎁 za ${r} ${rWord} nová`,
-    student: (n, nWord, r, rWord) => `${n} ${nWord} · 🎁 za ${r} ${rWord} nová!`,
+    pro:     (n, nWord, r, rWord) => `🎁 ještě ${r} ${rWord} = nová skupina`,
+    student: (n, nWord, r, rWord) => `🎁 ještě ${r} ${rWord} = nová skupina!`,
   },
+  streak_label_premium: { pro: '🔥 jen tak dál', student: '🔥 frčíš!' },
 
   srm_title:     { pro: 'Zamíchané procvičení', student: 'Velký random 🎲' },
   srm_sub_some:  { pro: 'Zamíchaná procházka napříč celou sekcí. Vyber si rozsah.',
@@ -574,11 +575,21 @@ const TEXTS = {
   reset_confirm: 'Opravdu chceš vynulovat veškerý pokrok?\n\nTuto akci nelze vrátit zpět.',
   generic_fail: 'Něco se nepovedlo. Zkus to znovu.',
   start_today: 'začni dnes',
-  stats_mastered_verbs: 'zvládnutých sloves',
+  stats_mastered_verbs: 'slovesa',
   stats_in_progress: (n) => ` · ${n} v procesu`,
   stats_trophies_aria: 'Získané trofeje',
   streak_pill_aria: 'Streak — jak to funguje',
-  stats_mastered_groups: 'zvládnutých skupin',
+  stats_mastered_groups: 'skupin',
+  // Popisky po kliknutí na dlaždici statistiky (toast)
+  stat_verbs_info: (m, total, inp) =>
+    inp
+      ? `${m}/${total} sloves ovládáš dokonale! (${inp} máš rozpracovaných)`
+      : `${m}/${total} sloves ovládáš dokonale!`,
+  stat_groups_info: (m, total) =>
+    m ? `${m}/${total} skupin máš celých zvládnutých!`
+      : `Zvládni celou skupinu a přibude ti sem. Celkem jich je ${total}.`,
+  stat_verbs_aria: 'Zvládnutá slovesa — co to znamená',
+  stat_groups_aria: 'Zvládnuté skupiny — co to znamená',
   next_weak_batch: 'Další porce slabin →',
   slaba_icon: { pro: '🎯', student: '👾', hantec: '🛠️' },
   slaba_tile_title: { pro: 'Dnešní cílovka', student: 'Boss mode', hantec: 'Betelná šichta' },
@@ -2815,9 +2826,9 @@ function streakLabelText(streak, maxStreak, pending) {
   // Premium has every group unlocked — drop the reward-related copy and just
   // surface the streak number (or the grace warning when at risk).
   if (state.premium) {
-    if (pending && streak > 0) return t('streak_label_grace', streak, plurDays(streak));
+    if (pending && streak > 0) return t('streak_label_grace');
     if (streak === 0) return t('start_today');
-    return `${streak} ${plurDays(streak)}`;
+    return t('streak_label_premium');
   }
   if (rewardPending) return t('streak_label_pending');
   if (pending && streak > 0) return t('streak_label_grace', streak, plurDays(streak));
@@ -2835,12 +2846,12 @@ function renderStatsStrip() {
   const groupPct = s.totalGroups ? Math.round((s.masteredGroups / s.totalGroups) * 100) : 0;
   const streakBig = s.streak >= 3 ? ' is-hot' : '';
   c.innerHTML = `
-    <div class="stat-pill stat-pill-mastery">
+    <div class="stat-pill stat-pill-mastery is-clickable" id="mastery-info-open" role="button" tabindex="0" aria-label="${t('stat_verbs_aria')}">
       <div class="stat-pill-head">
         <span class="stat-pill-icon">🎯</span>
         <span class="stat-pill-num">${s.mastered}<span class="stat-pill-of"> / ${s.total}</span></span>
       </div>
-      <div class="stat-pill-label">${t('stats_mastered_verbs')}${s.inProgress ? t('stats_in_progress', s.inProgress) : ''}</div>
+      <div class="stat-pill-label">${t('stats_mastered_verbs')}</div>
       <div class="stat-pill-bar"><div class="stat-pill-bar-fill" style="width:${pct}%"></div></div>
     </div>
     ${(() => {
@@ -2856,14 +2867,14 @@ function renderStatsStrip() {
       <div class="stat-pill-streak-main">
         <div class="stat-pill-head">
           <span class="stat-pill-icon">🔥</span>
-          <span class="stat-pill-num">${s.streak}</span>
+          <span class="stat-pill-num">${s.streak}<span class="stat-pill-unit"> ${plurDayWord(s.streak)}</span></span>
         </div>
         <div class="stat-pill-label">${labelText}</div>
       </div>
       ${trophyHTML}
     </div>`;
     })()}
-    <div class="stat-pill stat-pill-groups">
+    <div class="stat-pill stat-pill-groups is-clickable" id="groups-info-open" role="button" tabindex="0" aria-label="${t('stat_groups_aria')}">
       <div class="stat-pill-head">
         <span class="stat-pill-icon">🏅</span>
         <span class="stat-pill-num">${s.masteredGroups}<span class="stat-pill-of"> / ${s.totalGroups}</span></span>
@@ -4694,6 +4705,23 @@ async function init() {
     if ((e.key === 'Enter' || e.key === ' ') && document.activeElement?.id === 'streak-info-open') {
       e.preventDefault();
       openStreakInfoModal();
+    }
+  });
+  // Mastery / groups pill — klik ukáže popis, o co jde (toast).
+  function showStatInfo(id) {
+    const s = computeMacroStats();
+    if (id === 'mastery-info-open') toast(t('stat_verbs_info', s.mastered, s.total, s.inProgress), 'info', 5000);
+    else if (id === 'groups-info-open') toast(t('stat_groups_info', s.masteredGroups, s.totalGroups), 'info', 5000);
+  }
+  document.addEventListener('click', (e) => {
+    const pill = e.target.closest && e.target.closest('#mastery-info-open, #groups-info-open');
+    if (pill) showStatInfo(pill.id);
+  });
+  document.addEventListener('keydown', (e) => {
+    const id = document.activeElement?.id;
+    if ((e.key === 'Enter' || e.key === ' ') && (id === 'mastery-info-open' || id === 'groups-info-open')) {
+      e.preventDefault();
+      showStatInfo(id);
     }
   });
   $('#sim-close')?.addEventListener('click', closeStreakInfoModal);
