@@ -3929,6 +3929,16 @@ function updatePortalBtn() {
   else btn.classList.add('hidden');
 }
 
+// Headers for authenticated backend calls. The Firebase ID token is verified
+// server-side and the uid is derived from it there — the backend no longer
+// trusts any uid sent in the body, so we don't send one.
+async function backendAuthHeaders() {
+  const token = await cloud.getIdToken();
+  const h = { 'Content-Type': 'application/json' };
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
 async function openCustomerPortal() {
   if (!BACKEND_URL) { toast(t('backend_unavailable'), 'error'); return; }
   const user = cloud.getCurrentUser();
@@ -3939,9 +3949,8 @@ async function openCustomerPortal() {
   try {
     const resp = await fetch(`${BACKEND_URL}/create-portal-session`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await backendAuthHeaders(),
       body: JSON.stringify({
-        uid: user.uid,
         returnUrl: window.location.origin + window.location.pathname,
       }),
     });
@@ -4077,8 +4086,8 @@ async function redeemPromo(rawCode, ctx) {
   try {
     const resp = await fetch(`${BACKEND_URL}/redeem-code`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uid: user.uid, code }),
+      headers: await backendAuthHeaders(),
+      body: JSON.stringify({ code }),
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
@@ -4153,10 +4162,9 @@ async function startCheckout(plan, btn) {
   try {
     const resp = await fetch(`${BACKEND_URL}/create-checkout-session`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await backendAuthHeaders(),
       body: JSON.stringify({
         priceId: price.id,
-        uid: user.uid,
         mode: price.mode,
         returnUrl: window.location.origin + window.location.pathname,
         email: user.email,

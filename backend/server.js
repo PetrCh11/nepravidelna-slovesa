@@ -23,6 +23,22 @@ const svcAcc = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '{}');
 admin.initializeApp({ credential: admin.credential.cert(svcAcc) });
 const db = admin.firestore();
 
+// Verify the caller's Firebase ID token (Authorization: Bearer <token>) and
+// return their uid, or null if missing/invalid. The uid MUST come from a
+// verified token — never from the request body — so a caller can only ever
+// act on their own account (no acting as another user by guessing their uid).
+async function verifyUid(req) {
+  const m = /^Bearer (.+)$/.exec(req.headers.authorization || '');
+  if (!m) return null;
+  try {
+    const decoded = await admin.auth().verifyIdToken(m[1]);
+    return decoded.uid || null;
+  } catch (e) {
+    console.warn('ID token verification failed:', e.message);
+    return null;
+  }
+}
+
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
 
 const app = express();
@@ -106,9 +122,11 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 app.use(express.json());
 
 app.post('/create-checkout-session', async (req, res) => {
-  const { priceId, uid, mode, returnUrl, email, locale } = req.body || {};
-  if (!priceId || !uid || !mode || !returnUrl) {
-    return res.status(400).json({ error: 'missing params (priceId, uid, mode, returnUrl)' });
+  const uid = await verifyUid(req);
+  if (!uid) return res.status(401).json({ error: 'unauthenticated' });
+  const { priceId, mode, returnUrl, email, locale } = req.body || {};
+  if (!priceId || !mode || !returnUrl) {
+    return res.status(400).json({ error: 'missing params (priceId, mode, returnUrl)' });
   }
   if (!['payment', 'subscription'].includes(mode)) {
     return res.status(400).json({ error: 'mode must be payment or subscription' });
@@ -153,8 +171,10 @@ app.post('/create-checkout-session', async (req, res) => {
 // allow_promotion_codes flag — this endpoint is only for granting full
 // premium without a payment.
 app.post('/redeem-code', async (req, res) => {
-  const { uid, code } = req.body || {};
-  if (!uid || !code) return res.status(400).json({ error: 'missing uid or code' });
+  const uid = await verifyUid(req);
+  if (!uid) return res.status(401).json({ error: 'unauthenticated' });
+  const { code } = req.body || {};
+  if (!code) return res.status(400).json({ error: 'missing code' });
   const normalized = String(code).trim().toUpperCase();
   if (!/^[A-Z0-9_-]{3,40}$/.test(normalized)) {
     return res.status(400).json({ error: 'invalid_code_format' });
@@ -222,8 +242,10 @@ app.post('/redeem-code', async (req, res) => {
 
 // Stripe Customer Portal — lets users cancel, update card, download invoices
 app.post('/create-portal-session', async (req, res) => {
-  const { uid, returnUrl } = req.body || {};
-  if (!uid || !returnUrl) return res.status(400).json({ error: 'missing uid or returnUrl' });
+  const uid = await verifyUid(req);
+  if (!uid) return res.status(401).json({ error: 'unauthenticated' });
+  const { returnUrl } = req.body || {};
+  if (!returnUrl) return res.status(400).json({ error: 'missing returnUrl' });
   try {
     const userSnap = await db.collection('users').doc(uid).get();
     const data = userSnap.exists ? userSnap.data() : {};

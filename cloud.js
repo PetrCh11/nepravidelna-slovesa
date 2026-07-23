@@ -56,6 +56,20 @@ export function getCurrentUser() {
   return auth.currentUser;
 }
 
+// Fresh Firebase ID token for authenticating backend calls. The backend
+// verifies it and derives the uid from it, so no endpoint trusts a uid sent
+// in the request body. Returns null when signed out.
+export async function getIdToken() {
+  const user = auth.currentUser;
+  if (!user) return null;
+  try {
+    return await user.getIdToken();
+  } catch (e) {
+    console.error('getIdToken failed', e);
+    return null;
+  }
+}
+
 onAuthStateChanged(auth, (user) => {
   listeners.onUser?.(user);
   if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null; }
