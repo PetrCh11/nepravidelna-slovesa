@@ -100,6 +100,33 @@ h3 {
   .seo-cta-banner .seo-cta { text-align: center; }
 }
 
+/* PDF ke stažení */
+.seo-pdf-section { margin: 22px 0; }
+.seo-pdf-section h2 { font-size: 1.25rem; margin: 0 0 8px; }
+.seo-pdf-section > p { margin: 0 0 14px; color: #4a525c; }
+.seo-pdf-download {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 520px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-left: 4px solid #d7263d;
+  border-radius: 16px;
+  text-decoration: none;
+  color: #1d2329;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.seo-pdf-download:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.10); }
+.seo-pdf-ico { flex: 0 0 auto; line-height: 0; }
+.seo-pdf-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.seo-pdf-text strong { font-size: 1rem; }
+.seo-pdf-text span { font-size: 0.82rem; color: #6b7280; }
+.seo-pdf-arrow { flex: 0 0 auto; font-size: 1.2rem; color: #d7263d; transition: transform 0.15s; }
+.seo-pdf-download:hover .seo-pdf-arrow { transform: translateY(2px); }
+
 /* Table of contents */
 .seo-toc {
   background: #fff;
