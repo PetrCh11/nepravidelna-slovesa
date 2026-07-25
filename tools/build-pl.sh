@@ -18,6 +18,9 @@ mkdir -p dist-pl
 cp app.js cloud.js celebrate.js install.js styles.css dist-pl/
 cp pl/icon-180.png pl/icon-192.png pl/icon-512.png dist-pl/
 cp -R data lang dist-pl/
+# PDF přehled (generuje tools/build-pdf.sh pl) — do rootu, ZÁMĚRNĚ mimo sw.js
+# precache: ~1 MB, stahuje se živě stejně jako české PDF.
+cp pl/czasowniki-nieregularne-lista.pdf dist-pl/
 
 # 2) index.html — pryč <base href="/"> (včetně vysvětlujícího komentáře),
 #    manifest z pl/manifest.json na manifest.json

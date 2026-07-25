@@ -30,6 +30,7 @@ SLUGS_CS = None  # lazy — only needed for hreflang; imported below
 
 SITE = 'https://czasowniki.pl'
 SITE_CS = 'https://ucseslovesa.cz'
+PDF = 'czasowniki-nieregularne-lista.pdf'  # generuje tools/build-pdf.sh pl
 TODAY = date.today().isoformat()
 
 # ---------- Polish translations parsed from lang/pl.js ----------
@@ -263,9 +264,9 @@ jumbo = f'''<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Czasowniki nieregularne – tabela i pełna lista {TOTAL} czasowników | czasowniki.pl</title>
-  <meta name="description" content="Pełna tabela {TOTAL} angielskich czasowników nieregularnych z polskim tłumaczeniem, podzielona na 24 grupy według wzorców wymowy. Past simple, past participle. Naucz się ich systematycznie, nie na pamięć." />
-  <meta name="keywords" content="czasowniki nieregularne tabela, tabela czasowników nieregularnych, angielskie czasowniki nieregularne, czasowniki nieregularne, lista czasowników nieregularnych, past simple, past participle, irregular verbs po polsku, czasowniki angielski tabela" />
+  <title>Czasowniki nieregularne – tabela i PDF do pobrania ({TOTAL} czasowników) | czasowniki.pl</title>
+  <meta name="description" content="Pełna tabela {TOTAL} angielskich czasowników nieregularnych z polskim tłumaczeniem, podzielona na 24 grupy według wzorców wymowy. Do pobrania za darmo w PDF (do druku i offline). Past simple, past participle." />
+  <meta name="keywords" content="czasowniki nieregularne pdf, czasowniki nieregularne do pobrania, czasowniki nieregularne tabela, tabela czasowników nieregularnych, angielskie czasowniki nieregularne, czasowniki nieregularne, lista czasowników nieregularnych, past simple, past participle, irregular verbs po polsku, czasowniki angielski tabela" />
   <link rel="canonical" href="{SITE}/lista/" />
   <link rel="alternate" hreflang="pl" href="{SITE}/lista/" />
   <link rel="alternate" hreflang="cs" href="{SITE_CS}/seznam/" />
@@ -274,8 +275,8 @@ jumbo = f'''<!DOCTYPE html>
 
   <!-- Open Graph -->
   <meta property="og:type" content="article" />
-  <meta property="og:title" content="Czasowniki nieregularne – tabela i pełna lista {TOTAL} czasowników" />
-  <meta property="og:description" content="Tabela {TOTAL} czasowników w 24 grupach według wzorców wymowy. Past simple, past participle, polskie tłumaczenie." />
+  <meta property="og:title" content="Czasowniki nieregularne – tabela i PDF do pobrania ({TOTAL} czasowników)" />
+  <meta property="og:description" content="Tabela {TOTAL} czasowników w 24 grupach według wzorców wymowy. Do pobrania za darmo w PDF. Past simple, past participle, polskie tłumaczenie." />
   <meta property="og:url" content="{SITE}/lista/" />
   <meta property="og:locale" content="pl_PL" />
   <meta property="og:site_name" content="Czasowniki nieregularne – raz na zawsze" />
@@ -334,6 +335,31 @@ jumbo = f'''<!DOCTYPE html>
         </div>
         <a class="seo-cta" href="../" data-track="cta_top">Otwórz aplikację</a>
       </div>
+
+      <section class="seo-pdf-section">
+        <h2 id="pdf">Czasowniki nieregularne do pobrania w PDF</h2>
+        <p>
+          Całą tabelę {TOTAL} czasowników nieregularnych możesz
+          <strong>pobrać za darmo w PDF</strong> — przejrzyście, grupa po grupie,
+          z kolorowo zaznaczoną zmianą w każdym słowie. Idealne do wydruku
+          do zeszytu i do nauki offline.
+        </p>
+        <a class="seo-pdf-download" href="/{PDF}" download data-track="pdf_lista">
+          <span class="seo-pdf-ico" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="38" height="38">
+              <rect x="5" y="2" width="22" height="28" rx="3" fill="#ffffff" stroke="#e0dcd3" stroke-width="1.4"/>
+              <path d="M20 2v6h7" fill="none" stroke="#e0dcd3" stroke-width="1.4"/>
+              <rect x="7" y="17" width="18" height="9" rx="2" fill="#e2483d"/>
+              <text x="16" y="23.6" font-size="6.4" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif">PDF</text>
+            </svg>
+          </span>
+          <span class="seo-pdf-text">
+            <strong>Pobierz zestawienie w PDF</strong>
+            <span>Wszystkie {TOTAL} czasowników w grupach — do druku i offline</span>
+          </span>
+          <span class="seo-pdf-arrow" aria-hidden="true">⬇</span>
+        </a>
+      </section>
 
       <nav class="seo-toc" aria-label="Spis treści">
         <h2>Spis treści – 24 grupy</h2>
@@ -636,6 +662,13 @@ sitemap_lines = ['<?xml version="1.0" encoding="UTF-8"?>',
                  '        xmlns:xhtml="http://www.w3.org/1999/xhtml">']
 sitemap_lines += url_entry(f'{SITE}/', f'{SITE_CS}/', 'weekly', '1.0')
 sitemap_lines += url_entry(f'{SITE}/lista/', f'{SITE_CS}/seznam/', 'monthly', '0.9')
+# PDF přehled — bez hreflang alternates (stejně jako v české sitemapě).
+sitemap_lines += ['  <url>',
+                  f'    <loc>{SITE}/{PDF}</loc>',
+                  f'    <lastmod>{TODAY}</lastmod>',
+                  '    <changefreq>monthly</changefreq>',
+                  '    <priority>0.7</priority>',
+                  '  </url>']
 for sub in ORDERED_SUBS:
     sitemap_lines += url_entry(
         f'{SITE}/grupa/{slug_for(sub["id"])}/',
@@ -645,7 +678,7 @@ sitemap_lines.append('</urlset>')
 sitemap_lines.append('')
 with open(os.path.join(OUT, 'sitemap.xml'), 'w', encoding='utf-8') as f:
     f.write('\n'.join(sitemap_lines))
-print(f'Wrote sitemap.xml ({2 + len(ORDERED_SUBS)} URLs)')
+print(f'Wrote sitemap.xml ({3 + len(ORDERED_SUBS)} URLs)')
 
 # ---------- robots.txt ----------
 with open(os.path.join(OUT, 'robots.txt'), 'w', encoding='utf-8') as f:

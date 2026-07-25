@@ -151,11 +151,14 @@
       streak_title_h: 'Twoja nagroda — wybieraj!',
       streak_sub_h: function (days) { return 'Masz za sobą ' + days + ' dni z rzędu. 🔥 Wybrana grupa zostaje twoja na zawsze — nawet jeśli seria się kiedyś przerwie.'; },
       streak_foot_h: 'Tip: wybraną grupę możesz ćwiczyć od razu po wyborze.',
-      streak_label_zero: '<span class="streak-lbl-d">zacznij dziś · 🎁 3 dni z rzędu = nowa grupa za darmo</span><span class="streak-lbl-m">🎁 3 dni = nowa grupa</span>',
+      // Popisky u serii: liczba dni jest renderowana osobno przy cyfrze
+      // (plur_day), więc sam popisek jej NIE powtarza.
+      streak_label_zero: '<span class="streak-lbl-d">🎁 jeszcze 3 dni z rzędu = nowa grupa za darmo</span><span class="streak-lbl-m">jeszcze 3 dni = nowa grupa</span>',
       streak_label_pending: '🎁 nieodebrana nagroda — wybierz',
-      streak_label_grace: function (n, word) { return '<span class="streak-lbl-d">' + n + ' ' + word + ' · ⏳ zdąż dziś, inaczej seria przepadnie</span><span class="streak-lbl-m">⏳ zdąż dziś!</span>'; },
-      streak_label_maxed: function (n, word) { return n + ' ' + word + ' · 👑 wszystko opanowane'; },
-      streak_label_progress: function (n, nWord, r, rWord) { return n + ' ' + nWord + ' · 🎁 za ' + r + ' ' + rWord + ' nowa grupa'; },
+      streak_label_grace: '<span class="streak-lbl-d">⏳ zdąż dziś, inaczej seria przepadnie</span><span class="streak-lbl-m">⏳ zdąż dziś!</span>',
+      streak_label_maxed: '👑 wszystko opanowane',
+      streak_label_progress: function (n, nWord, r, rWord) { return '🎁 jeszcze ' + r + ' ' + rWord + ' = nowa grupa'; },
+      streak_label_premium: '🔥 tak trzymaj',
       srm_title: 'Wymieszana powtórka 🎲',
       srm_sub_some: 'Losowa przechadzka przez całą sekcję. Wybierz zakres.',
       srm_sub_clean: 'Cała sekcja na zielono — żadnych opornych czasowników. Możesz śmiało przejść wszystko jeszcze raz dla pewności.',
@@ -173,7 +176,7 @@
       toast_login_fail: function (e) { return 'Logowanie się nie powiodło — ' + e; },
       // Menu
       menu_lesson: '🎓 Lekcje',
-      menu_browse: '📚 Przegląd grup',
+      menu_browse: '📚 Lista czasowników',
       menu_fc: '🃏 Fiszki',
       menu_quiz: '✅ Szybki quiz',
       // Webview banner
@@ -244,11 +247,26 @@
       reset_confirm: 'Na pewno chcesz wyzerować cały postęp?\n\nTej operacji nie da się cofnąć.',
       generic_fail: 'Coś poszło nie tak. Spróbuj jeszcze raz.',
       start_today: 'zacznij dziś',
-      stats_mastered_verbs: 'opanowanych czasowników',
+      stats_mastered_verbs: 'czasowniki',
       stats_in_progress: function (n) { return ' · ' + n + ' w trakcie'; },
       stats_trophies_aria: 'Zdobyte trofea',
       streak_pill_aria: 'Seria — jak to działa',
-      stats_mastered_groups: 'opanowanych grup',
+      stats_mastered_groups: 'grupy',
+      // Opisy po kliknięciu w kafelek statystyki (toast).
+      // Konstrukcja „X z Y" — po „z" zawsze dopełniacz liczby mnogiej,
+      // dzięki czemu forma jest poprawna dla każdej liczby (2, 5, 22…).
+      stat_verbs_info: function (m, total, inp) {
+        var base = 'Znasz perfekcyjnie ' + m + ' z ' + total + ' czasowników!';
+        return inp ? base + ' (' + inp + ' w trakcie nauki)' : base;
+      },
+      stat_groups_info: function (m, total) {
+        if (!m) return 'Opanuj całą grupę, a pojawi się tutaj. W sumie jest ich ' + total + '.';
+        return m === 1
+          ? 'Masz w całości opanowaną 1 grupę z ' + total + '!'
+          : 'Masz w całości opanowane ' + m + ' z ' + total + ' grup!';
+      },
+      stat_verbs_aria: 'Opanowane czasowniki — co to znaczy',
+      stat_groups_aria: 'Opanowane grupy — co to znaczy',
       next_weak_batch: 'Kolejna porcja słabych punktów →',
       slaba_icon: { pro: '🎯', student: '👾' },
       slaba_tile_title: { pro: 'Dzisiejszy target', student: 'Boss mode' },

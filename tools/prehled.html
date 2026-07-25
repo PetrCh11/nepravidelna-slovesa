@@ -9,7 +9,11 @@
   skupin se počítají STEJNOU logikou jako v app.js (diffRanges + hl override +
   hue podle pořadí skupiny), takže PDF zůstává automaticky v souladu s appkou.
 
-  Aktualizace PDF po změně dat:  tools/build-pdf.sh
+  Jazykové mutace: ?lang=pl načte /lang/pl.js a přeloží data i popisky
+  (viz L10N níže a docs/i18n.md). Bez parametru jede česky.
+
+  Aktualizace PDF po změně dat:  tools/build-pdf.sh        (české)
+                                 tools/build-pdf.sh pl     (polské)
   (nebo otevřít tuto stránku přes lokální server a vytisknout do PDF).
 -->
 <style>
@@ -110,7 +114,7 @@
 </head>
 <body>
 <div id="doc"></div>
-<div class="doc-footer">ucseslovesa.cz</div>
+<div class="doc-footer" id="doc-footer">ucseslovesa.cz</div>
 
 <script>
 const SECTION_EMOJI = { '1.0.0': '🎯', '2.0.0': '🌀', '3.0.0': '⚡' };
@@ -161,21 +165,91 @@ function highlightVowel(word, range) {
   return out + esc(word.slice(pos));
 }
 
+// ---- Jazykové mutace (docs/i18n.md) --------------------------------------
+// Čeština je zdroj pravdy; ?lang=pl načte pack /lang/pl.js a přeloží data
+// (v.cs, sub.pattern, sec.title) stejně jako localizeData() v app.js.
+const L10N = {
+  cs: {
+    htmlLang: 'cs',
+    docTitle: 'Nepravidelná slovesa — přehled',
+    domain: 'ucseslovesa.cz',
+    logo: '/icon-192.png',
+    h1: 'Nepravidelná slovesa',
+    sub: '… jednou a provždy.',
+    count: (n) => `${n} sloves`,
+    colInf: 'Infinitiv', colPast: 'Past simple', colPp: 'Past participle',
+  },
+  pl: {
+    htmlLang: 'pl',
+    docTitle: 'Czasowniki nieregularne — zestawienie',
+    domain: 'czasowniki.pl',
+    logo: '/pl/icon-192.png',
+    h1: 'Czasowniki nieregularne',
+    sub: '… raz na zawsze.',
+    // 1 czasownik / 2–4 czasowniki / reszta czasowników
+    count: (n) => {
+      const d = n % 10, h = n % 100;
+      const w = n === 1 ? 'czasownik'
+        : (d >= 2 && d <= 4 && !(h >= 12 && h <= 14)) ? 'czasowniki' : 'czasowników';
+      return `${n} ${w}`;
+    },
+    colInf: 'Bezokolicznik', colPast: 'Past simple', colPp: 'Past participle',
+  },
+};
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+// Přepíše data překlady z packu — zrcadlo localizeData() v app.js.
+function localizeData(data, pack) {
+  const d = pack && pack.data;
+  if (!d) return;
+  data.sections.forEach((sec) => {
+    if (d.sections && d.sections[sec.id]) sec.title = d.sections[sec.id];
+    sec.subsections.forEach((sub) => {
+      const g = d.groups && d.groups[sub.id];
+      if (g) {
+        if (g.pattern) sub.pattern = g.pattern;
+        if (g.rule) sub.rule = g.rule;
+      }
+      sub.verbs.forEach((v) => {
+        if (d.verbs && d.verbs[v.inf]) v.cs = d.verbs[v.inf];
+      });
+    });
+  });
+}
+
 async function build() {
+  const lang = new URLSearchParams(location.search).get('lang') || 'cs';
+  const L = L10N[lang] || L10N.cs;
+  document.documentElement.lang = L.htmlLang;
+
   const data = await fetch('/data/verbs.json').then((r) => r.json());
+  if (lang !== 'cs') {
+    await loadScript(`/lang/${lang}.js`);
+    if (!window.LANG_PACK) throw new Error(`Jazykový pack /lang/${lang}.js nenastavil window.LANG_PACK`);
+    localizeData(data, window.LANG_PACK);
+  }
+
   const doc = document.getElementById('doc');
+  document.getElementById('doc-footer').textContent = L.domain;
   const totalSubs = data.sections.reduce((n, s) => n + s.subsections.length, 0);
 
   // Hlavička
   const header = document.createElement('div');
   header.className = 'doc-header';
   header.innerHTML = `
-    <div class="doc-domain">ucseslovesa.cz</div>
+    <div class="doc-domain">${esc(L.domain)}</div>
     <div class="doc-title-row">
-      <img class="doc-logo" src="/icon-192.png" alt="">
+      <img class="doc-logo" src="${L.logo}" alt="">
       <div class="doc-title">
-        <h1>Nepravidelná slovesa</h1>
-        <div class="sub">… jednou a provždy.</div>
+        <h1>${esc(L.h1)}</h1>
+        <div class="sub">${esc(L.sub)}</div>
       </div>
     </div>`;
   doc.appendChild(header);
@@ -189,7 +263,7 @@ async function build() {
       <div class="section-icon">${SECTION_EMOJI[sec.id] || '📚'}</div>
       <div>
         <h2>${esc(sec.title)}</h2>
-        <div class="count">${secVerbs} sloves</div>
+        <div class="count">${esc(L.count(secVerbs))}</div>
       </div>`;
     doc.appendChild(band);
 
@@ -223,9 +297,9 @@ async function build() {
             <span class="group-count">${sub.verbs.length}×</span>
           </div>
           <div class="group-head-cols">
-            <span class="col-label">Infinitiv</span>
-            <span class="col-label">Past simple</span>
-            <span class="col-label">Past participle</span>
+            <span class="col-label">${esc(L.colInf)}</span>
+            <span class="col-label">${esc(L.colPast)}</span>
+            <span class="col-label">${esc(L.colPp)}</span>
             <span></span>
           </div>
         </div>

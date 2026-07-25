@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="styles.css" />
   <!-- Jazykový pack — musí se načíst PŘED app.js (docs/i18n.md).
        ?v=N bumpni při každé změně packu (cache busting; stejný ?v patří do sw.js ASSETS). -->
-  <script src="lang/pl.js?v=4"></script>
+  <script src="lang/pl.js?v=5"></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
   <script>
@@ -162,7 +162,7 @@
           <button id="menu-btn" class="icon-btn" aria-label="Menu" aria-expanded="false">☰</button>
           <div id="menu-dropdown" class="menu-dropdown" role="menu">
             <button class="menu-item" data-view="lesson" role="menuitem" data-tone="menu_lesson">🎓 Lekcje</button>
-            <button class="menu-item" data-view="browse" role="menuitem" data-tone="menu_browse">📚 Przegląd grup</button>
+            <button class="menu-item" data-view="browse" role="menuitem" data-tone="menu_browse">📚 Lista czasowników</button>
             <button class="menu-item" data-view="flashcards" role="menuitem" data-tone="menu_fc">🃏 Fiszki</button>
             <button class="menu-item" data-view="quiz" role="menuitem" data-tone="menu_quiz">✅ Szybki quiz</button>
             <button class="menu-item" data-view="auto" role="menuitem">🚗 Tryb samochodowy <span class="menu-premium-badge">Premium</span></button>
@@ -257,9 +257,24 @@
     <!-- BROWSE VIEW -->
     <section id="view-browse" class="view">
       <div class="intro">
-        <h2>Przegląd grup wymowy</h2>
+        <h2>Lista czasowników</h2>
         <p>Każda grupa ma wspólny wzorzec. Kliknij słowo, aby usłyszeć wymowę 🔊.</p>
       </div>
+      <a class="pdf-download" href="/czasowniki-nieregularne-lista.pdf" download>
+        <span class="pdf-download-ico" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="38" height="38">
+            <rect x="5" y="2" width="22" height="28" rx="3" fill="#ffffff" stroke="#e0dcd3" stroke-width="1.4"/>
+            <path d="M20 2v6h7" fill="none" stroke="#e0dcd3" stroke-width="1.4"/>
+            <rect x="7" y="17" width="18" height="9" rx="2" fill="#e2483d"/>
+            <text x="16" y="23.6" font-size="6.4" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif">PDF</text>
+          </svg>
+        </span>
+        <span class="pdf-download-text">
+          <strong>Pobierz zestawienie w PDF</strong>
+          <span>Wszystkie 106 czasowników w grupach — do druku i offline</span>
+        </span>
+        <span class="pdf-download-arrow" aria-hidden="true">⬇</span>
+      </a>
       <div id="sections-list"></div>
     </section>
 
