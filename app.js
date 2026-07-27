@@ -705,6 +705,7 @@ const TEXTS = {
   teacher_domain: 'ucseslovesa.cz',
   teacher_footer: 'ucseslovesa.cz — appka, se kterou se tvoje třída naučí nepravidelná slovesa',
   teacher_key_correct: 'Správné odpovědi (u sloves s více tvary platí kterýkoli uvedený):',
+  teacher_limit_print: (m) => `⏱ časový limit: ${m} min`,
 
   // --- Digitální test (sdílený odkaz + kód o odevzdání) ---
   dt_copied: 'Odkaz zkopírován 📋',
@@ -724,6 +725,9 @@ const TEXTS = {
   dt_verify_col_attempt: 'Pokus',
   dt_verify_col_state: 'Stav',
   dt_verify_col_wrong: 'Chybné odpovědi',
+  dt_verify_timeout: 'Vypršel časový limit — test se odevzdal automaticky',
+  dt_time_up: '⏱ Čas vypršel — test byl odevzdán.',
+  dt_limit_note: (m) => `⏱ Na test máš ${m} ${m === 1 ? 'minutu' : m >= 2 && m <= 4 ? 'minuty' : 'minut'}.`,
   dt_verify_no_mistakes: 'bez chyby',
   dt_verify_ok: '✅ platný',
   dt_verify_bad: '❌ nesedí',
@@ -1211,6 +1215,7 @@ function setView(view) {
   // Odchod ze zadaného testu → kvíz se vrátí do běžného stavu (jinak by zůstala
   // schovaná nastavovací obrazovka a viset testový režim).
   if (view !== 'quiz' && state.quiz.test) {
+    dtStopTimer();
     state.quiz.test = null;
     $('#dt-intro')?.classList.add('hidden');
     $('#dt-result')?.classList.add('hidden');
@@ -3764,6 +3769,8 @@ function quizStart() {
   state.quiz.score = 0;
   state.quiz.maxScore = 0;
   state.quiz.scoring = 'verb';
+  state.quiz.timedOut = false;
+  dtStopTimer();
   state.quiz.total = n;
   state.quiz.type = $('#quiz-type').value;
   state.quiz.review = [];
@@ -3931,6 +3938,7 @@ function quizNext() {
 }
 
 function quizFinish() {
+  dtStopTimer();
   $('.quiz-play').classList.add('hidden');
   $('.quiz-done').classList.remove('hidden');
   const maxPts = state.quiz.maxScore || state.quiz.total;
@@ -4430,6 +4438,7 @@ function teacherSettings() {
     color: (document.querySelector('input[name="tt-color"]:checked') || {}).value === 'color',
     // Bodování digitálního testu: 'verb' = celé sloveso za bod, 'form' = po tvarech
     scoring: (document.querySelector('input[name="tt-scoring"]:checked') || {}).value || 'verb',
+    limitMin: parseInt($('#tt-limit').value, 10) || 0,
   };
 }
 
@@ -4542,7 +4551,7 @@ function teacherTestPage(rows, s, subs, variantLabel) {
       <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_class').replace(/:$/, '')}</span></span>
       <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_date').replace(/:$/, '')}</span></span>
     </div>
-    <p class="tt-instr">${t('teacher_instr_' + s.type)}</p>
+    <p class="tt-instr">${t('teacher_instr_' + s.type)}${s.limitMin ? ` · ${t('teacher_limit_print', s.limitMin)}` : ''}</p>
     ${body}
     <div class="tt-scorebar">
       <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_score').replace(/:$/, '')}</span></span>
@@ -4660,6 +4669,8 @@ function allSubIdsInOrder() {
 // missing→missing, choice→mc.
 const DT_TYPES = ['mixed', 'mc', 'fill', 'cs3', 'missing'];
 const DT_TYPE_FROM_PAPER = { inf2: 'fill', cs3: 'cs3', missing: 'missing', choice: 'mc' };
+// Časový limit v minutách; index se ukládá do odkazu (3 bity). 0 = bez limitu.
+const DT_LIMITS = [0, 5, 10, 15, 20, 30, 45, 60];
 // Kontrolní součet kódů je jen proti přepsání skóre "od stolu" — klíč je
 // nutně v klientu, takže odhodlaného žáka nezastaví (viz docs).
 const DT_SALT = 'ucseslovesa-dt-2026';
@@ -4681,6 +4692,7 @@ function dtEncode(cfg) {
   v = (v << 3n) | BigInt(Math.max(0, DT_TYPES.indexOf(cfg.type)));
   v = (v << 1n) | BigInt(cfg.askName ? 1 : 0);
   v = (v << 1n) | BigInt(cfg.scoring === 'form' ? 1 : 0);
+  v = (v << 3n) | BigInt(Math.max(0, DT_LIMITS.indexOf(cfg.limitMin || 0)));
   v = (v << 16n) | BigInt(cfg.seed & 0xffff);
   const payload = v.toString(36);
   // Dvouznakový kontrolní součet: bez něj by se náhodný/překlepnutý odkaz
@@ -4704,6 +4716,7 @@ function dtDecode(code) {
       v = v * 36n + d;
     }
     const seed = Number(v & 0xffffn); v >>= 16n;
+    const limitMin = DT_LIMITS[Number(v & 7n)] || 0; v >>= 3n;
     const scoring = Number(v & 1n) === 1 ? 'form' : 'verb'; v >>= 1n;
     const askName = Number(v & 1n) === 1; v >>= 1n;
     const type = DT_TYPES[Number(v & 7n)] || 'mixed'; v >>= 3n;
@@ -4711,7 +4724,7 @@ function dtDecode(code) {
     const all = allSubIdsInOrder();
     const subIds = all.filter((_, i) => ((v >> BigInt(i)) & 1n) === 1n);
     if (!subIds.length || !count) return null;
-    return { subIds, count, type, askName, scoring, seed };
+    return { subIds, count, type, askName, scoring, limitMin, seed };
   } catch (_) { return null; }
 }
 
@@ -4724,18 +4737,18 @@ function dtBuildPool(cfg) {
 }
 
 // --- Kód o odevzdání ---
-function dtMakeCode({ testCode, name, verified, score, total, attempt, wrong }) {
+function dtMakeCode({ testCode, name, verified, score, total, attempt, wrong, timedOut }) {
   const clean = String(name || '').trim().replace(/\s+/g, ' ');
   // Chybné odpovědi: "!3=speaked,7=writed|writen" (číslo otázky = pořadí v testu).
   // Správné se nepřenášejí — učitel je zná z klíče, kód tak zůstane krátký.
   const wrongStr = dtWrongToString(wrong);
-  const base = [testCode, clean.toLowerCase(), verified ? '1' : '0', score, total, attempt, wrongStr].join('|');
+  const base = [testCode, clean.toLowerCase(), verified ? '1' : '0', score, total, attempt, wrongStr, timedOut ? 'T' : ''].join('|');
   const sum = dtHash(base + DT_SALT);
   const who = clean ? `${clean}${verified ? ' ✓' : ''} · ` : '';
   const wrongPart = wrongStr ? `!${wrongStr} · ` : '';
   // Slovo "pokus" jde z TEXTS — kontrolní součet se počítá jen z `base`, takže
   // jazyk kódu jeho platnost neovlivní (učitel ověří i kód z jiné mutace).
-  return `${who}${score}/${total} · ${t('dt_code_attempt', attempt)} · ${wrongPart}${sum}`;
+  return `${who}${score}/${total}${timedOut ? '⏱' : ''} · ${t('dt_code_attempt', attempt)} · ${wrongPart}${sum}`;
 }
 
 // [{i, typed:[]}] → "3=speaked,7=writed|writen". Oddělovače z odpovědí vyházíme,
@@ -4743,7 +4756,10 @@ function dtMakeCode({ testCode, name, verified, score, total, attempt, wrong }) 
 function dtWrongToString(wrong) {
   if (!Array.isArray(wrong) || !wrong.length) return '';
   return wrong.map((w) => {
-    const vals = (w.typed || []).map((x) => String(x).replace(/[,|=!·]/g, '').trim() || '—').join('|');
+    // Prázdné pole = otázka, ke které se žák nedostal (vypršel čas)
+    const vals = (w.typed || []).length
+      ? (w.typed).map((x) => String(x).replace(/[,|=!·]/g, '').trim() || '—').join('|')
+      : '—';
     return `${w.i}=${vals}`;
   }).join(',');
 }
@@ -4773,13 +4789,14 @@ function dtParseCode(line) {
   // Číslo pokusu bereme odkudkoli z té části — formulace se liší podle jazyka
   // („1. pokus“, „1. próba“, …), číslo je jediné, co je společné.
   const attemptM = /(\d+)/.exec(parts[parts.length - 2]);
-  const scoreM = /^(\d+)\s*\/\s*(\d+)$/.exec(parts[parts.length - 3]);
+  const scoreM = /^(\d+)\s*\/\s*(\d+)\s*(⏱)?$/.exec(parts[parts.length - 3]);
   if (!attemptM || !scoreM) return null;
   const nameRaw = parts.slice(0, parts.length - 3).join(' · ');
   const verified = /✓\s*$/.test(nameRaw);
   const name = nameRaw.replace(/✓\s*$/, '').trim();
   return {
     name, verified, sum, wrongStr, wrong: dtWrongFromString(wrongStr),
+    timedOut: !!scoreM[3],
     score: Number(scoreM[1]), total: Number(scoreM[2]), attempt: Number(attemptM[1]),
   };
 }
@@ -4837,6 +4854,11 @@ function dtOpen(code) {
     $('#dt-name-hint').classList.toggle('hidden', !input.dataset.fromAccount);
   }
   // Kolikátý pokus se právě chystá (dokončené + 1)
+  const limitNote = $('#dt-limit-note');
+  if (limitNote) {
+    limitNote.textContent = cfg.limitMin ? t('dt_limit_note', cfg.limitMin) : '';
+    limitNote.classList.toggle('hidden', !cfg.limitMin);
+  }
   const nextAttempt = dtAttemptsDone(code) + 1;
   $('#dt-attempt-note').textContent = nextAttempt > 1 ? t('dt_attempt_note', nextAttempt) : '';
   track('dt_test_opened', { verbs: String(pool.length) });
@@ -4865,6 +4887,53 @@ function dtStartTest() {
   $('.quiz-done').classList.add('hidden');
   $('.quiz-play').classList.remove('hidden');
   quizRender();
+  dtStartTimer(cfg.limitMin);
+}
+
+// --- Časový limit ---
+
+function dtStopTimer() {
+  if (state.quiz.timerId) { clearInterval(state.quiz.timerId); state.quiz.timerId = null; }
+  $('#quiz-timer')?.classList.add('hidden');
+}
+
+function dtStartTimer(minutes) {
+  dtStopTimer();
+  const box = $('#quiz-timer');
+  if (!minutes || !box) return;
+  state.quiz.deadline = Date.now() + minutes * 60000;
+  state.quiz.timedOut = false;
+  box.classList.remove('hidden');
+  const tick = () => {
+    const left = Math.max(0, state.quiz.deadline - Date.now());
+    const s = Math.ceil(left / 1000);
+    $('#quiz-timer-val').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    box.classList.toggle('is-urgent', left <= 60000);
+    if (left <= 0) dtTimeUp();
+  };
+  tick();
+  state.quiz.timerId = setInterval(tick, 1000);
+}
+
+// Vypršel čas → test se odevzdá tak, jak je. Otázky, na které žák nedošel,
+// se musí započítat do maxima, jinak by "3 z 10 stihnutých" vyšlo jako 100 %.
+function dtTimeUp() {
+  dtStopTimer();
+  state.quiz.timedOut = true;
+  const answered = state.quiz.review.length;
+  const remaining = state.quiz.pool.length - answered;
+  if (remaining > 0) {
+    const perQuestion = state.quiz.scoring === 'form'
+      ? (state.quiz.type === 'cs3' ? 3 : state.quiz.type === 'missing' || state.quiz.type === 'mc' ? 1 : 2)
+      : 1;
+    state.quiz.maxScore = (state.quiz.maxScore || 0) + remaining * perQuestion;
+    for (let i = answered; i < state.quiz.pool.length; i++) {
+      const v = state.quiz.pool[i];
+      state.quiz.review.push({ ok: false, q: v.inf, a: '', verb: v, typed: [], skipped: true });
+    }
+  }
+  toast(t('dt_time_up'), 'error', 5000);
+  quizFinish();
 }
 
 // Po dokončení: v zadaném testu připoj kód o odevzdání.
@@ -4889,6 +4958,7 @@ function dtRenderResult() {
     total: state.quiz.maxScore || state.quiz.total,
     attempt: state.quiz.attempt || 1,
     wrong,
+    timedOut: !!state.quiz.timedOut,
   });
   $('#dt-code').textContent = code;
   box.classList.remove('hidden');
@@ -4920,6 +4990,7 @@ function dtCreateLink() {
     type: DT_TYPE_FROM_PAPER[s.type] || 'mixed',
     askName: $('#dt-ask-name').checked,
     scoring: s.scoring,
+    limitMin: s.limitMin,
     seed: Math.floor(Math.random() * 0xffff),
   };
   const code = dtEncode(cfg);
@@ -4958,7 +5029,7 @@ function dtRunVerify() {
       : `<span class="dt-all-ok">${t('dt_verify_no_mistakes')}</span>`;
     return `<tr class="${r.valid ? '' : 'dt-row-bad'}">
       <td>${r.name || '—'}${r.verified ? ` <span class="dt-verified" title="${t('dt_verify_verified')}">✓</span>` : ''}</td>
-      <td>${r.score}/${r.total}</td>
+      <td>${r.score}/${r.total}${r.timedOut ? ` <span class="dt-timeout" title="${t('dt_verify_timeout')}">⏱</span>` : ''}</td>
       <td>${r.attempt}.</td>
       <td class="dt-wrong-cell">${wrongCells}</td>
       <td>${r.valid ? t('dt_verify_ok') : t('dt_verify_bad')}</td>

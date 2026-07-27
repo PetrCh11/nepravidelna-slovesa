@@ -5711,3 +5711,13 @@ body.theme-dark .streak-info-badge {
 }
 .dt-wrong-item b { color: var(--text-muted); font-weight: 600; }
 .dt-all-ok { color: var(--success); font-size: 0.85em; }
+
+/* Odpočet času v testu */
+.quiz-timer {
+  font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+.quiz-timer.is-urgent { color: var(--error); animation: timer-pulse 1s ease-in-out infinite; }
+@keyframes timer-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+.dt-limit-note { font-size: 0.86rem; color: var(--warn); margin: 0 0 10px; font-weight: 600; }
+.dt-timeout { cursor: help; }

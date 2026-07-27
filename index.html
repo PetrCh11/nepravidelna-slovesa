@@ -422,6 +422,7 @@
             <input id="dt-name" type="text" placeholder="Jméno a příjmení" autocomplete="name" />
             <span class="dt-name-hint hidden" id="dt-name-hint">Vyplněno z tvého účtu — můžeš upravit</span>
           </div>
+          <p class="dt-limit-note hidden" id="dt-limit-note"></p>
           <p class="dt-attempt-note" id="dt-attempt-note"></p>
           <button id="dt-start" class="btn btn-primary">Spustit test</button>
         </div>
@@ -430,6 +431,7 @@
       <div class="quiz-play hidden">
         <div class="quiz-progress">
           <div class="quiz-counter"><span id="quiz-current">1</span> / <span id="quiz-total">10</span></div>
+          <div class="quiz-timer hidden" id="quiz-timer">⏱ <span id="quiz-timer-val">--:--</span></div>
           <div class="quiz-score">Skóre: <span id="quiz-score">0</span></div>
         </div>
         <div class="quiz-bar"><div class="quiz-bar-fill" id="quiz-bar-fill"></div></div>
@@ -469,6 +471,17 @@
           <h3 class="teacher-block-title">2️⃣ Jaký test?</h3>
           <label class="teacher-opt-row">Počet sloves v testu:
             <input type="number" id="tt-count" min="3" max="106" value="20" />
+          </label>
+          <label class="teacher-opt-row">Časový limit:
+            <select id="tt-limit">
+              <option value="0" selected>bez limitu</option>
+              <option value="5">5 minut</option>
+              <option value="10">10 minut</option>
+              <option value="15">15 minut</option>
+              <option value="20">20 minut</option>
+              <option value="30">30 minut</option>
+              <option value="45">45 minut</option>
+            </select>
           </label>
           <div class="tt-type-cards" role="radiogroup" aria-label="Typ testu">
             <label class="tt-type-card">
