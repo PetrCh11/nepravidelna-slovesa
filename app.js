@@ -506,7 +506,7 @@ const TEXTS = {
                      student: (e) => 'Něco se kouslo — ' + e },
   // Menu
   menu_lesson:   { pro: '🎓 Lekce', student: '🎓 Lekce' },
-  menu_browse:   { pro: '📚 Přehled skupin', student: '📚 Skupiny' },
+  menu_browse:   { pro: '📚 Seznam sloves', student: '📚 Seznam sloves' },
   menu_fc:       { pro: '🃏 Flashcards', student: '🃏 Karty' },
   menu_quiz:     { pro: '✅ Volný kvíz', student: '✅ Rychlokvíz' },
 

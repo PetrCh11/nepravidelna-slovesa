@@ -269,6 +269,40 @@ main { flex: 1; padding: 28px 0 48px; }
 .intro h2 { margin: 0 0 6px; font-size: 1.6rem; }
 .intro p { margin: 0 0 24px; color: var(--text-muted); }
 
+/* ---------- PDF ke stažení (Seznam sloves) ---------- */
+.pdf-download {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 520px;
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--error);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.pdf-download:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--error);
+}
+.pdf-download-ico { flex: 0 0 auto; line-height: 0; }
+.pdf-download-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.pdf-download-text strong { font-size: 1rem; }
+.pdf-download-text span { font-size: 0.82rem; color: var(--text-muted); }
+.pdf-download-arrow {
+  flex: 0 0 auto;
+  font-size: 1.2rem;
+  color: var(--error);
+  transition: transform 0.15s;
+}
+.pdf-download:hover .pdf-download-arrow { transform: translateY(2px); }
+
 /* ---------- Sections list (Browse view) ---------- */
 .section-group {
   background: var(--bg-elev);

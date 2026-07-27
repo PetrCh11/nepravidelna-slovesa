@@ -152,7 +152,7 @@
           <button id="menu-btn" class="icon-btn" aria-label="Menu" aria-expanded="false">☰</button>
           <div id="menu-dropdown" class="menu-dropdown" role="menu">
             <button class="menu-item" data-view="lesson" role="menuitem" data-tone="menu_lesson">🎓 Lekce</button>
-            <button class="menu-item" data-view="browse" role="menuitem" data-tone="menu_browse">📚 Přehled skupin</button>
+            <button class="menu-item" data-view="browse" role="menuitem" data-tone="menu_browse">📚 Seznam sloves</button>
             <button class="menu-item" data-view="flashcards" role="menuitem" data-tone="menu_fc">🃏 Flashcards</button>
             <button class="menu-item" data-view="quiz" role="menuitem" data-tone="menu_quiz">✅ Volný kvíz</button>
             <button class="menu-item" data-view="auto" role="menuitem">🚗 Car mode <span class="menu-premium-badge">Premium</span></button>
@@ -249,9 +249,24 @@
     <!-- BROWSE VIEW -->
     <section id="view-browse" class="view">
       <div class="intro">
-        <h2>Přehled výslovnostních skupin</h2>
+        <h2>Seznam sloves</h2>
         <p>Každá skupina má společný vzorec. Klikni na slovo pro výslovnost 🔊.</p>
       </div>
+      <a class="pdf-download" href="/Nepravidelna-slovesa-prehled.pdf" download>
+        <span class="pdf-download-ico" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="38" height="38">
+            <rect x="5" y="2" width="22" height="28" rx="3" fill="#ffffff" stroke="#e0dcd3" stroke-width="1.4"/>
+            <path d="M20 2v6h7" fill="none" stroke="#e0dcd3" stroke-width="1.4"/>
+            <rect x="7" y="17" width="18" height="9" rx="2" fill="#e2483d"/>
+            <text x="16" y="23.6" font-size="6.4" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif">PDF</text>
+          </svg>
+        </span>
+        <span class="pdf-download-text">
+          <strong>Stáhnout přehled v PDF</strong>
+          <span>Všech 106 sloves ve skupinách — na tisk i offline</span>
+        </span>
+        <span class="pdf-download-arrow" aria-hidden="true">⬇</span>
+      </a>
       <div id="sections-list"></div>
     </section>
 
