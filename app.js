@@ -224,7 +224,8 @@ const state = {
   style: localStorage.getItem('style') || 'pro', // 'pro' | 'student' | 'hantec'
   currentView: 'lesson',
   lesson: null, // lesson state when active
-  quiz: { pool: [], idx: 0, score: 0, total: 0, type: 'mixed', selectedSections: new Set(), review: [] },
+  // test: null = volný kvíz; jinak zadání z odkazu #/test/<kód> (viz dtDecode)
+  quiz: { pool: [], idx: 0, score: 0, total: 0, type: 'mixed', selectedSections: new Set(), review: [], test: null, rng: null },
   progress: JSON.parse(localStorage.getItem('progress') || '{}'), // { inf: {status, lastSeen, attempts} }
   premium: isPremiumActive(),
   // Streak-based group unlocks. Picked at milestones 3/7/14/30; permanent.
@@ -627,6 +628,7 @@ const TEXTS = {
   quiz_all_chip: 'Vše',
   quiz_pick_correct: (label) => `Vyber správný tvar (${label})`,
   quiz_fill_hint: (cs) => `Doplň past simple a past participle · <em>${cs}</em>`,
+  quiz_cs3_hint: 'Doplň všechny tři tvary anglicky',
   quiz_correct_is: 'Správně:',
   theme_light: 'Světlý režim',
   theme_dark: 'Tmavý režim',
@@ -703,6 +705,48 @@ const TEXTS = {
   teacher_domain: 'ucseslovesa.cz',
   teacher_footer: 'ucseslovesa.cz — appka, se kterou se tvoje třída naučí nepravidelná slovesa',
   teacher_key_correct: 'Správné odpovědi (u sloves s více tvary platí kterýkoli uvedený):',
+
+  // --- Digitální test (sdílený odkaz + kód o odevzdání) ---
+  dt_make_link: '🔗 Vytvořit odkaz',
+  dt_link_title: 'Odkaz na digitální test',
+  dt_link_hint: 'Pošli žákům (Classroom, Teams, mail). Každý dostane stejný test a hned uvidí výsledek.',
+  dt_copy: 'Kopírovat odkaz',
+  dt_copied: 'Odkaz zkopírován 📋',
+  dt_copy_fail: 'Kopírování se nepovedlo — označ odkaz a zkopíruj ručně.',
+  dt_ask_name: 'Žák vyplní jméno (objeví se v kódu o odevzdání)',
+  dt_premium_note: 'Zdarma jde odkaz vytvořit ze skupin dostupných v bezplatné verzi. Pro celý rozsah je potřeba Premium.',
+  dt_premium_blocked: 'Vybrané skupiny jsou nad rámec bezplatné verze — odemkni Premium, nebo vyber jen skupiny zdarma.',
+
+  dt_intro_title: 'Zadaný test',
+  dt_intro_sub: (n) => `${n} ${n === 1 ? 'otázka' : n >= 2 && n <= 4 ? 'otázky' : 'otázek'} · po dokončení dostaneš kód pro učitele`,
+  dt_name_label: 'Tvoje jméno',
+  dt_name_ph: 'Jméno a příjmení',
+  dt_name_from_account: 'Vyplněno z tvého účtu — můžeš upravit',
+  dt_name_missing: 'Vyplň prosím jméno, ať tě učitel pozná.',
+  dt_start: 'Spustit test',
+  dt_attempt_note: (n) => (n > 1 ? `Tohle je tvůj ${n}. pokus — v kódu to učitel uvidí.` : ''),
+
+  dt_result_title: 'Hotovo! 🎉',
+  dt_code_label: 'Kód o odevzdání — pošli ho učiteli:',
+  dt_copy_code: 'Kopírovat kód',
+  dt_code_copied: 'Kód zkopírován 📋',
+  dt_retry: 'Zkusit znovu',
+  dt_bad_link: 'Odkaz na test je poškozený nebo už neplatí. Popros učitele o nový.',
+
+  dt_verify_title: 'Ověřit kódy od žáků',
+  dt_verify_hint: 'Vlož kódy (klidně celý sloupec, jeden na řádek) a zkontroluj je naráz.',
+  dt_verify_ph: 'Jan Novák ✓ · 8/10 · 1. pokus · K3F9',
+  dt_verify_btn: 'Zkontrolovat',
+  dt_verify_col_name: 'Jméno',
+  dt_verify_col_score: 'Skóre',
+  dt_verify_col_attempt: 'Pokus',
+  dt_verify_col_state: 'Stav',
+  dt_verify_ok: '✅ platný',
+  dt_verify_bad: '❌ nesedí',
+  dt_verify_verified: 'jméno z účtu Google',
+  dt_verify_empty: 'Vlož aspoň jeden kód.',
+  dt_verify_no_test: 'Nejdřív vytvoř odkaz na test — kódy se ověřují proti němu.',
+  dt_verify_summary: (ok, total) => `Platných ${ok} z ${total}`,
 };
 
 // Česká koncovka přídavného jména pro počítaná "slovesa" (stř. rod mn. č.):
@@ -1180,6 +1224,14 @@ function setView(view) {
   // Switching top-level view ends any active practice session — otherwise the
   // mobile "hidden header" chrome could linger on a non-lesson view.
   document.body.classList.remove('practicing');
+  // Odchod ze zadaného testu → kvíz se vrátí do běžného stavu (jinak by zůstala
+  // schovaná nastavovací obrazovka a viset testový režim).
+  if (view !== 'quiz' && state.quiz.test) {
+    state.quiz.test = null;
+    $('#dt-intro')?.classList.add('hidden');
+    $('#dt-result')?.classList.add('hidden');
+    $('.quiz-setup')?.classList.remove('hidden');
+  }
   markActiveMenuItem();
   $('#menu-dropdown').classList.remove('open');
   $('#menu-btn').setAttribute('aria-expanded', 'false');
@@ -1373,6 +1425,13 @@ function subProgress(sub) {
 // URL convention: https://ucseslovesa.cz/#/skupina/1-1-0  (dashes ↔ dots)
 // Also accepts ?skupina=1.1.0 in the query string for share/paste-friendly links.
 function handleDeepLink() {
+  // Zadaný test od učitele: #/test/<kód> — má přednost před ostatními odkazy.
+  const testMatch = (window.location.hash || '').match(/^#\/test\/([0-9a-z]+)/i);
+  if (testMatch) {
+    history.replaceState(null, '', window.location.pathname);
+    dtOpen(testMatch[1]);
+    return;
+  }
   let target = null;
   const hashMatch = (window.location.hash || '').match(/^#\/skupina\/([\w.\-]+)/);
   if (hashMatch) target = hashMatch[1];
@@ -3711,6 +3770,7 @@ function renderSectionChips(container, selectedSet) {
 }
 
 function quizStart() {
+  state.quiz.test = null; // volný kvíz — zahodit případný zadaný test
   const all = flattenVerbs(state.data, state.quiz.selectedSections);
   if (all.length === 0) return;
   const countSel = parseInt($('#quiz-count').value, 10);
@@ -3731,19 +3791,24 @@ function quizStart() {
 function quizRender() {
   const verb = state.quiz.pool[state.quiz.idx];
   const allVerbs = flattenVerbs(state.data);
+  // Zadaný test: náhodnost každé otázky se odvozuje ze seedu odkazu a jejího
+  // pořadí, takže celá třída dostane identické otázky i možnosti.
+  state.quiz.rng = state.quiz.test
+    ? mulberry32(state.quiz.test.seed + state.quiz.idx * 7919)
+    : null;
   $('#quiz-current').textContent = state.quiz.idx + 1;
   $('#quiz-score').textContent = state.quiz.score;
   $('#quiz-bar-fill').style.width = `${(state.quiz.idx / state.quiz.total) * 100}%`;
   let mode = state.quiz.type;
-  if (mode === 'mixed') mode = Math.random() < 0.5 ? 'mc' : 'fill';
+  if (mode === 'mixed') mode = qRand() < 0.5 ? 'mc' : 'fill';
   const card = $('#quiz-card');
   card.innerHTML = '';
   if (mode === 'mc') {
-    const ask = Math.random() < 0.5 ? 'past' : 'pp';
+    const ask = qRand() < 0.5 ? 'past' : 'pp';
     const askLabel = ask === 'past' ? 'past simple' : 'past participle';
     const correct = pickForm(verb, ask, state.dialect);
-    const distractors = shuffle(allVerbs.filter((v) => v.inf !== verb.inf).map((v) => pickForm(v, ask, state.dialect))).slice(0, 3);
-    const options = shuffle([correct, ...distractors]);
+    const distractors = shuffleWith(allVerbs.filter((v) => v.inf !== verb.inf).map((v) => pickForm(v, ask, state.dialect)), qRand).slice(0, 3);
+    const options = shuffleWith([correct, ...distractors], qRand);
     card.innerHTML = `
       <div class="q-emoji">${verb.emoji || '❓'}</div>
       <div class="q-prompt">${verb.inf} <button class="speak-btn" data-speak="${verb.inf}">🔊</button></div>
@@ -3771,13 +3836,31 @@ function quizRender() {
   } else {
     const past = pickForm(verb, 'past', state.dialect);
     const pp = pickForm(verb, 'pp', state.dialect);
+    // Které tvary se doplňují a co je v zadání:
+    //   fill    — dané sloveso (infinitiv), doplň past + pp
+    //   cs3     — dané české sloveso, doplň všechny tři tvary
+    //   missing — dané dva tvary, doplň ten chybějící
+    let blanks;
+    if (mode === 'cs3') blanks = ['inf', 'past', 'pp'];
+    else if (mode === 'missing') blanks = [['inf', 'past', 'pp'][Math.floor(qRand() * 3)]];
+    else blanks = ['past', 'pp'];
+    const labels = { inf: 'infinitiv', past: 'past simple', pp: 'past participle' };
+    const shownForms = { inf: verb.inf, past, pp };
+    const promptHTML = mode === 'cs3'
+      ? `<div class="q-prompt q-prompt-cs">${verb.cs}</div><div class="q-hint">${t('quiz_cs3_hint')}</div>`
+      : mode === 'missing'
+        ? `<div class="q-prompt q-prompt-missing">${['inf', 'past', 'pp']
+            .map((k) => (blanks.includes(k)
+              ? '<span class="q-blank">?</span>'
+              : `<span>${shownForms[k]}</span>`)).join('<span class="q-sep">–</span>')}</div>
+           <div class="q-hint">${t('quiz_fill_hint', verb.cs)}</div>`
+        : `<div class="q-prompt">${verb.inf} <button class="speak-btn" data-speak="${verb.inf}">🔊</button></div>
+           <div class="q-hint">${t('quiz_fill_hint', verb.cs)}</div>`;
     card.innerHTML = `
       <div class="q-emoji">${verb.emoji || '❓'}</div>
-      <div class="q-prompt">${verb.inf} <button class="speak-btn" data-speak="${verb.inf}">🔊</button></div>
-      <div class="q-hint">${t('quiz_fill_hint', verb.cs)}</div>
+      ${promptHTML}
       <div class="quiz-fill-inputs">
-        <input data-form="past" placeholder="past simple" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" enterkeyhint="next" inputmode="text" />
-        <input data-form="pp" placeholder="past participle" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" enterkeyhint="done" inputmode="text" />
+        ${blanks.map((k, i) => `<input data-form="${k}" placeholder="${labels[k]}" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" enterkeyhint="${i === blanks.length - 1 ? 'done' : 'next'}" inputmode="text" />`).join('')}
       </div>
       <div class="quiz-feedback"></div>
       <div class="quiz-next-row"><button class="btn btn-primary" id="quiz-check">${t('check_btn')}</button><button class="btn btn-primary hidden" id="quiz-next">${t('next_btn')}</button></div>
@@ -3792,7 +3875,7 @@ function quizRender() {
         inp.disabled = true;
         if (!good) ok = false;
       });
-      handleQuizAnswer(ok, verb, verb.inf, `${past} – ${pp}`);
+      handleQuizAnswer(ok, verb, mode === 'cs3' ? verb.cs : verb.inf, `${verb.inf} – ${past} – ${pp}`);
       card.querySelector('#quiz-check').classList.add('hidden');
     };
     card.querySelector('#quiz-check').addEventListener('click', submitFill);
@@ -3856,6 +3939,7 @@ function quizFinish() {
   $('.quiz-done').classList.remove('hidden');
   const pct = Math.round((state.quiz.score / state.quiz.total) * 100);
   $('#quiz-final').textContent = `${state.quiz.score} / ${state.quiz.total} (${pct} %)`;
+  dtRenderResult();
   const review = $('#quiz-review');
   review.innerHTML = '';
   state.quiz.review.forEach((r) => {
@@ -4311,6 +4395,17 @@ function renderTeacherSetup() {
     document.body.classList.remove('printing');
     $('#print-area').innerHTML = '';
   });
+
+  // Digitální test
+  $('#dt-make-link')?.addEventListener('click', dtCreateLink);
+  $('#dt-copy-link')?.addEventListener('click', dtCopyLink);
+  $('#dt-verify-btn')?.addEventListener('click', dtRunVerify);
+  $('#dt-link')?.addEventListener('focus', (e) => e.target.select());
+  // Ověřovací pole si pamatuje poslední vytvořený test i po reloadu.
+  try {
+    const last = localStorage.getItem('dtLastTest');
+    if (last) { teacher.testCode = last; $('#dt-verify-test').value = last; }
+  } catch (_) {}
 }
 
 function teacherSettings() {
@@ -4506,6 +4601,318 @@ function teacherPrint(kind) {
   $('#print-area').innerHTML = kind === 'key' ? teacher.pages.key : teacher.pages.tests.join('');
   document.body.classList.add('printing');
   window.print();
+}
+
+// ============================================================
+// DIGITÁLNÍ TEST — sdílený odkaz (#/test/<kód>) + kód o odevzdání
+//
+// Celé zadání je zakódované v odkazu, nic se neukládá na server: každý, kdo
+// odkaz otevře, dostane díky seedovanému generátoru přesně stejný test.
+// Po dokončení dostane žák kód o odevzdání (jméno · skóre · pokus · kontrolní
+// součet), který pošle učiteli; ten ho ověří v Teacher mode.
+// ============================================================
+
+// Deterministický RNG (mulberry32) — stejný seed = stejné otázky pro celou třídu.
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffleWith(arr, rnd) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Náhodnost kvízu: v zadaném testu jede přes seed, jinak Math.random.
+function qRand() {
+  return state.quiz.rng ? state.quiz.rng() : Math.random();
+}
+
+function allSubIdsInOrder() {
+  const out = [];
+  state.data.sections.forEach((sec) => sec.subsections.forEach((sub) => out.push(sub.id)));
+  return out;
+}
+
+// Typy testu v odkazu. Pořadí je součástí formátu kódu — nové typy se přidávají
+// jen na konec. Mapování z papírového Teacher mode: inf2→fill, cs3→cs3,
+// missing→missing, choice→mc.
+const DT_TYPES = ['mixed', 'mc', 'fill', 'cs3', 'missing'];
+const DT_TYPE_FROM_PAPER = { inf2: 'fill', cs3: 'cs3', missing: 'missing', choice: 'mc' };
+// Kontrolní součet kódů je jen proti přepsání skóre "od stolu" — klíč je
+// nutně v klientu, takže odhodlaného žáka nezastaví (viz docs).
+const DT_SALT = 'ucseslovesa-dt-2026';
+
+function dtHash(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(36).toUpperCase().padStart(4, '0').slice(-4);
+}
+
+// Zadání → krátký řetězec do odkazu. Bitové pole: skupiny | počet | typ | jméno | seed
+function dtEncode(cfg) {
+  const all = allSubIdsInOrder();
+  let v = 0n;
+  for (let i = all.length - 1; i >= 0; i--) {
+    v = (v << 1n) | (cfg.subIds.includes(all[i]) ? 1n : 0n);
+  }
+  v = (v << 7n) | BigInt(Math.max(1, Math.min(127, cfg.count)));
+  v = (v << 3n) | BigInt(Math.max(0, DT_TYPES.indexOf(cfg.type)));
+  v = (v << 1n) | BigInt(cfg.askName ? 1 : 0);
+  v = (v << 16n) | BigInt(cfg.seed & 0xffff);
+  const payload = v.toString(36);
+  // Dvouznakový kontrolní součet: bez něj by se náhodný/překlepnutý odkaz
+  // dekódoval na "nějaké" zadání a žák by dostal test, který nikdo nezadal.
+  return payload + dtCheck(payload);
+}
+
+function dtCheck(payload) {
+  return dtHash(payload + DT_SALT).slice(0, 2).toLowerCase();
+}
+
+function dtDecode(code) {
+  try {
+    if (!/^[0-9a-z]{4,40}$/i.test(code)) return null;
+    const payload = code.slice(0, -2).toLowerCase();
+    if (dtCheck(payload) !== code.slice(-2).toLowerCase()) return null;
+    let v = 0n;
+    for (const ch of payload) {
+      const d = BigInt(parseInt(ch, 36));
+      if (Number.isNaN(Number(d))) return null;
+      v = v * 36n + d;
+    }
+    const seed = Number(v & 0xffffn); v >>= 16n;
+    const askName = Number(v & 1n) === 1; v >>= 1n;
+    const type = DT_TYPES[Number(v & 7n)] || 'mixed'; v >>= 3n;
+    const count = Number(v & 127n); v >>= 7n;
+    const all = allSubIdsInOrder();
+    const subIds = all.filter((_, i) => ((v >> BigInt(i)) & 1n) === 1n);
+    if (!subIds.length || !count) return null;
+    return { subIds, count, type, askName, seed };
+  } catch (_) { return null; }
+}
+
+// Slovesa testu — vždy ve stejném pořadí pro daný odkaz.
+function dtBuildPool(cfg) {
+  const sel = new Set(cfg.subIds);
+  const all = flattenVerbs(state.data, sel);
+  const rnd = mulberry32(cfg.seed);
+  return shuffleWith(all, rnd).slice(0, Math.min(cfg.count, all.length));
+}
+
+// --- Kód o odevzdání ---
+function dtMakeCode({ testCode, name, verified, score, total, attempt }) {
+  const clean = String(name || '').trim().replace(/\s+/g, ' ');
+  const base = [testCode, clean.toLowerCase(), verified ? '1' : '0', score, total, attempt].join('|');
+  const sum = dtHash(base + DT_SALT);
+  const who = clean ? `${clean}${verified ? ' ✓' : ''} · ` : '';
+  return `${who}${score}/${total} · ${attempt}. pokus · ${sum}`;
+}
+
+// Rozebere řádek zpět. Jméno může obsahovat cokoli — bereme ho jako zbytek
+// před posledními třemi částmi.
+function dtParseCode(line) {
+  const parts = String(line).split('·').map((s) => s.trim()).filter(Boolean);
+  if (parts.length < 3) return null;
+  const sum = parts[parts.length - 1];
+  const attemptM = /^(\d+)\./.exec(parts[parts.length - 2]);
+  const scoreM = /^(\d+)\s*\/\s*(\d+)$/.exec(parts[parts.length - 3]);
+  if (!attemptM || !scoreM) return null;
+  const nameRaw = parts.slice(0, parts.length - 3).join(' · ');
+  const verified = /✓\s*$/.test(nameRaw);
+  const name = nameRaw.replace(/✓\s*$/, '').trim();
+  return {
+    name, verified, sum,
+    score: Number(scoreM[1]), total: Number(scoreM[2]), attempt: Number(attemptM[1]),
+  };
+}
+
+function dtVerifyCode(line, testCode) {
+  const p = dtParseCode(line);
+  if (!p) return null;
+  const expected = dtMakeCode({ ...p, testCode });
+  return { ...p, valid: dtParseCode(expected)?.sum === p.sum };
+}
+
+// --- Žákovská strana ---
+
+// Kolikátý pokus to na tomhle zařízení je. Smazat úložiště jde, ale běžný
+// žák to neudělá — učitel tak aspoň vidí opakované pokusy.
+function dtAttemptsDone(testCode) {
+  try {
+    const map = JSON.parse(localStorage.getItem('dtAttempts') || '{}');
+    return Number(map[testCode]) || 0;
+  } catch (_) { return 0; }
+}
+
+function dtBumpAttempt(testCode) {
+  const n = dtAttemptsDone(testCode) + 1;
+  try {
+    const map = JSON.parse(localStorage.getItem('dtAttempts') || '{}');
+    map[testCode] = n;
+    localStorage.setItem('dtAttempts', JSON.stringify(map));
+  } catch (_) {}
+  return n;
+}
+
+// Otevření odkazu #/test/<kód>
+function dtOpen(code) {
+  const cfg = dtDecode(code);
+  if (!cfg) { toast(t('dt_bad_link'), 'error', 6000); setView('lesson'); return; }
+  state.quiz.test = { ...cfg, code };
+  setView('quiz');
+  $('.quiz-setup').classList.add('hidden');
+  $('.quiz-play').classList.add('hidden');
+  $('.quiz-done').classList.add('hidden');
+  const intro = $('#dt-intro');
+  intro.classList.remove('hidden');
+  const pool = dtBuildPool(cfg);
+  $('#dt-intro-sub').textContent = t('dt_intro_sub', pool.length);
+  const nameRow = $('#dt-name-row');
+  nameRow.classList.toggle('hidden', !cfg.askName);
+  if (cfg.askName) {
+    const user = cloud.getCurrentUser();
+    const input = $('#dt-name');
+    if (user && user.displayName && !input.value) {
+      input.value = user.displayName;
+      input.dataset.fromAccount = user.displayName;
+    }
+    $('#dt-name-hint').classList.toggle('hidden', !input.dataset.fromAccount);
+  }
+  // Kolikátý pokus se právě chystá (dokončené + 1)
+  const nextAttempt = dtAttemptsDone(code) + 1;
+  $('#dt-attempt-note').textContent = nextAttempt > 1 ? t('dt_attempt_note', nextAttempt) : '';
+  track('dt_test_opened', { verbs: String(pool.length) });
+}
+
+function dtStartTest() {
+  const cfg = state.quiz.test;
+  if (!cfg) return;
+  if (cfg.askName && !$('#dt-name').value.trim()) {
+    toast(t('dt_name_missing'), 'error');
+    $('#dt-name').focus();
+    return;
+  }
+  const pool = dtBuildPool(cfg);
+  state.quiz.pool = pool;
+  state.quiz.idx = 0;
+  state.quiz.score = 0;
+  state.quiz.total = pool.length;
+  state.quiz.type = cfg.type;
+  state.quiz.review = [];
+  state.quiz.attempt = dtBumpAttempt(cfg.code);
+  $('#quiz-total').textContent = pool.length;
+  $('#dt-intro').classList.add('hidden');
+  $('.quiz-done').classList.add('hidden');
+  $('.quiz-play').classList.remove('hidden');
+  quizRender();
+}
+
+// Po dokončení: v zadaném testu připoj kód o odevzdání.
+function dtRenderResult() {
+  const box = $('#dt-result');
+  if (!box) return;
+  const cfg = state.quiz.test;
+  if (!cfg) { box.classList.add('hidden'); return; }
+  const input = $('#dt-name');
+  const typed = cfg.askName ? input.value.trim() : '';
+  const verified = !!(cfg.askName && input.dataset.fromAccount
+    && input.dataset.fromAccount.trim() === typed);
+  const code = dtMakeCode({
+    testCode: cfg.code,
+    name: typed,
+    verified,
+    score: state.quiz.score,
+    total: state.quiz.total,
+    attempt: state.quiz.attempt || 1,
+  });
+  $('#dt-code').textContent = code;
+  box.classList.remove('hidden');
+  $('#dt-copy-code').onclick = () => {
+    navigator.clipboard.writeText(code)
+      .then(() => toast(t('dt_code_copied'), 'success'))
+      .catch(() => toast(t('dt_copy_fail'), 'error'));
+  };
+  track('dt_test_finished', { score: `${state.quiz.score}/${state.quiz.total}` });
+}
+
+// --- Učitelská strana ---
+
+function dtCreateLink() {
+  const subs = teacherSelectedSubs();
+  if (!subs.length) { toast(t('teacher_none_selected'), 'error'); return; }
+  // Premium brána: odkaz mimo skupiny zdarma smí vytvořit jen předplatitel.
+  // Vytvořený odkaz pak funguje každému žákovi v plném rozsahu.
+  if (!state.premium && subs.some((s) => !isFreeSub(s.id))) {
+    toast(t('dt_premium_blocked'), 'error', 6000);
+    showPaywall();
+    return;
+  }
+  const s = teacherSettings();
+  const cfg = {
+    subIds: subs.map((x) => x.id),
+    count: Math.min(s.count, subs.reduce((n, x) => n + x.verbs.length, 0)),
+    // Digitální test respektuje typ zvolený výše pro papír.
+    type: DT_TYPE_FROM_PAPER[s.type] || 'mixed',
+    askName: $('#dt-ask-name').checked,
+    seed: Math.floor(Math.random() * 0xffff),
+  };
+  const code = dtEncode(cfg);
+  teacher.testCode = code;
+  try { localStorage.setItem('dtLastTest', code); } catch (_) {}
+  const url = `${location.origin}${location.pathname}#/test/${code}`;
+  $('#dt-link-box').classList.remove('hidden');
+  $('#dt-link').value = url;
+  $('#dt-verify-test').value = code;
+  track('dt_link_created', { verbs: String(cfg.count) });
+}
+
+function dtCopyLink() {
+  const url = $('#dt-link').value;
+  navigator.clipboard.writeText(url)
+    .then(() => toast(t('dt_copied'), 'success'))
+    .catch(() => toast(t('dt_copy_fail'), 'error'));
+}
+
+function dtRunVerify() {
+  const testCode = $('#dt-verify-test').value.trim();
+  const raw = $('#dt-verify-input').value.trim();
+  const out = $('#dt-verify-out');
+  if (!testCode) { toast(t('dt_verify_no_test'), 'error'); return; }
+  if (!raw) { toast(t('dt_verify_empty'), 'error'); return; }
+  const rows = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+  let ok = 0;
+  const body = rows.map((line) => {
+    const r = dtVerifyCode(line, testCode);
+    if (!r) {
+      return `<tr class="dt-row-bad"><td colspan="3">${line}</td><td>${t('dt_verify_bad')}</td></tr>`;
+    }
+    if (r.valid) ok++;
+    return `<tr class="${r.valid ? '' : 'dt-row-bad'}">
+      <td>${r.name || '—'}${r.verified ? ` <span class="dt-verified" title="${t('dt_verify_verified')}">✓</span>` : ''}</td>
+      <td>${r.score}/${r.total}</td>
+      <td>${r.attempt}.</td>
+      <td>${r.valid ? t('dt_verify_ok') : t('dt_verify_bad')}</td>
+    </tr>`;
+  }).join('');
+  out.innerHTML = `
+    <p class="dt-verify-summary">${t('dt_verify_summary', ok, rows.length)}</p>
+    <table class="dt-verify-table">
+      <thead><tr>
+        <th>${t('dt_verify_col_name')}</th><th>${t('dt_verify_col_score')}</th>
+        <th>${t('dt_verify_col_attempt')}</th><th>${t('dt_verify_col_state')}</th>
+      </tr></thead>
+      <tbody>${body}</tbody>
+    </table>`;
+  out.classList.remove('hidden');
 }
 
 // ============================================================
@@ -4757,8 +5164,13 @@ async function init() {
   $('#quiz-start').addEventListener('click', quizStart);
   $('#quiz-restart').addEventListener('click', () => {
     $('.quiz-done').classList.add('hidden');
-    $('.quiz-setup').classList.remove('hidden');
+    // Zadaný test se opakuje znovu od úvodní obrazovky (počítá se další pokus),
+    // volný kvíz se vrací do nastavení.
+    if (state.quiz.test) dtOpen(state.quiz.test.code);
+    else $('.quiz-setup').classList.remove('hidden');
   });
+  $('#dt-start')?.addEventListener('click', dtStartTest);
+  $('#dt-name')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') dtStartTest(); });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && state.currentView === 'quiz') {
       // V quiz-fill režimu má Enter řešit per-input handler (posun na další

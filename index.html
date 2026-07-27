@@ -410,6 +410,23 @@
         </div>
         <button id="quiz-start" class="btn btn-primary">Spustit kvíz</button>
       </div>
+
+      <!-- Zadaný test z odkazu #/test/<kód> — úvodní obrazovka pro žáka -->
+      <div class="dt-intro hidden" id="dt-intro">
+        <div class="dt-intro-card">
+          <div class="dt-intro-icon" aria-hidden="true">📝</div>
+          <h2>Zadaný test</h2>
+          <p class="dt-intro-sub" id="dt-intro-sub"></p>
+          <div class="dt-name-row" id="dt-name-row">
+            <label for="dt-name">Tvoje jméno</label>
+            <input id="dt-name" type="text" placeholder="Jméno a příjmení" autocomplete="name" />
+            <span class="dt-name-hint hidden" id="dt-name-hint">Vyplněno z tvého účtu — můžeš upravit</span>
+          </div>
+          <p class="dt-attempt-note" id="dt-attempt-note"></p>
+          <button id="dt-start" class="btn btn-primary">Spustit test</button>
+        </div>
+      </div>
+
       <div class="quiz-play hidden">
         <div class="quiz-progress">
           <div class="quiz-counter"><span id="quiz-current">1</span> / <span id="quiz-total">10</span></div>
@@ -421,6 +438,14 @@
       <div class="quiz-done hidden">
         <h3>Kvíz hotov! 🏆</h3>
         <p>Tvé skóre: <strong id="quiz-final">—</strong></p>
+        <!-- Kód o odevzdání — jen u zadaného testu z odkazu -->
+        <div class="dt-result hidden" id="dt-result">
+          <p class="dt-code-label">Kód o odevzdání — pošli ho učiteli:</p>
+          <div class="dt-code-row">
+            <code id="dt-code"></code>
+            <button id="dt-copy-code" class="btn btn-primary btn-sm" type="button">Kopírovat kód</button>
+          </div>
+        </div>
         <div id="quiz-review" class="quiz-review"></div>
         <button id="quiz-restart" class="btn btn-primary">Zkusit znovu</button>
       </div>
@@ -469,7 +494,33 @@
 
         <div class="teacher-actions">
           <button id="teacher-generate" class="btn btn-primary">📝 Vygenerovat test</button>
+          <button id="dt-make-link" class="btn btn-secondary">🔗 Vytvořit odkaz</button>
           <span id="teacher-count-info" class="teacher-count-info"></span>
+        </div>
+
+        <!-- Digitální test: sdílený odkaz -->
+        <div class="teacher-block dt-block">
+          <h3 class="teacher-block-title">💻 Digitální test (odkaz pro žáky)</h3>
+          <label class="teacher-check"><input type="checkbox" id="dt-ask-name" checked /> Žák vyplní jméno (objeví se v kódu o odevzdání)</label>
+          <p class="dt-note">Žáci odkaz otevřou na mobilu, test vyplní a hned uvidí výsledek. Nic se nikam neukládá — na konci dostanou kód, který ti pošlou.</p>
+
+          <div class="dt-link-box hidden" id="dt-link-box">
+            <label for="dt-link">Odkaz na digitální test</label>
+            <div class="dt-link-row">
+              <input id="dt-link" type="text" readonly />
+              <button id="dt-copy-link" class="btn btn-primary btn-sm" type="button">Kopírovat odkaz</button>
+            </div>
+            <p class="dt-note">Pošli žákům (Classroom, Teams, mail). Každý dostane stejný test a hned uvidí výsledek.</p>
+          </div>
+
+          <div class="dt-verify">
+            <h4>Ověřit kódy od žáků</h4>
+            <p class="dt-note">Vlož kódy (klidně celý sloupec, jeden na řádek) a zkontroluj je naráz.</p>
+            <input id="dt-verify-test" type="text" class="dt-verify-test" placeholder="kód testu (vyplní se sám po vytvoření odkazu)" />
+            <textarea id="dt-verify-input" rows="4" placeholder="Jan Novák ✓ · 8/10 · 1. pokus · K3F9"></textarea>
+            <button id="dt-verify-btn" class="btn btn-primary btn-sm" type="button">Zkontrolovat</button>
+            <div id="dt-verify-out" class="dt-verify-out hidden"></div>
+          </div>
         </div>
 
         <div id="teacher-result" class="teacher-result" hidden>

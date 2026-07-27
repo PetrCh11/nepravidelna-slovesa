@@ -5565,3 +5565,87 @@ body.theme-dark .streak-info-badge {
   #print-area .tt-row, #print-area .tt-card-head, #print-area .tt-choice-row { break-inside: avoid; }
   @page { margin: 13mm 12mm; }
 }
+
+/* ============================================================
+   DIGITÁLNÍ TEST — odkaz pro žáky + kód o odevzdání
+   ============================================================ */
+
+/* --- Učitel: blok v Teacher mode --- */
+.dt-block .dt-note { color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 0; }
+.dt-link-box { margin-top: 14px; }
+.dt-link-box > label { display: block; font-weight: 600; margin-bottom: 6px; }
+.dt-link-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.dt-link-row input {
+  flex: 1; min-width: 220px; padding: 9px 11px;
+  border: 1.5px solid var(--accent); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit; font-size: 0.9rem;
+}
+.dt-verify { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+.dt-verify h4 { margin: 0 0 4px; font-size: 1rem; color: var(--accent); }
+.dt-verify-test, .dt-verify textarea {
+  width: 100%; margin-top: 10px; padding: 9px 11px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-elev); color: var(--text); font: inherit; font-size: 0.9rem;
+  box-sizing: border-box;
+}
+.dt-verify textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.dt-verify .btn { margin-top: 10px; }
+.dt-verify-out { margin-top: 14px; overflow-x: auto; }
+.dt-verify-summary { font-weight: 700; margin: 0 0 8px; }
+.dt-verify-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.dt-verify-table th, .dt-verify-table td {
+  text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border);
+}
+.dt-verify-table th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.dt-verify-table .dt-row-bad td { color: var(--error); }
+.dt-verified { color: var(--success); }
+
+/* --- Žák: úvodní obrazovka testu --- */
+.dt-intro { display: flex; justify-content: center; padding: 10px 0; }
+.dt-intro-card {
+  width: 100%; max-width: 420px; text-align: center;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 26px 22px; box-shadow: var(--shadow-lg);
+}
+.dt-intro-icon { font-size: 2.4rem; line-height: 1; margin-bottom: 6px; }
+.dt-intro-card h2 { margin: 0 0 4px; font-size: 1.4rem; }
+.dt-intro-sub { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 18px; }
+.dt-name-row { text-align: left; margin-bottom: 14px; }
+.dt-name-row label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; }
+.dt-name-row input {
+  width: 100%; padding: 11px 12px; box-sizing: border-box;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-elev); color: var(--text); font: inherit;
+}
+.dt-name-row input:focus { border-color: var(--accent); outline: none; }
+.dt-name-hint { display: block; font-size: 0.76rem; color: var(--text-muted); margin-top: 5px; }
+.dt-attempt-note { font-size: 0.82rem; color: var(--warn); margin: 0 0 12px; }
+.dt-intro-card .btn { width: 100%; }
+
+/* --- Žák: kód o odevzdání --- */
+.dt-result {
+  margin: 16px 0 20px; padding: 16px;
+  background: var(--accent-soft); border: 1px solid var(--accent);
+  border-radius: var(--radius);
+}
+.dt-code-label { margin: 0 0 10px; font-weight: 600; font-size: 0.92rem; }
+.dt-code-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.dt-code-row code {
+  flex: 1; min-width: 200px; padding: 10px 12px;
+  background: var(--bg-elev); border: 1px dashed var(--accent);
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92rem;
+  word-break: break-word;
+}
+
+/* Zadání otázky v digitálním testu: české sloveso (cs3) a chybějící tvar */
+.q-prompt-cs {
+  font-style: italic;
+  color: var(--primary);
+}
+.q-prompt-missing { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.q-prompt-missing .q-sep { color: var(--text-muted); font-weight: 400; }
+.q-prompt-missing .q-blank {
+  display: inline-block; min-width: 2.2em;
+  border-bottom: 3px dotted var(--primary); color: var(--primary);
+}
