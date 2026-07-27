@@ -531,7 +531,14 @@
 
           <div class="tt-pane hidden" id="tt-pane-digital" role="tabpanel" aria-labelledby="tt-tab-digital">
             <label class="teacher-check"><input type="checkbox" id="dt-ask-name" checked /> Žák vyplní jméno (objeví se v kódu o odevzdání)</label>
-            <p class="dt-note">Žáci odkaz otevřou na mobilu, test vyplní a hned uvidí výsledek. Nic se nikam neukládá — na konci dostanou kód, který ti pošlou.</p>
+            <div class="teacher-opt-group" role="radiogroup" aria-label="Bodování">
+              <span class="teacher-opt-label">Bodování:</span>
+              <div class="tt-color-row">
+                <label class="teacher-radio"><input type="radio" name="tt-scoring" value="verb" checked /> Za celé sloveso <span class="teacher-radio-note">(všechny tvary správně = 1 bod)</span></label>
+                <label class="teacher-radio"><input type="radio" name="tt-scoring" value="form" /> Za každý tvar <span class="teacher-radio-note">(1 bod za správný tvar)</span></label>
+              </div>
+            </div>
+            <p class="dt-note">Žáci odkaz otevřou na mobilu, test vyplní a hned uvidí výsledek. Nic se nikam neukládá — na konci dostanou kód, ve kterém uvidíš i jejich chybné odpovědi.</p>
             <button id="dt-make-link" class="btn btn-primary tt-cta">🔗 Vytvořit odkaz</button>
 
             <div class="dt-link-box hidden" id="dt-link-box">

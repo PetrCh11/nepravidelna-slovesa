@@ -5702,3 +5702,12 @@ body.theme-dark .streak-info-badge {
 .teacher-count-info { margin: 12px 0 0; }
 .dt-verify-block .dt-verify-test,
 .dt-verify-block textarea { margin-top: 10px; }
+
+/* Chybné odpovědi v tabulce ověření */
+.dt-wrong-cell { max-width: 260px; }
+.dt-wrong-item {
+  display: inline-block; margin: 1px 6px 1px 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.84em;
+}
+.dt-wrong-item b { color: var(--text-muted); font-weight: 600; }
+.dt-all-ok { color: var(--success); font-size: 0.85em; }

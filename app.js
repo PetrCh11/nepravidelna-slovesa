@@ -723,6 +723,8 @@ const TEXTS = {
   dt_verify_col_score: 'Skóre',
   dt_verify_col_attempt: 'Pokus',
   dt_verify_col_state: 'Stav',
+  dt_verify_col_wrong: 'Chybné odpovědi',
+  dt_verify_no_mistakes: 'bez chyby',
   dt_verify_ok: '✅ platný',
   dt_verify_bad: '❌ nesedí',
   dt_verify_verified: 'jméno z účtu Google',
@@ -3760,6 +3762,8 @@ function quizStart() {
   state.quiz.pool = shuffle(all).slice(0, n);
   state.quiz.idx = 0;
   state.quiz.score = 0;
+  state.quiz.maxScore = 0;
+  state.quiz.scoring = 'verb';
   state.quiz.total = n;
   state.quiz.type = $('#quiz-type').value;
   state.quiz.review = [];
@@ -3811,7 +3815,7 @@ function quizRender() {
           if (btn.textContent.toLowerCase() === correct.toLowerCase()) btn.classList.add('correct');
           else if (btn === b && !ok) btn.classList.add('wrong');
         });
-        handleQuizAnswer(ok, verb, `${verb.inf} (${askLabel})`, correct);
+        handleQuizAnswer(ok, verb, `${verb.inf} (${askLabel})`, correct, { gained: ok ? 1 : 0, possible: 1, typed: [opt] });
       });
       list.appendChild(b);
     });
@@ -3850,14 +3854,21 @@ function quizRender() {
     const fillInputs = Array.from(card.querySelectorAll('.quiz-fill-inputs input'));
     const submitFill = () => {
       let ok = true;
+      let goodCount = 0;
+      const typed = [];
       fillInputs.forEach((inp) => {
         const key = inp.dataset.form;
         const good = isAnswerCorrect(inp.value, verb, key, state.dialect);
         inp.classList.add(good ? 'correct' : 'wrong');
         inp.disabled = true;
-        if (!good) ok = false;
+        typed.push(inp.value.trim());
+        if (good) goodCount++; else ok = false;
       });
-      handleQuizAnswer(ok, verb, mode === 'cs3' ? verb.cs : verb.inf, `${verb.inf} – ${past} – ${pp}`);
+      // Bodování: 'form' = bod za každý správný tvar, jinak vše nebo nic.
+      const byForm = state.quiz.scoring === 'form';
+      const gained = byForm ? goodCount : (ok ? 1 : 0);
+      const possible = byForm ? fillInputs.length : 1;
+      handleQuizAnswer(ok, verb, mode === 'cs3' ? verb.cs : verb.inf, `${verb.inf} – ${past} – ${pp}`, { gained, possible, typed });
       card.querySelector('#quiz-check').classList.add('hidden');
     };
     card.querySelector('#quiz-check').addEventListener('click', submitFill);
@@ -3887,12 +3898,15 @@ function quizRender() {
   );
 }
 
-function handleQuizAnswer(ok, verb, qText, aText) {
+function handleQuizAnswer(ok, verb, qText, aText, detail) {
   const fb = $('#quiz-card .quiz-feedback');
   const past = pickForm(verb, 'past', state.dialect);
   const pp = pickForm(verb, 'pp', state.dialect);
+  const gained = detail ? detail.gained : (ok ? 1 : 0);
+  const possible = detail ? detail.possible : 1;
+  state.quiz.score += gained;
+  state.quiz.maxScore = (state.quiz.maxScore || 0) + possible;
   if (ok) {
-    state.quiz.score++;
     state.quiz.streak = (state.quiz.streak || 0) + 1;
     const key = (state.quiz.streak >= 3) ? 'fb_streak' : 'fb_pass_ok';
     fb.textContent = '✅ ' + t(key);
@@ -3902,7 +3916,7 @@ function handleQuizAnswer(ok, verb, qText, aText) {
     fb.innerHTML = `❌ ${t('fb_pass_wrong')}<br><span style="font-size:0.9em;opacity:0.85">${t('quiz_correct_is')} <strong>${verb.inf} – ${past} – ${pp}</strong></span>`;
     fb.className = 'quiz-feedback wrong';
   }
-  state.quiz.review.push({ ok, q: qText, a: aText, verb });
+  state.quiz.review.push({ ok, q: qText, a: aText, verb, typed: detail ? detail.typed : [] });
   $('#quiz-score').textContent = state.quiz.score;
   const next = $('#quiz-card #quiz-next');
   next.classList.remove('hidden');
@@ -3919,8 +3933,9 @@ function quizNext() {
 function quizFinish() {
   $('.quiz-play').classList.add('hidden');
   $('.quiz-done').classList.remove('hidden');
-  const pct = Math.round((state.quiz.score / state.quiz.total) * 100);
-  $('#quiz-final').textContent = `${state.quiz.score} / ${state.quiz.total} (${pct} %)`;
+  const maxPts = state.quiz.maxScore || state.quiz.total;
+  const pct = maxPts ? Math.round((state.quiz.score / maxPts) * 100) : 0;
+  $('#quiz-final').textContent = `${state.quiz.score} / ${maxPts} (${pct} %)`;
   dtRenderResult();
   const review = $('#quiz-review');
   review.innerHTML = '';
@@ -4413,6 +4428,8 @@ function teacherSettings() {
     // U "česky → 3 tvary" je překlad součástí zadání vždy
     showCs: type === 'cs3' ? true : $('#tt-cs').checked,
     color: (document.querySelector('input[name="tt-color"]:checked') || {}).value === 'color',
+    // Bodování digitálního testu: 'verb' = celé sloveso za bod, 'form' = po tvarech
+    scoring: (document.querySelector('input[name="tt-scoring"]:checked') || {}).value || 'verb',
   };
 }
 
@@ -4663,6 +4680,7 @@ function dtEncode(cfg) {
   v = (v << 7n) | BigInt(Math.max(1, Math.min(127, cfg.count)));
   v = (v << 3n) | BigInt(Math.max(0, DT_TYPES.indexOf(cfg.type)));
   v = (v << 1n) | BigInt(cfg.askName ? 1 : 0);
+  v = (v << 1n) | BigInt(cfg.scoring === 'form' ? 1 : 0);
   v = (v << 16n) | BigInt(cfg.seed & 0xffff);
   const payload = v.toString(36);
   // Dvouznakový kontrolní součet: bez něj by se náhodný/překlepnutý odkaz
@@ -4686,13 +4704,14 @@ function dtDecode(code) {
       v = v * 36n + d;
     }
     const seed = Number(v & 0xffffn); v >>= 16n;
+    const scoring = Number(v & 1n) === 1 ? 'form' : 'verb'; v >>= 1n;
     const askName = Number(v & 1n) === 1; v >>= 1n;
     const type = DT_TYPES[Number(v & 7n)] || 'mixed'; v >>= 3n;
     const count = Number(v & 127n); v >>= 7n;
     const all = allSubIdsInOrder();
     const subIds = all.filter((_, i) => ((v >> BigInt(i)) & 1n) === 1n);
     if (!subIds.length || !count) return null;
-    return { subIds, count, type, askName, seed };
+    return { subIds, count, type, askName, scoring, seed };
   } catch (_) { return null; }
 }
 
@@ -4705,21 +4724,51 @@ function dtBuildPool(cfg) {
 }
 
 // --- Kód o odevzdání ---
-function dtMakeCode({ testCode, name, verified, score, total, attempt }) {
+function dtMakeCode({ testCode, name, verified, score, total, attempt, wrong }) {
   const clean = String(name || '').trim().replace(/\s+/g, ' ');
-  const base = [testCode, clean.toLowerCase(), verified ? '1' : '0', score, total, attempt].join('|');
+  // Chybné odpovědi: "!3=speaked,7=writed|writen" (číslo otázky = pořadí v testu).
+  // Správné se nepřenášejí — učitel je zná z klíče, kód tak zůstane krátký.
+  const wrongStr = dtWrongToString(wrong);
+  const base = [testCode, clean.toLowerCase(), verified ? '1' : '0', score, total, attempt, wrongStr].join('|');
   const sum = dtHash(base + DT_SALT);
   const who = clean ? `${clean}${verified ? ' ✓' : ''} · ` : '';
+  const wrongPart = wrongStr ? `!${wrongStr} · ` : '';
   // Slovo "pokus" jde z TEXTS — kontrolní součet se počítá jen z `base`, takže
   // jazyk kódu jeho platnost neovlivní (učitel ověří i kód z jiné mutace).
-  return `${who}${score}/${total} · ${t('dt_code_attempt', attempt)} · ${sum}`;
+  return `${who}${score}/${total} · ${t('dt_code_attempt', attempt)} · ${wrongPart}${sum}`;
+}
+
+// [{i, typed:[]}] → "3=speaked,7=writed|writen". Oddělovače z odpovědí vyházíme,
+// aby nerozbily formát (žák může napsat cokoli).
+function dtWrongToString(wrong) {
+  if (!Array.isArray(wrong) || !wrong.length) return '';
+  return wrong.map((w) => {
+    const vals = (w.typed || []).map((x) => String(x).replace(/[,|=!·]/g, '').trim() || '—').join('|');
+    return `${w.i}=${vals}`;
+  }).join(',');
+}
+
+function dtWrongFromString(s) {
+  if (!s) return [];
+  return s.split(',').map((chunk) => {
+    const m = /^(\d+)=(.*)$/.exec(chunk.trim());
+    if (!m) return null;
+    return { i: Number(m[1]), typed: m[2].split('|') };
+  }).filter(Boolean);
 }
 
 // Rozebere řádek zpět. Jméno může obsahovat cokoli — bereme ho jako zbytek
 // před posledními třemi částmi.
 function dtParseCode(line) {
-  const parts = String(line).split('·').map((s) => s.trim()).filter(Boolean);
+  let parts = String(line).split('·').map((s) => s.trim()).filter(Boolean);
   if (parts.length < 3) return null;
+  // Volitelná sekce s chybami: část začínající "!" (může chybět u plného počtu)
+  let wrongStr = '';
+  const wIdx = parts.findIndex((p) => p.startsWith('!'));
+  if (wIdx !== -1) {
+    wrongStr = parts[wIdx].slice(1);
+    parts = parts.filter((_, i) => i !== wIdx);
+  }
   const sum = parts[parts.length - 1];
   // Číslo pokusu bereme odkudkoli z té části — formulace se liší podle jazyka
   // („1. pokus“, „1. próba“, …), číslo je jediné, co je společné.
@@ -4730,7 +4779,7 @@ function dtParseCode(line) {
   const verified = /✓\s*$/.test(nameRaw);
   const name = nameRaw.replace(/✓\s*$/, '').trim();
   return {
-    name, verified, sum,
+    name, verified, sum, wrongStr, wrong: dtWrongFromString(wrongStr),
     score: Number(scoreM[1]), total: Number(scoreM[2]), attempt: Number(attemptM[1]),
   };
 }
@@ -4805,6 +4854,8 @@ function dtStartTest() {
   state.quiz.pool = pool;
   state.quiz.idx = 0;
   state.quiz.score = 0;
+  state.quiz.maxScore = 0;
+  state.quiz.scoring = cfg.scoring || 'verb';
   state.quiz.total = pool.length;
   state.quiz.type = cfg.type;
   state.quiz.review = [];
@@ -4826,13 +4877,18 @@ function dtRenderResult() {
   const typed = cfg.askName ? input.value.trim() : '';
   const verified = !!(cfg.askName && input.dataset.fromAccount
     && input.dataset.fromAccount.trim() === typed);
+  // Co žák vyplnil špatně — jen tyhle odpovědi jdou do kódu (viz dtMakeCode)
+  const wrong = state.quiz.review
+    .map((r, i) => (r.ok ? null : { i: i + 1, typed: r.typed || [] }))
+    .filter(Boolean);
   const code = dtMakeCode({
     testCode: cfg.code,
     name: typed,
     verified,
     score: state.quiz.score,
-    total: state.quiz.total,
+    total: state.quiz.maxScore || state.quiz.total,
     attempt: state.quiz.attempt || 1,
+    wrong,
   });
   $('#dt-code').textContent = code;
   box.classList.remove('hidden');
@@ -4863,6 +4919,7 @@ function dtCreateLink() {
     // Digitální test respektuje typ zvolený výše pro papír.
     type: DT_TYPE_FROM_PAPER[s.type] || 'mixed',
     askName: $('#dt-ask-name').checked,
+    scoring: s.scoring,
     seed: Math.floor(Math.random() * 0xffff),
   };
   const code = dtEncode(cfg);
@@ -4893,13 +4950,17 @@ function dtRunVerify() {
   const body = rows.map((line) => {
     const r = dtVerifyCode(line, testCode);
     if (!r) {
-      return `<tr class="dt-row-bad"><td colspan="3">${line}</td><td>${t('dt_verify_bad')}</td></tr>`;
+      return `<tr class="dt-row-bad"><td colspan="4">${line}</td><td>${t('dt_verify_bad')}</td></tr>`;
     }
     if (r.valid) ok++;
+    const wrongCells = (r.wrong || []).length
+      ? r.wrong.map((w) => `<span class="dt-wrong-item"><b>${w.i}.</b> ${w.typed.join(' / ')}</span>`).join('')
+      : `<span class="dt-all-ok">${t('dt_verify_no_mistakes')}</span>`;
     return `<tr class="${r.valid ? '' : 'dt-row-bad'}">
       <td>${r.name || '—'}${r.verified ? ` <span class="dt-verified" title="${t('dt_verify_verified')}">✓</span>` : ''}</td>
       <td>${r.score}/${r.total}</td>
       <td>${r.attempt}.</td>
+      <td class="dt-wrong-cell">${wrongCells}</td>
       <td>${r.valid ? t('dt_verify_ok') : t('dt_verify_bad')}</td>
     </tr>`;
   }).join('');
@@ -4908,7 +4969,7 @@ function dtRunVerify() {
     <table class="dt-verify-table">
       <thead><tr>
         <th>${t('dt_verify_col_name')}</th><th>${t('dt_verify_col_score')}</th>
-        <th>${t('dt_verify_col_attempt')}</th><th>${t('dt_verify_col_state')}</th>
+        <th>${t('dt_verify_col_attempt')}</th><th>${t('dt_verify_col_wrong')}</th><th>${t('dt_verify_col_state')}</th>
       </tr></thead>
       <tbody>${body}</tbody>
     </table>`;
