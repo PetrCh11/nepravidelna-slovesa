@@ -707,36 +707,18 @@ const TEXTS = {
   teacher_key_correct: 'Správné odpovědi (u sloves s více tvary platí kterýkoli uvedený):',
 
   // --- Digitální test (sdílený odkaz + kód o odevzdání) ---
-  dt_make_link: '🔗 Vytvořit odkaz',
-  dt_link_title: 'Odkaz na digitální test',
-  dt_link_hint: 'Pošli žákům (Classroom, Teams, mail). Každý dostane stejný test a hned uvidí výsledek.',
-  dt_copy: 'Kopírovat odkaz',
   dt_copied: 'Odkaz zkopírován 📋',
   dt_copy_fail: 'Kopírování se nepovedlo — označ odkaz a zkopíruj ručně.',
-  dt_ask_name: 'Žák vyplní jméno (objeví se v kódu o odevzdání)',
-  dt_premium_note: 'Zdarma jde odkaz vytvořit ze skupin dostupných v bezplatné verzi. Pro celý rozsah je potřeba Premium.',
   dt_premium_blocked: 'Vybrané skupiny jsou nad rámec bezplatné verze — odemkni Premium, nebo vyber jen skupiny zdarma.',
 
-  dt_intro_title: 'Zadaný test',
   dt_intro_sub: (n) => `${n} ${n === 1 ? 'otázka' : n >= 2 && n <= 4 ? 'otázky' : 'otázek'} · po dokončení dostaneš kód pro učitele`,
-  dt_name_label: 'Tvoje jméno',
-  dt_name_ph: 'Jméno a příjmení',
-  dt_name_from_account: 'Vyplněno z tvého účtu — můžeš upravit',
   dt_name_missing: 'Vyplň prosím jméno, ať tě učitel pozná.',
-  dt_start: 'Spustit test',
   dt_attempt_note: (n) => (n > 1 ? `Tohle je tvůj ${n}. pokus — v kódu to učitel uvidí.` : ''),
 
-  dt_result_title: 'Hotovo! 🎉',
-  dt_code_label: 'Kód o odevzdání — pošli ho učiteli:',
-  dt_copy_code: 'Kopírovat kód',
+  dt_code_attempt: (n) => `${n}. pokus`,
   dt_code_copied: 'Kód zkopírován 📋',
-  dt_retry: 'Zkusit znovu',
   dt_bad_link: 'Odkaz na test je poškozený nebo už neplatí. Popros učitele o nový.',
 
-  dt_verify_title: 'Ověřit kódy od žáků',
-  dt_verify_hint: 'Vlož kódy (klidně celý sloupec, jeden na řádek) a zkontroluj je naráz.',
-  dt_verify_ph: 'Jan Novák ✓ · 8/10 · 1. pokus · K3F9',
-  dt_verify_btn: 'Zkontrolovat',
   dt_verify_col_name: 'Jméno',
   dt_verify_col_score: 'Skóre',
   dt_verify_col_attempt: 'Pokus',
@@ -4714,7 +4696,9 @@ function dtMakeCode({ testCode, name, verified, score, total, attempt }) {
   const base = [testCode, clean.toLowerCase(), verified ? '1' : '0', score, total, attempt].join('|');
   const sum = dtHash(base + DT_SALT);
   const who = clean ? `${clean}${verified ? ' ✓' : ''} · ` : '';
-  return `${who}${score}/${total} · ${attempt}. pokus · ${sum}`;
+  // Slovo "pokus" jde z TEXTS — kontrolní součet se počítá jen z `base`, takže
+  // jazyk kódu jeho platnost neovlivní (učitel ověří i kód z jiné mutace).
+  return `${who}${score}/${total} · ${t('dt_code_attempt', attempt)} · ${sum}`;
 }
 
 // Rozebere řádek zpět. Jméno může obsahovat cokoli — bereme ho jako zbytek
@@ -4723,7 +4707,9 @@ function dtParseCode(line) {
   const parts = String(line).split('·').map((s) => s.trim()).filter(Boolean);
   if (parts.length < 3) return null;
   const sum = parts[parts.length - 1];
-  const attemptM = /^(\d+)\./.exec(parts[parts.length - 2]);
+  // Číslo pokusu bereme odkudkoli z té části — formulace se liší podle jazyka
+  // („1. pokus“, „1. próba“, …), číslo je jediné, co je společné.
+  const attemptM = /(\d+)/.exec(parts[parts.length - 2]);
   const scoreM = /^(\d+)\s*\/\s*(\d+)$/.exec(parts[parts.length - 3]);
   if (!attemptM || !scoreM) return null;
   const nameRaw = parts.slice(0, parts.length - 3).join(' · ');
