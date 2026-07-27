@@ -4378,6 +4378,20 @@ function renderTeacherSetup() {
     $('#print-area').innerHTML = '';
   });
 
+  // Záložky „Na papír / Odkazem“ — každá forma zadání ukazuje jen svoje volby.
+  $$('.tt-tab').forEach((tab) => tab.addEventListener('click', () => {
+    const which = tab.dataset.tab;
+    $$('.tt-tab').forEach((b) => {
+      const on = b === tab;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    $('#tt-pane-paper').classList.toggle('hidden', which !== 'paper');
+    $('#tt-pane-digital').classList.toggle('hidden', which !== 'digital');
+    // Náhled papírového testu nedává smysl u online zadání.
+    if (which === 'digital') $('#teacher-result').hidden = true;
+  }));
+
   // Digitální test
   $('#dt-make-link')?.addEventListener('click', dtCreateLink);
   $('#dt-copy-link')?.addEventListener('click', dtCopyLink);

@@ -5571,7 +5571,7 @@ body.theme-dark .streak-info-badge {
    ============================================================ */
 
 /* --- Učitel: blok v Teacher mode --- */
-.dt-block .dt-note { color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 0; }
+.dt-note { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
 .dt-link-box { margin-top: 14px; }
 .dt-link-box > label { display: block; font-weight: 600; margin-bottom: 6px; }
 .dt-link-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -5580,16 +5580,14 @@ body.theme-dark .streak-info-badge {
   border: 1.5px solid var(--accent); border-radius: var(--radius-sm);
   background: var(--bg); color: var(--text); font: inherit; font-size: 0.9rem;
 }
-.dt-verify { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
-.dt-verify h4 { margin: 0 0 4px; font-size: 1rem; color: var(--accent); }
-.dt-verify-test, .dt-verify textarea {
+.dt-verify-test, .dt-verify-block textarea {
   width: 100%; margin-top: 10px; padding: 9px 11px;
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: var(--bg-elev); color: var(--text); font: inherit; font-size: 0.9rem;
   box-sizing: border-box;
 }
-.dt-verify textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; }
-.dt-verify .btn { margin-top: 10px; }
+.dt-verify-block textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.dt-verify-block .btn { margin-top: 10px; }
 .dt-verify-out { margin-top: 14px; overflow-x: auto; }
 .dt-verify-summary { font-weight: 700; margin: 0 0 8px; }
 .dt-verify-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -5649,3 +5647,58 @@ body.theme-dark .streak-info-badge {
   display: inline-block; min-width: 2.2em;
   border-bottom: 3px dotted var(--primary); color: var(--primary);
 }
+
+/* ---------- Teacher mode: typ testu jako dlaždice ---------- */
+.tt-type-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.tt-type-card {
+  display: flex; align-items: center; gap: 11px;
+  padding: 12px 13px;
+  border: 1.5px solid rgba(74, 144, 226, 0.45);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.tt-type-card:hover { border-color: var(--accent); }
+.tt-type-card input { position: absolute; opacity: 0; pointer-events: none; }
+.tt-type-card:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.tt-type-ico { font-size: 1.5rem; line-height: 1; flex: 0 0 auto; }
+.tt-type-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.tt-type-name { font-weight: 700; font-size: 0.9rem; }
+.tt-type-note { font-size: 0.76rem; color: var(--text-muted); }
+
+/* ---------- Teacher mode: záložky papír / odkaz ---------- */
+.tt-tabs {
+  display: flex; gap: 6px;
+  margin: 4px 0 16px;
+  border-bottom: 2px solid var(--border);
+}
+.tt-tab {
+  border: 0; background: transparent; color: var(--text-muted);
+  font: inherit; font-weight: 700; font-size: 0.95rem;
+  padding: 9px 16px; cursor: pointer;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  margin-bottom: -2px; border-bottom: 3px solid transparent;
+}
+.tt-tab:hover { color: var(--text); background: var(--accent-soft); }
+.tt-tab.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--accent-soft);
+}
+.tt-pane { display: flex; flex-direction: column; gap: 13px; }
+.tt-color-row { display: flex; gap: 20px; flex-wrap: wrap; }
+.tt-cta { align-self: flex-start; margin-top: 4px; }
+
+.teacher-count-info { margin: 12px 0 0; }
+.dt-verify-block .dt-verify-test,
+.dt-verify-block textarea { margin-top: 10px; }
