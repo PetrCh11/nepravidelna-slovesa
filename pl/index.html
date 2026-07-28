@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="styles.css" />
   <!-- Jazykový pack — musí se načíst PŘED app.js (docs/i18n.md).
        ?v=N bumpni při každé změně packu (cache busting; stejný ?v patří do sw.js ASSETS). -->
-  <script src="lang/pl.js?v=5"></script>
+  <script src="lang/pl.js?v=6"></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
   <script>
@@ -418,9 +418,28 @@
         </div>
         <button id="quiz-start" class="btn btn-primary">Rozpocznij quiz</button>
       </div>
+
+      <!-- Zadany test z linku #/test/<kod> — ekran startowy dla ucznia -->
+      <div class="dt-intro hidden" id="dt-intro">
+        <div class="dt-intro-card">
+          <div class="dt-intro-icon" aria-hidden="true">📝</div>
+          <h2>Zadany test</h2>
+          <p class="dt-intro-sub" id="dt-intro-sub"></p>
+          <div class="dt-name-row" id="dt-name-row">
+            <label for="dt-name">Twoje imię i nazwisko</label>
+            <input id="dt-name" type="text" placeholder="Imię i nazwisko" autocomplete="name" />
+            <span class="dt-name-hint hidden" id="dt-name-hint">Uzupełnione z twojego konta — możesz zmienić</span>
+          </div>
+          <p class="dt-limit-note hidden" id="dt-limit-note"></p>
+          <p class="dt-attempt-note" id="dt-attempt-note"></p>
+          <button id="dt-start" class="btn btn-primary">Rozpocznij test</button>
+        </div>
+      </div>
+
       <div class="quiz-play hidden">
         <div class="quiz-progress">
           <div class="quiz-counter"><span id="quiz-current">1</span> / <span id="quiz-total">10</span></div>
+          <div class="quiz-timer hidden" id="quiz-timer">⏱ <span id="quiz-timer-val">--:--</span></div>
           <div class="quiz-score">Wynik: <span id="quiz-score">0</span></div>
         </div>
         <div class="quiz-bar"><div class="quiz-bar-fill" id="quiz-bar-fill"></div></div>
@@ -429,6 +448,14 @@
       <div class="quiz-done hidden">
         <h3>Quiz ukończony! 🏆</h3>
         <p>Twój wynik: <strong id="quiz-final">—</strong></p>
+        <!-- Kod o oddaniu pracy — tylko przy teście zadanym linkiem -->
+        <div class="dt-result hidden" id="dt-result">
+          <p class="dt-code-label">Kod o oddaniu pracy — wyślij go nauczycielowi:</p>
+          <div class="dt-code-row">
+            <code id="dt-code"></code>
+            <button id="dt-copy-code" class="btn btn-primary btn-sm" type="button">Kopiuj kod</button>
+          </div>
+        </div>
         <div id="quiz-review" class="quiz-review"></div>
         <button id="quiz-restart" class="btn btn-primary">Spróbuj jeszcze raz</button>
       </div>
@@ -444,39 +471,105 @@
         <div class="teacher-block">
           <h3 class="teacher-block-title">1️⃣ Co sprawdzić?</h3>
           <div id="teacher-groups"></div>
+          <p id="teacher-count-info" class="teacher-count-info"></p>
         </div>
 
         <div class="teacher-block">
-          <h3 class="teacher-block-title">2️⃣ Ustawienia testu</h3>
-          <div class="teacher-options">
-            <label class="teacher-opt-row">Liczba czasowników w teście:
-              <input type="number" id="tt-count" min="3" max="106" value="20" />
+          <h3 class="teacher-block-title">2️⃣ Jaki test?</h3>
+          <label class="teacher-opt-row">Liczba czasowników w teście:
+            <input type="number" id="tt-count" min="3" max="106" value="20" />
+          </label>
+          <label class="teacher-opt-row">Limit czasu:
+            <select id="tt-limit">
+              <option value="0" selected>bez limitu</option>
+              <option value="5">5 minut</option>
+              <option value="10">10 minut</option>
+              <option value="15">15 minut</option>
+              <option value="20">20 minut</option>
+              <option value="30">30 minut</option>
+              <option value="45">45 minut</option>
+            </select>
+          </label>
+          <div class="tt-type-cards" role="radiogroup" aria-label="Typ testu">
+            <label class="tt-type-card">
+              <input type="radio" name="tt-type" value="inf2" checked />
+              <span class="tt-type-ico" aria-hidden="true">✏️</span>
+              <span class="tt-type-body">
+                <span class="tt-type-name">Bezokolicznik → 2 formy</span>
+                <span class="tt-type-note">klasyczny sprawdzian</span>
+              </span>
             </label>
-            <div class="teacher-opt-group" role="radiogroup" aria-label="Typ testu">
-              <span class="teacher-opt-label">Typ testu:</span>
-              <label class="teacher-radio"><input type="radio" name="tt-type" value="inf2" checked /> Bezokolicznik → uzupełnij 2 formy <span class="teacher-radio-note">(klasyczny sprawdzian)</span></label>
-              <label class="teacher-radio"><input type="radio" name="tt-type" value="cs3" /> Po polsku → uzupełnij 3 formy <span class="teacher-radio-note">(trudniejszy)</span></label>
-              <label class="teacher-radio"><input type="radio" name="tt-type" value="missing" /> Losowa brakująca forma <span class="teacher-radio-note">(w każdym wierszu brakuje innej)</span></label>
-              <label class="teacher-radio"><input type="radio" name="tt-type" value="choice" /> Wybór z możliwości <span class="teacher-radio-note">(zakreślanie, szybkie ocenianie)</span></label>
-            </div>
-            <div class="teacher-opt-group">
-              <label class="teacher-check teacher-check-strong">
-                <span class="teacher-check-strong-text">Dwie wersje (A + B) <span class="teacher-radio-note">— przeciw ściąganiu</span></span>
-                <input type="checkbox" id="tt-variants" />
-              </label>
-            </div>
-            <label class="teacher-check" id="tt-cs-row"><input type="checkbox" id="tt-cs" checked /> Pokaż polskie tłumaczenie jako podpowiedź</label>
-            <div class="teacher-opt-group" role="radiogroup" aria-label="Wygląd wydruku">
-              <span class="teacher-opt-label">Wygląd wydruku:</span>
-              <label class="teacher-radio"><input type="radio" name="tt-color" value="bw" checked /> 🖤 Czarno-biały <span class="teacher-radio-note">(oszczędza toner)</span></label>
-              <label class="teacher-radio"><input type="radio" name="tt-color" value="color" /> 🎨 Kolorowy</label>
-            </div>
+            <label class="tt-type-card">
+              <input type="radio" name="tt-type" value="cs3" />
+              <span class="tt-type-ico" aria-hidden="true">💬</span>
+              <span class="tt-type-body">
+                <span class="tt-type-name">Po polsku → 3 formy</span>
+                <span class="tt-type-note">trudniejszy</span>
+              </span>
+            </label>
+            <label class="tt-type-card">
+              <input type="radio" name="tt-type" value="missing" />
+              <span class="tt-type-ico" aria-hidden="true">❓</span>
+              <span class="tt-type-body">
+                <span class="tt-type-name">Brakująca forma</span>
+                <span class="tt-type-note">w każdym wierszu inna</span>
+              </span>
+            </label>
+            <label class="tt-type-card">
+              <input type="radio" name="tt-type" value="choice" />
+              <span class="tt-type-ico" aria-hidden="true">🔘</span>
+              <span class="tt-type-body">
+                <span class="tt-type-name">Wybór z możliwości</span>
+                <span class="tt-type-note">szybkie ocenianie</span>
+              </span>
+            </label>
           </div>
         </div>
 
-        <div class="teacher-actions">
-          <button id="teacher-generate" class="btn btn-primary">📝 Wygeneruj test</button>
-          <span id="teacher-count-info" class="teacher-count-info"></span>
+        <div class="teacher-block">
+          <h3 class="teacher-block-title">3️⃣ Jak go zadasz?</h3>
+          <div class="tt-tabs" role="tablist" aria-label="Forma zadania">
+            <button class="tt-tab is-active" type="button" role="tab" aria-selected="true" data-tab="paper" id="tt-tab-paper">🖨️ Na papierze</button>
+            <button class="tt-tab" type="button" role="tab" aria-selected="false" data-tab="digital" id="tt-tab-digital">💻 Linkiem</button>
+          </div>
+
+          <div class="tt-pane" id="tt-pane-paper" role="tabpanel" aria-labelledby="tt-tab-paper">
+            <label class="teacher-check teacher-check-strong">
+              <span class="teacher-check-strong-text">Dwie wersje (A + B) <span class="teacher-radio-note">— przeciw ściąganiu</span></span>
+              <input type="checkbox" id="tt-variants" />
+            </label>
+            <label class="teacher-check" id="tt-cs-row"><input type="checkbox" id="tt-cs" checked /> Pokaż polskie tłumaczenie jako podpowiedź</label>
+            <div class="teacher-opt-group" role="radiogroup" aria-label="Wygląd wydruku">
+              <span class="teacher-opt-label">Wygląd wydruku:</span>
+              <div class="tt-color-row">
+                <label class="teacher-radio"><input type="radio" name="tt-color" value="bw" checked /> 🖤 Czarno-biały <span class="teacher-radio-note">(oszczędza toner)</span></label>
+                <label class="teacher-radio"><input type="radio" name="tt-color" value="color" /> 🎨 Kolorowy</label>
+              </div>
+            </div>
+            <button id="teacher-generate" class="btn btn-primary tt-cta">📝 Wygeneruj test</button>
+          </div>
+
+          <div class="tt-pane hidden" id="tt-pane-digital" role="tabpanel" aria-labelledby="tt-tab-digital">
+            <label class="teacher-check"><input type="checkbox" id="dt-ask-name" checked /> Uczeń wpisuje imię i nazwisko (pojawi się w kodzie o oddaniu pracy)</label>
+            <div class="teacher-opt-group" role="radiogroup" aria-label="Punktacja">
+              <span class="teacher-opt-label">Punktacja:</span>
+              <div class="tt-color-row">
+                <label class="teacher-radio"><input type="radio" name="tt-scoring" value="verb" checked /> Za cały czasownik <span class="teacher-radio-note">(wszystkie formy poprawnie = 1 punkt)</span></label>
+                <label class="teacher-radio"><input type="radio" name="tt-scoring" value="form" /> Za każdą formę <span class="teacher-radio-note">(1 punkt za poprawną formę)</span></label>
+              </div>
+            </div>
+            <p class="dt-note">Uczniowie otwierają link na telefonie, wypełniają test i od razu widzą wynik. Nic nigdzie się nie zapisuje — na koniec dostają kod, w którym zobaczysz także ich błędne odpowiedzi.</p>
+            <button id="dt-make-link" class="btn btn-primary tt-cta">🔗 Utwórz link</button>
+
+            <div class="dt-link-box hidden" id="dt-link-box">
+              <label for="dt-link">Link do testu cyfrowego</label>
+              <div class="dt-link-row">
+                <input id="dt-link" type="text" readonly />
+                <button id="dt-copy-link" class="btn btn-primary btn-sm" type="button">Kopiuj link</button>
+              </div>
+              <p class="dt-note">Wyślij uczniom (Classroom, Teams, mail). Każdy dostanie ten sam test i od razu zobaczy wynik.</p>
+            </div>
+          </div>
         </div>
 
         <div id="teacher-result" class="teacher-result" hidden>
@@ -487,6 +580,16 @@
           </div>
           <p class="teacher-print-hint">Podgląd testu — drukowanie odbywa się przez okno przeglądarki (zapis do PDF też działa).</p>
           <div id="teacher-preview" class="teacher-preview"></div>
+        </div>
+
+        <!-- Sprawdzanie po teście: osobna czynność, dlatego własny blok -->
+        <div class="teacher-block dt-verify-block">
+          <h3 class="teacher-block-title">✅ Sprawdź kody od uczniów</h3>
+          <p class="dt-note">Wklej kody (choćby całą kolumnę, jeden na wiersz) i sprawdź je za jednym razem.</p>
+          <input id="dt-verify-test" type="text" class="dt-verify-test" placeholder="kod testu (uzupełni się sam po utworzeniu linku)" />
+          <textarea id="dt-verify-input" rows="4" placeholder="Jan Kowalski ✓ · 8/10 · 1. próba · K3F9"></textarea>
+          <button id="dt-verify-btn" class="btn btn-primary btn-sm" type="button">Sprawdź</button>
+          <div id="dt-verify-out" class="dt-verify-out hidden"></div>
         </div>
       </div>
     </section>

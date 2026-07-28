@@ -384,6 +384,47 @@
       teacher_groups_mix: function (g) { return 'mieszanka z ' + g + ' grup'; },
       teacher_footer: 'czasowniki.pl — aplikacja, z którą twoja klasa nauczy się czasowników nieregularnych',
       teacher_key_correct: 'Poprawne odpowiedzi (przy czasownikach z kilkoma formami każda z podanych jest poprawna):',
+      teacher_limit_print: function (m) { return '⏱ limit czasu: ' + m + ' min'; },
+
+      quiz_cs3_hint: 'Uzupełnij wszystkie trzy formy po angielsku',
+
+      // ---- Test cyfrowy (link + kod o oddaniu pracy) -------------------------
+      dt_copied: 'Link skopiowany 📋',
+      dt_copy_fail: 'Kopiowanie się nie udało — zaznacz link i skopiuj ręcznie.',
+      dt_premium_blocked: 'Wybrane grupy wykraczają poza wersję bezpłatną — odblokuj Premium albo wybierz tylko darmowe grupy.',
+
+      dt_intro_sub: function (n) {
+        return n + ' ' + pl(n, 'pytanie', 'pytania', 'pytań') + ' · po ukończeniu dostaniesz kod dla nauczyciela';
+      },
+      dt_name_missing: 'Wpisz imię i nazwisko, żeby nauczyciel wiedział, czyja to praca.',
+      // „próba" jest rodzaju żeńskiego → „twoja … próba"
+      dt_attempt_note: function (n) {
+        return n > 1 ? 'To twoja ' + n + '. próba — nauczyciel zobaczy to w kodzie.' : '';
+      },
+
+      // Idzie wprost do kodu o oddaniu pracy. Suma kontrolna liczy się tylko
+      // z danych, a parser bierze stąd samą liczbę — język nie psuje weryfikacji.
+      dt_code_attempt: function (n) { return n + '. próba'; },
+      dt_code_copied: 'Kod skopiowany 📋',
+      dt_bad_link: 'Link do testu jest uszkodzony albo już nieaktualny. Poproś nauczyciela o nowy.',
+
+      dt_verify_col_name: 'Imię i nazwisko',
+      dt_verify_col_score: 'Wynik',
+      dt_verify_col_attempt: 'Próba',
+      dt_verify_col_state: 'Status',
+      dt_verify_col_wrong: 'Błędne odpowiedzi',
+      dt_verify_timeout: 'Upłynął limit czasu — test został oddany automatycznie',
+      dt_time_up: '⏱ Czas minął — test został oddany.',
+      dt_limit_note: function (m) {
+        return '⏱ Na test masz ' + m + ' ' + pl(m, 'minutę', 'minuty', 'minut') + '.';
+      },
+      dt_verify_no_mistakes: 'bez błędu',
+      dt_verify_ok: '✅ prawidłowy',
+      dt_verify_bad: '❌ nie zgadza się',
+      dt_verify_verified: 'imię z konta Google',
+      dt_verify_empty: 'Wklej przynajmniej jeden kod.',
+      dt_verify_no_test: 'Najpierw utwórz link do testu — kody sprawdzane są względem niego.',
+      dt_verify_summary: function (ok, total) { return 'Prawidłowych ' + ok + ' z ' + total; },
     },
 
     // ---- Překlady dat (localizeData v app.js) -------------------------------

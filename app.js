@@ -3837,7 +3837,8 @@ function quizRender() {
     if (mode === 'cs3') blanks = ['inf', 'past', 'pp'];
     else if (mode === 'missing') blanks = [['inf', 'past', 'pp'][Math.floor(qRand() * 3)]];
     else blanks = ['past', 'pp'];
-    const labels = { inf: 'infinitiv', past: 'past simple', pp: 'past participle' };
+    // Popisky polí jdou z TEXTS, aby je jazykový pack uměl přepsat (docs/i18n.md).
+    const labels = { inf: t('form_inf'), past: t('form_past_full'), pp: t('form_pp') };
     const shownForms = { inf: verb.inf, past, pp };
     const promptHTML = mode === 'cs3'
       ? `<div class="q-prompt q-prompt-cs">${verb.cs}</div><div class="q-hint">${t('quiz_cs3_hint')}</div>`
