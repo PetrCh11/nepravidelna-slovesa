@@ -5580,12 +5580,22 @@ body.theme-dark .streak-info-badge {
   border: 1.5px solid var(--accent); border-radius: var(--radius-sm);
   background: var(--bg); color: var(--text); font: inherit; font-size: 0.9rem;
 }
-.dt-verify-test, .dt-verify-block textarea {
-  width: 100%; margin-top: 10px; padding: 9px 11px;
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
+/* Vstupy jsou zřetelně ohraničené — na světlém podkladu bloku by rámeček
+   v barvě --border splýval a pole by nebylo vidět. */
+.dt-verify-test, .dt-verify-block textarea, .dt-link-row input {
+  width: 100%; margin-top: 10px; padding: 10px 12px;
+  border: 1.5px solid rgba(74, 144, 226, 0.45); border-radius: var(--radius-sm);
   background: var(--bg-elev); color: var(--text); font: inherit; font-size: 0.9rem;
   box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
+.dt-verify-test:hover, .dt-verify-block textarea:hover { border-color: var(--accent); }
+.dt-verify-test:focus, .dt-verify-block textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.dt-verify-test::placeholder, .dt-verify-block textarea::placeholder { color: var(--text-muted); opacity: 0.75; }
 .dt-verify-block textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; }
 .dt-verify-block .btn { margin-top: 10px; }
 .dt-verify-out { margin-top: 14px; overflow-x: auto; }
