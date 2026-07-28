@@ -472,17 +472,42 @@
           <label class="teacher-opt-row">Počet sloves v testu:
             <input type="number" id="tt-count" min="3" max="106" value="20" />
           </label>
-          <label class="teacher-opt-row">Časový limit:
-            <select id="tt-limit">
-              <option value="0" selected>bez limitu</option>
-              <option value="5">5 minut</option>
-              <option value="10">10 minut</option>
-              <option value="15">15 minut</option>
-              <option value="20">20 minut</option>
-              <option value="30">30 minut</option>
-              <option value="45">45 minut</option>
-            </select>
-          </label>
+          <div class="tt-limit-row">
+            <label class="teacher-opt-row">Časový limit:
+              <select id="tt-limit-mode">
+                <option value="none" selected>bez limitu</option>
+                <option value="test">na celý test</option>
+                <option value="word">na každé sloveso</option>
+              </select>
+            </label>
+            <label class="teacher-opt-row hidden" id="tt-limit-test-row">Trvání:
+              <select id="tt-limit-test">
+                <option value="30">30 sekund</option>
+                <option value="60">1 minuta</option>
+                <option value="120">2 minuty</option>
+                <option value="180">3 minuty</option>
+                <option value="300" selected>5 minut</option>
+                <option value="420">7 minut</option>
+                <option value="600">10 minut</option>
+                <option value="900">15 minut</option>
+                <option value="1200">20 minut</option>
+                <option value="1500">25 minut</option>
+                <option value="1800">30 minut</option>
+              </select>
+            </label>
+            <label class="teacher-opt-row hidden" id="tt-limit-word-row">Na sloveso:
+              <select id="tt-limit-word">
+                <option value="10">10 sekund</option>
+                <option value="15">15 sekund</option>
+                <option value="20">20 sekund</option>
+                <option value="25" selected>25 sekund</option>
+                <option value="30">30 sekund</option>
+                <option value="40">40 sekund</option>
+                <option value="45">45 sekund</option>
+                <option value="60">1 minuta</option>
+              </select>
+            </label>
+          </div>
           <div class="tt-type-cards" role="radiogroup" aria-label="Typ testu">
             <label class="tt-type-card">
               <input type="radio" name="tt-type" value="inf2" checked />

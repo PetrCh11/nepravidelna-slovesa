@@ -5721,3 +5721,6 @@ body.theme-dark .streak-info-badge {
 @keyframes timer-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 .dt-limit-note { font-size: 0.86rem; color: var(--warn); margin: 0 0 10px; font-weight: 600; }
 .dt-timeout { cursor: help; }
+
+/* Volba časového limitu (režim + trvání) */
+.tt-limit-row { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }

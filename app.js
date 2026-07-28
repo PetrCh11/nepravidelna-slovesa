@@ -705,7 +705,8 @@ const TEXTS = {
   teacher_domain: 'ucseslovesa.cz',
   teacher_footer: 'ucseslovesa.cz — appka, se kterou se tvoje třída naučí nepravidelná slovesa',
   teacher_key_correct: 'Správné odpovědi (u sloves s více tvary platí kterýkoli uvedený):',
-  teacher_limit_print: (m) => `⏱ časový limit: ${m} min`,
+  teacher_limit_print: (txt) => `⏱ časový limit: ${txt}`,
+  teacher_limit_print_word: (txt) => `⏱ ${txt} na sloveso`,
 
   // --- Digitální test (sdílený odkaz + kód o odevzdání) ---
   dt_copied: 'Odkaz zkopírován 📋',
@@ -727,7 +728,10 @@ const TEXTS = {
   dt_verify_col_wrong: 'Chybné odpovědi',
   dt_verify_timeout: 'Vypršel časový limit — test se odevzdal automaticky',
   dt_time_up: '⏱ Čas vypršel — test byl odevzdán.',
-  dt_limit_note: (m) => `⏱ Na test máš ${m} ${m === 1 ? 'minutu' : m >= 2 && m <= 4 ? 'minuty' : 'minut'}.`,
+  dt_secs: (s) => `${s} ${s === 1 ? 'sekundu' : s >= 2 && s <= 4 ? 'sekundy' : 'sekund'}`,
+  dt_mins: (m) => `${m} ${m === 1 ? 'minutu' : m >= 2 && m <= 4 ? 'minuty' : 'minut'}`,
+  dt_limit_note_test: (txt) => `⏱ Na celý test máš ${txt}.`,
+  dt_limit_note_word: (txt) => `⏱ Na každé sloveso máš ${txt} — pak se otázka uzavře.`,
   dt_verify_no_mistakes: 'bez chyby',
   dt_verify_ok: '✅ platný',
   dt_verify_bad: '❌ nesedí',
@@ -3826,6 +3830,15 @@ function quizRender() {
       });
       list.appendChild(b);
     });
+    // Limit na slovo: po vypršení se otázka uzavře bez odpovědi.
+    state.quiz.onExpireQuestion = () => {
+      list.querySelectorAll('button').forEach((btn) => {
+        btn.disabled = true;
+        if (btn.textContent.toLowerCase() === correct.toLowerCase()) btn.classList.add('correct');
+      });
+      handleQuizAnswer(false, verb, `${verb.inf} (${askLabel})`, correct,
+        { gained: 0, possible: 1, typed: [] });
+    };
   } else {
     const past = pickForm(verb, 'past', state.dialect);
     const pp = pickForm(verb, 'pp', state.dialect);
@@ -3880,6 +3893,8 @@ function quizRender() {
       card.querySelector('#quiz-check').classList.add('hidden');
     };
     card.querySelector('#quiz-check').addEventListener('click', submitFill);
+    // Limit na slovo: po vypršení se odešle to, co má žák rozepsané.
+    state.quiz.onExpireQuestion = submitFill;
 
     // Enter chování: posuň na další prázdné pole; teprve když jsou všechna
     // vyplněná (a Enter je v posledním), odešli — stejně jako klasická Lekce.
@@ -3904,6 +3919,8 @@ function quizRender() {
   card.querySelectorAll('[data-speak]').forEach((el) =>
     el.addEventListener('click', (e) => { e.stopPropagation(); speak(el.dataset.speak, state.dialect); })
   );
+  const cfg = state.quiz.test;
+  if (cfg && cfg.limitMode === 'word') dtStartTimer(cfg.limitSec, dtWordTimeUp);
 }
 
 function handleQuizAnswer(ok, verb, qText, aText, detail) {
@@ -3923,6 +3940,12 @@ function handleQuizAnswer(ok, verb, qText, aText, detail) {
     state.quiz.streak = 0;
     fb.innerHTML = `❌ ${t('fb_pass_wrong')}<br><span style="font-size:0.9em;opacity:0.85">${t('quiz_correct_is')} <strong>${verb.inf} – ${past} – ${pp}</strong></span>`;
     fb.className = 'quiz-feedback wrong';
+  }
+  // Odpověď je odeslaná → limit na slovo doběhl svůj účel; další otázka si
+  // spustí nový odpočet. (Limit na celý test běží dál.)
+  if (state.quiz.test && state.quiz.test.limitMode === 'word') {
+    state.quiz.onExpireQuestion = null;
+    dtStopTimer();
   }
   state.quiz.review.push({ ok, q: qText, a: aText, verb, typed: detail ? detail.typed : [] });
   $('#quiz-score').textContent = state.quiz.score;
@@ -4416,6 +4439,15 @@ function renderTeacherSetup() {
     if (which === 'digital') $('#teacher-result').hidden = true;
   }));
 
+  // Volba trvání se ukazuje jen pro zvolený režim limitu
+  const syncLimitRows = () => {
+    const m = $('#tt-limit-mode').value;
+    $('#tt-limit-test-row').classList.toggle('hidden', m !== 'test');
+    $('#tt-limit-word-row').classList.toggle('hidden', m !== 'word');
+  };
+  $('#tt-limit-mode')?.addEventListener('change', syncLimitRows);
+  syncLimitRows();
+
   // Digitální test
   $('#dt-make-link')?.addEventListener('click', dtCreateLink);
   $('#dt-copy-link')?.addEventListener('click', dtCopyLink);
@@ -4439,7 +4471,9 @@ function teacherSettings() {
     color: (document.querySelector('input[name="tt-color"]:checked') || {}).value === 'color',
     // Bodování digitálního testu: 'verb' = celé sloveso za bod, 'form' = po tvarech
     scoring: (document.querySelector('input[name="tt-scoring"]:checked') || {}).value || 'verb',
-    limitMin: parseInt($('#tt-limit').value, 10) || 0,
+    limitMode: $('#tt-limit-mode').value || 'none',
+    limitSec: $('#tt-limit-mode').value === 'test' ? (parseInt($('#tt-limit-test').value, 10) || 0)
+      : $('#tt-limit-mode').value === 'word' ? (parseInt($('#tt-limit-word').value, 10) || 0) : 0,
   };
 }
 
@@ -4552,7 +4586,9 @@ function teacherTestPage(rows, s, subs, variantLabel) {
       <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_class').replace(/:$/, '')}</span></span>
       <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_date').replace(/:$/, '')}</span></span>
     </div>
-    <p class="tt-instr">${t('teacher_instr_' + s.type)}${s.limitMin ? ` · ${t('teacher_limit_print', s.limitMin)}` : ''}</p>
+    <p class="tt-instr">${t('teacher_instr_' + s.type)}${s.limitMode && s.limitMode !== 'none' && s.limitSec
+      ? ` · ${t(s.limitMode === 'word' ? 'teacher_limit_print_word' : 'teacher_limit_print', dtDuration(s.limitSec))}`
+      : ''}</p>
     ${body}
     <div class="tt-scorebar">
       <span class="tt-meta-cell"><span class="tt-meta-label">${t('teacher_score').replace(/:$/, '')}</span></span>
@@ -4670,8 +4706,14 @@ function allSubIdsInOrder() {
 // missing→missing, choice→mc.
 const DT_TYPES = ['mixed', 'mc', 'fill', 'cs3', 'missing'];
 const DT_TYPE_FROM_PAPER = { inf2: 'fill', cs3: 'cs3', missing: 'missing', choice: 'mc' };
-// Časový limit v minutách; index se ukládá do odkazu (3 bity). 0 = bez limitu.
-const DT_LIMITS = [0, 5, 10, 15, 20, 30, 45, 60];
+// Časový limit: režim + hodnota v sekundách. Do odkazu se ukládá index do
+// příslušné tabulky (2 bity režim + 4 bity hodnota).
+const DT_LIMIT_MODES = ['none', 'test', 'word'];
+const DT_LIMIT_TEST = [30, 60, 120, 180, 300, 420, 600, 900, 1200, 1500, 1800];
+const DT_LIMIT_WORD = [10, 15, 20, 25, 30, 40, 45, 60];
+function dtLimitTable(mode) {
+  return mode === 'word' ? DT_LIMIT_WORD : DT_LIMIT_TEST;
+}
 // Kontrolní součet kódů je jen proti přepsání skóre "od stolu" — klíč je
 // nutně v klientu, takže odhodlaného žáka nezastaví (viz docs).
 const DT_SALT = 'ucseslovesa-dt-2026';
@@ -4693,7 +4735,9 @@ function dtEncode(cfg) {
   v = (v << 3n) | BigInt(Math.max(0, DT_TYPES.indexOf(cfg.type)));
   v = (v << 1n) | BigInt(cfg.askName ? 1 : 0);
   v = (v << 1n) | BigInt(cfg.scoring === 'form' ? 1 : 0);
-  v = (v << 3n) | BigInt(Math.max(0, DT_LIMITS.indexOf(cfg.limitMin || 0)));
+  const lMode = DT_LIMIT_MODES.indexOf(cfg.limitMode || 'none');
+  v = (v << 2n) | BigInt(Math.max(0, lMode));
+  v = (v << 4n) | BigInt(Math.max(0, dtLimitTable(cfg.limitMode).indexOf(cfg.limitSec || 0)));
   v = (v << 16n) | BigInt(cfg.seed & 0xffff);
   const payload = v.toString(36);
   // Dvouznakový kontrolní součet: bez něj by se náhodný/překlepnutý odkaz
@@ -4717,7 +4761,9 @@ function dtDecode(code) {
       v = v * 36n + d;
     }
     const seed = Number(v & 0xffffn); v >>= 16n;
-    const limitMin = DT_LIMITS[Number(v & 7n)] || 0; v >>= 3n;
+    const limitIdx = Number(v & 15n); v >>= 4n;
+    const limitMode = DT_LIMIT_MODES[Number(v & 3n)] || 'none'; v >>= 2n;
+    const limitSec = limitMode === 'none' ? 0 : (dtLimitTable(limitMode)[limitIdx] || 0);
     const scoring = Number(v & 1n) === 1 ? 'form' : 'verb'; v >>= 1n;
     const askName = Number(v & 1n) === 1; v >>= 1n;
     const type = DT_TYPES[Number(v & 7n)] || 'mixed'; v >>= 3n;
@@ -4725,7 +4771,7 @@ function dtDecode(code) {
     const all = allSubIdsInOrder();
     const subIds = all.filter((_, i) => ((v >> BigInt(i)) & 1n) === 1n);
     if (!subIds.length || !count) return null;
-    return { subIds, count, type, askName, scoring, limitMin, seed };
+    return { subIds, count, type, askName, scoring, limitMode, limitSec, seed };
   } catch (_) { return null; }
 }
 
@@ -4857,8 +4903,11 @@ function dtOpen(code) {
   // Kolikátý pokus se právě chystá (dokončené + 1)
   const limitNote = $('#dt-limit-note');
   if (limitNote) {
-    limitNote.textContent = cfg.limitMin ? t('dt_limit_note', cfg.limitMin) : '';
-    limitNote.classList.toggle('hidden', !cfg.limitMin);
+    const on = cfg.limitMode && cfg.limitMode !== 'none' && cfg.limitSec;
+    limitNote.textContent = on
+      ? t(cfg.limitMode === 'word' ? 'dt_limit_note_word' : 'dt_limit_note_test', dtDuration(cfg.limitSec))
+      : '';
+    limitNote.classList.toggle('hidden', !on);
   }
   const nextAttempt = dtAttemptsDone(code) + 1;
   $('#dt-attempt-note').textContent = nextAttempt > 1 ? t('dt_attempt_note', nextAttempt) : '';
@@ -4887,33 +4936,50 @@ function dtStartTest() {
   $('#dt-intro').classList.add('hidden');
   $('.quiz-done').classList.add('hidden');
   $('.quiz-play').classList.remove('hidden');
+  state.quiz.timedOut = false;
   quizRender();
-  dtStartTimer(cfg.limitMin);
+  if (cfg.limitMode === 'test') dtStartTimer(cfg.limitSec, dtTimeUp);
 }
 
 // --- Časový limit ---
+
+// „45 sekund“ / „5 minut“ — celé minuty se ukazují v minutách.
+function dtDuration(sec) {
+  return (sec >= 60 && sec % 60 === 0) ? t('dt_mins', sec / 60) : t('dt_secs', sec);
+}
 
 function dtStopTimer() {
   if (state.quiz.timerId) { clearInterval(state.quiz.timerId); state.quiz.timerId = null; }
   $('#quiz-timer')?.classList.add('hidden');
 }
 
-function dtStartTimer(minutes) {
+// Odpočet: `seconds` sekund, po vypršení se zavolá `onExpire`. Používá se pro
+// limit celého testu (jednou při startu) i pro limit na slovo (u každé otázky).
+function dtStartTimer(seconds, onExpire) {
   dtStopTimer();
   const box = $('#quiz-timer');
-  if (!minutes || !box) return;
-  state.quiz.deadline = Date.now() + minutes * 60000;
-  state.quiz.timedOut = false;
+  if (!seconds || !box) return;
+  state.quiz.deadline = Date.now() + seconds * 1000;
   box.classList.remove('hidden');
+  // U krátkých limitů (na slovo) varuj v poslední třetině, u testu poslední minutu.
+  const urgentAt = Math.min(60000, Math.max(5000, seconds * 1000 / 3));
   const tick = () => {
     const left = Math.max(0, state.quiz.deadline - Date.now());
     const s = Math.ceil(left / 1000);
     $('#quiz-timer-val').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-    box.classList.toggle('is-urgent', left <= 60000);
-    if (left <= 0) dtTimeUp();
+    box.classList.toggle('is-urgent', left <= urgentAt);
+    if (left <= 0) { dtStopTimer(); onExpire(); }
   };
   tick();
   state.quiz.timerId = setInterval(tick, 1000);
+}
+
+// Vypršel čas na jedno slovo → odešle se to, co má žák napsané, a pokračuje se
+// další otázkou (zpětnou vazbu si žák pořád prohlédne, odpověď už nezmění).
+function dtWordTimeUp() {
+  const fn = state.quiz.onExpireQuestion;
+  state.quiz.onExpireQuestion = null;
+  if (typeof fn === 'function') fn();
 }
 
 // Vypršel čas → test se odevzdá tak, jak je. Otázky, na které žák nedošel,
@@ -4991,7 +5057,8 @@ function dtCreateLink() {
     type: DT_TYPE_FROM_PAPER[s.type] || 'mixed',
     askName: $('#dt-ask-name').checked,
     scoring: s.scoring,
-    limitMin: s.limitMin,
+    limitMode: s.limitMode,
+    limitSec: s.limitSec,
     seed: Math.floor(Math.random() * 0xffff),
   };
   const code = dtEncode(cfg);
