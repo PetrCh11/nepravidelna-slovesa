@@ -384,7 +384,8 @@
       teacher_groups_mix: function (g) { return 'mieszanka z ' + g + ' grup'; },
       teacher_footer: 'czasowniki.pl — aplikacja, z którą twoja klasa nauczy się czasowników nieregularnych',
       teacher_key_correct: 'Poprawne odpowiedzi (przy czasownikach z kilkoma formami każda z podanych jest poprawna):',
-      teacher_limit_print: function (m) { return '⏱ limit czasu: ' + m + ' min'; },
+      teacher_limit_print: function (txt) { return '⏱ limit czasu: ' + txt; },
+      teacher_limit_print_word: function (txt) { return '⏱ ' + txt + ' na czasownik'; },
 
       quiz_cs3_hint: 'Uzupełnij wszystkie trzy formy po angielsku',
 
@@ -415,8 +416,14 @@
       dt_verify_col_wrong: 'Błędne odpowiedzi',
       dt_verify_timeout: 'Upłynął limit czasu — test został oddany automatycznie',
       dt_time_up: '⏱ Czas minął — test został oddany.',
-      dt_limit_note: function (m) {
-        return '⏱ Na test masz ' + m + ' ' + pl(m, 'minutę', 'minuty', 'minut') + '.';
+      // Trvání se skládá zvlášť (dtDuration) a vkládá se i do tiskové hlavičky,
+      // proto MIANOWNIK („1 minuta“, ne „1 minutę“) a věty s dvojtečkou —
+      // vazba „masz…“ by u téhož řetězce vyžadovala biernik. Viz docs/i18n.md.
+      dt_secs: function (s) { return s + ' ' + pl(s, 'sekunda', 'sekundy', 'sekund'); },
+      dt_mins: function (m) { return m + ' ' + pl(m, 'minuta', 'minuty', 'minut'); },
+      dt_limit_note_test: function (txt) { return '⏱ Limit na cały test: ' + txt + '.'; },
+      dt_limit_note_word: function (txt) {
+        return '⏱ Limit na każdy czasownik: ' + txt + ' — potem pytanie się zamknie.';
       },
       dt_verify_no_mistakes: 'bez błędu',
       dt_verify_ok: '✅ prawidłowy',
