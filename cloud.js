@@ -89,7 +89,20 @@ onAuthStateChanged(auth, (user) => {
   });
 });
 
+// Jazyková mutace, ze které účet vznikl (docs/i18n.md). Zapisuje se do profilu
+// jen jednou a dál se nepřepisuje, aby zůstalo vidět, odkud uživatel přišel,
+// i když si později otevře druhou doménu. Hodnotu bereme z <html lang>.
+let remoteLangSeen = false; // dorazil snapshot → víme, co je v cloudu
+let remoteLang = null;
+
+function currentLang() {
+  return document.documentElement.lang || 'cs';
+}
+
 function mergeIntoLocal(remote) {
+  remoteLangSeen = true;
+  remoteLang = typeof remote.lang === 'string' ? remote.lang : null;
+
   const localProgress = JSON.parse(localStorage.getItem('progress') || '{}');
   const localDays = new Set(JSON.parse(localStorage.getItem('studyDays') || '[]'));
   const remoteProgress = remote.progress || {};
@@ -220,6 +233,7 @@ export async function clearCloudProgress() {
       updatedAt: Date.now(),
     };
     if (style === 'pro' || style === 'student' || style === 'hantec') payload.style = style;
+    if (remoteLang) payload.lang = remoteLang; // bez merge by se jinak smazal
     suppressPushOnce = true;
     await setDoc(ref, payload); // no merge → progress map fully replaced with {}
     setSyncStatus('synced');
@@ -253,6 +267,8 @@ async function pushNow() {
     const activeLessonAt = Number(localStorage.getItem('activeLessonAt') || 0) || 0;
     const payload = { progress, studyDays, updatedAt: Date.now() };
     if (style === 'pro' || style === 'student' || style === 'hantec') payload.style = style;
+    // Jen když víme, že v cloudu jazyk ještě není — nikdy nepřepisujeme původní.
+    if (remoteLangSeen && !remoteLang) payload.lang = currentLang();
     if (streakRewards) payload.streakRewards = streakRewards;
     if (activeLessonAt > 0) {
       payload.activeLesson = activeLesson; // either the object or null
