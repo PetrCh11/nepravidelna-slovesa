@@ -841,6 +841,11 @@ main { flex: 1; padding: 28px 0 48px; }
 .review-item.wrong { border-left-color: var(--error); }
 .review-item .q-text { font-weight: 600; }
 .review-item .a-text { color: var(--text-muted); font-size: 0.88rem; margin-top: 2px; }
+.review-item .a-typed { color: var(--error); font-size: 0.88rem; margin-top: 4px; font-weight: 600; }
+
+/* Zámek vyhodnocení u zadaného testu — odemkne se, až žák pošle kód učiteli */
+.dt-reveal { max-width: 600px; margin: 18px auto 0; text-align: center; }
+.dt-reveal-note { margin: 0 0 10px; color: var(--text-muted); font-size: 0.88rem; }
 
 /* ---------- Footer ---------- */
 .app-footer {

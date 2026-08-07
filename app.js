@@ -718,6 +718,8 @@ const TEXTS = {
   dt_attempt_note: (n) => (n > 1 ? `Tohle je tvůj ${n}. pokus — v kódu to učitel uvidí.` : ''),
   dt_countdown_ready: 'Připrav se…',
   dt_countdown_go: 'Hodně štěstí! 🍀',
+  review_typed: (s) => `Tvoje odpověď: ${s}`,
+  review_skipped: 'Nestihl jsi odpovědět',
 
   dt_code_attempt: (n) => `${n}. pokus`,
   dt_code_copied: 'Kód zkopírován 📋',
@@ -3978,12 +3980,30 @@ function quizFinish() {
   state.quiz.review.forEach((r) => {
     const item = document.createElement('div');
     item.className = 'review-item' + (r.ok ? '' : ' wrong');
+    // U chyb ukazujeme i to, co žák napsal — jinak z výpisu nepozná, kde se spletl.
+    const typed = (r.typed || []).filter((x) => String(x).trim());
+    const mine = r.ok ? ''
+      : r.skipped ? `<div class="a-typed">${t('review_skipped')}</div>`
+        : typed.length ? `<div class="a-typed">${t('review_typed', dtEsc(typed.join(' – ')))}</div>` : '';
     item.innerHTML = `
       <div class="q-text">${r.ok ? '✅' : '❌'} ${r.verb.emoji || ''} ${r.verb.inf} – ${pickForm(r.verb, 'past', state.dialect)} – ${pickForm(r.verb, 'pp', state.dialect)}</div>
       <div class="a-text">${r.verb.cs}</div>
+      ${mine}
     `;
     review.appendChild(item);
   });
+  // Zadaný test: vyhodnocení až potom, co žák odešle kód učiteli.
+  const gate = $('#dt-reveal');
+  const gated = !!state.quiz.test;
+  review.classList.toggle('hidden', gated);
+  gate.classList.toggle('hidden', !gated);
+}
+
+function dtRevealReview() {
+  $('#dt-reveal').classList.add('hidden');
+  const review = $('#quiz-review');
+  review.classList.remove('hidden');
+  review.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // ============================================================
@@ -5490,6 +5510,7 @@ async function init() {
     else $('.quiz-setup').classList.remove('hidden');
   });
   $('#dt-start')?.addEventListener('click', dtStartTest);
+  $('#dt-reveal-btn')?.addEventListener('click', dtRevealReview);
   $('#dt-name')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') dtStartTest(); });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && state.currentView === 'quiz') {
