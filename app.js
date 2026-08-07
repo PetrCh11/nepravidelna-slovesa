@@ -677,7 +677,7 @@ const TEXTS = {
   dialect_ame: 'Varianta: americká (AmE)',
   dialect_bre: 'Varianta: britská (BrE)',
 
-  // --- Teacher mode (generátor testů) ---
+  // --- Teacher zone (generátor testů) ---
   teacher_pick_all: 'vybrat vše',
   teacher_pick_none: 'zrušit',
   teacher_selected: (n, g) =>
@@ -716,6 +716,8 @@ const TEXTS = {
   dt_intro_sub: (n) => `${n} ${n === 1 ? 'otázka' : n >= 2 && n <= 4 ? 'otázky' : 'otázek'} · po dokončení dostaneš kód pro učitele`,
   dt_name_missing: 'Vyplň prosím jméno, ať tě učitel pozná.',
   dt_attempt_note: (n) => (n > 1 ? `Tohle je tvůj ${n}. pokus — v kódu to učitel uvidí.` : ''),
+  dt_countdown_ready: 'Připrav se…',
+  dt_countdown_go: 'Hodně štěstí! 🍀',
 
   dt_code_attempt: (n) => `${n}. pokus`,
   dt_code_copied: 'Kód zkopírován 📋',
@@ -1220,6 +1222,7 @@ function setView(view) {
   // schovaná nastavovací obrazovka a viset testový režim).
   if (view !== 'quiz' && state.quiz.test) {
     dtStopTimer();
+    dtStopCountdown();
     state.quiz.test = null;
     $('#dt-intro')?.classList.add('hidden');
     $('#dt-result')?.classList.add('hidden');
@@ -4668,7 +4671,7 @@ function teacherPrint(kind) {
 // Celé zadání je zakódované v odkazu, nic se neukládá na server: každý, kdo
 // odkaz otevře, dostane díky seedovanému generátoru přesně stejný test.
 // Po dokončení dostane žák kód o odevzdání (jméno · skóre · pokus · kontrolní
-// součet), který pošle učiteli; ten ho ověří v Teacher mode.
+// součet), který pošle učiteli; ten ho ověří v Teacher zone.
 // ============================================================
 
 // Deterministický RNG (mulberry32) — stejný seed = stejné otázky pro celou třídu.
@@ -4702,7 +4705,7 @@ function allSubIdsInOrder() {
 }
 
 // Typy testu v odkazu. Pořadí je součástí formátu kódu — nové typy se přidávají
-// jen na konec. Mapování z papírového Teacher mode: inf2→fill, cs3→cs3,
+// jen na konec. Mapování z papírového Teacher zone: inf2→fill, cs3→cs3,
 // missing→missing, choice→mc.
 const DT_TYPES = ['mixed', 'mc', 'fill', 'cs3', 'missing'];
 const DT_TYPE_FROM_PAPER = { inf2: 'fill', cs3: 'cs3', missing: 'missing', choice: 'mc' };
@@ -4882,6 +4885,7 @@ function dtOpen(code) {
   if (!cfg) { toast(t('dt_bad_link'), 'error', 6000); setView('lesson'); return; }
   state.quiz.test = { ...cfg, code };
   setView('quiz');
+  dtStopCountdown();
   $('.quiz-setup').classList.add('hidden');
   $('.quiz-play').classList.add('hidden');
   $('.quiz-done').classList.add('hidden');
@@ -4922,6 +4926,47 @@ function dtStartTest() {
     $('#dt-name').focus();
     return;
   }
+  $('#dt-intro').classList.add('hidden');
+  dtCountdown(dtBeginTest);
+}
+
+// 5 → 1, pak přání štěstí a teprve potom první otázka. Žák tak neztratí první
+// sekundy testu na to, aby se zorientoval (a u limitu na slovo ani bod).
+function dtCountdown(done) {
+  const box = $('#dt-countdown');
+  const num = $('#dt-countdown-num');
+  const msg = $('#dt-countdown-msg');
+  box.classList.remove('hidden');
+  msg.textContent = t('dt_countdown_ready');
+  let left = 5;
+  const step = () => {
+    if (left > 0) {
+      num.textContent = left;
+      // Restart animace: bez reflow by se u stejné třídy znovu nepřehrála.
+      num.style.animation = 'none'; void num.offsetWidth; num.style.animation = '';
+      left -= 1;
+      state.quiz.countdownId = setTimeout(step, 1000);
+      return;
+    }
+    num.textContent = '🍀';
+    msg.textContent = t('dt_countdown_go');
+    state.quiz.countdownId = setTimeout(() => {
+      state.quiz.countdownId = null;
+      box.classList.add('hidden');
+      done();
+    }, 1200);
+  };
+  step();
+}
+
+function dtStopCountdown() {
+  if (state.quiz.countdownId) { clearTimeout(state.quiz.countdownId); state.quiz.countdownId = null; }
+  $('#dt-countdown')?.classList.add('hidden');
+}
+
+function dtBeginTest() {
+  const cfg = state.quiz.test;
+  if (!cfg) return;
   const pool = dtBuildPool(cfg);
   state.quiz.pool = pool;
   state.quiz.idx = 0;

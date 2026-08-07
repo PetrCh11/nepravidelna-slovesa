@@ -156,7 +156,7 @@
             <button class="menu-item" data-view="flashcards" role="menuitem" data-tone="menu_fc">🃏 Flashcards</button>
             <button class="menu-item" data-view="quiz" role="menuitem" data-tone="menu_quiz">✅ Volný kvíz</button>
             <button class="menu-item" data-view="auto" role="menuitem">🚗 Car mode <span class="menu-premium-badge">Premium</span></button>
-            <button class="menu-item" data-view="teacher" role="menuitem">🧑‍🏫 Teacher mode</button>
+            <button class="menu-item" data-view="teacher" role="menuitem">🧑‍🏫 Teacher zone</button>
             <hr class="menu-divider" />
             <button class="menu-item" id="theme-toggle-menu" role="menuitem" type="button">
               <span id="theme-toggle-menu-icon">🌙</span>
@@ -428,6 +428,12 @@
         </div>
       </div>
 
+      <!-- Odpočet před startem zadaného testu -->
+      <div class="dt-countdown hidden" id="dt-countdown" aria-live="polite">
+        <div class="dt-countdown-num" id="dt-countdown-num">5</div>
+        <p class="dt-countdown-msg" id="dt-countdown-msg"></p>
+      </div>
+
       <div class="quiz-play hidden">
         <div class="quiz-progress">
           <div class="quiz-counter"><span id="quiz-current">1</span> / <span id="quiz-total">10</span></div>
@@ -456,7 +462,7 @@
     <!-- TEACHER MODE VIEW -->
     <section id="view-teacher" class="view">
       <div class="intro intro-hero">
-        <h2>🧑‍🏫 Teacher mode</h2>
+        <h2>🧑‍🏫 Teacher zone</h2>
         <p class="hero-lead">Vyberte skupiny sloves, nastavte typ testu a vytiskněte písemku i s klíčem pro opravu. Zdarma pro všechny učitele.</p>
       </div>
 
@@ -808,7 +814,7 @@
     })();
   </script>
 
-  <!-- Teacher mode: tiskový kontejner — na obrazovce skrytý, při tisku jediný
+  <!-- Teacher zone: tiskový kontejner — na obrazovce skrytý, při tisku jediný
        viditelný obsah stránky (viz @media print ve styles.css) -->
   <div id="print-area" aria-hidden="true"></div>
 </body>

@@ -5570,7 +5570,7 @@ body.theme-dark .streak-info-badge {
    DIGITÁLNÍ TEST — odkaz pro žáky + kód o odevzdání
    ============================================================ */
 
-/* --- Učitel: blok v Teacher mode --- */
+/* --- Učitel: blok v Teacher zone --- */
 .dt-note { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
 .dt-link-box { margin-top: 14px; }
 .dt-link-box > label { display: block; font-weight: 600; margin-bottom: 6px; }
@@ -5620,14 +5620,44 @@ body.theme-dark .streak-info-badge {
 .dt-intro-sub { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 18px; }
 .dt-name-row { text-align: left; margin-bottom: 14px; }
 .dt-name-row label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; }
+/* Modrý rámeček: v barvě --border pole na podkladu karty splývalo a žák
+   nepoznal, kam má psát. */
 .dt-name-row input {
   width: 100%; padding: 11px 12px; box-sizing: border-box;
-  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  border: 1.5px solid rgba(74, 144, 226, 0.45); border-radius: var(--radius-sm);
   background: var(--bg-elev); color: var(--text); font: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.dt-name-row input:focus { border-color: var(--accent); outline: none; }
+.dt-name-row input:hover { border-color: var(--accent); }
+.dt-name-row input:focus {
+  border-color: var(--accent); outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.dt-name-row input::placeholder { color: var(--text-muted); opacity: 0.75; }
 .dt-name-hint { display: block; font-size: 0.76rem; color: var(--text-muted); margin-top: 5px; }
 .dt-attempt-note { font-size: 0.82rem; color: var(--warn); margin: 0 0 12px; }
+
+/* --- Žák: odpočet před startem testu --- */
+.dt-countdown {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; min-height: 46vh; text-align: center;
+}
+.dt-countdown-num {
+  font-size: 5.5rem; font-weight: 800; line-height: 1;
+  color: var(--accent);
+  animation: dt-count-pop 0.45s ease-out;
+}
+.dt-countdown-msg { margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text); }
+/* Jen zvětšení, ne prolnutí: kdyby prohlížeč animaci uspal (skrytá záložka),
+   číslo by při náběhu z opacity:0 zůstalo neviditelné. */
+@keyframes dt-count-pop {
+  0% { transform: scale(0.55); }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dt-countdown-num { animation: none; }
+}
 .dt-intro-card .btn { width: 100%; }
 
 /* --- Žák: kód o odevzdání --- */
@@ -5658,7 +5688,7 @@ body.theme-dark .streak-info-badge {
   border-bottom: 3px dotted var(--primary); color: var(--primary);
 }
 
-/* ---------- Teacher mode: typ testu jako dlaždice ---------- */
+/* ---------- Teacher zone: typ testu jako dlaždice ---------- */
 .tt-type-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -5686,7 +5716,7 @@ body.theme-dark .streak-info-badge {
 .tt-type-name { font-weight: 700; font-size: 0.9rem; }
 .tt-type-note { font-size: 0.76rem; color: var(--text-muted); }
 
-/* ---------- Teacher mode: záložky papír / odkaz ---------- */
+/* ---------- Teacher zone: záložky papír / odkaz ---------- */
 .tt-tabs {
   display: flex; gap: 6px;
   margin: 4px 0 16px;
