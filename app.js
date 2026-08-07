@@ -739,7 +739,8 @@ const TEXTS = {
   dt_verify_bad: '❌ nesedí',
   dt_verify_verified: 'jméno z účtu Google',
   dt_verify_empty: 'Vlož aspoň jeden kód.',
-  dt_verify_no_test: 'Nejdřív vytvoř odkaz na test — kódy se ověřují proti němu.',
+  dt_verify_no_test: 'Vlož kód testu — nebo rovnou odkaz, který jsi poslal žákům. Kódy se ověřují proti němu.',
+  dt_verify_bad_hint: 'Kód nesedí k žádnému testu vytvořenému na tomhle zařízení. Zkontroluj, že v poli nahoře je ten test, ze kterého kód pochází.',
   dt_verify_summary: (ok, total) => `Platných ${ok} z ${total}`,
 };
 
@@ -4459,7 +4460,9 @@ function renderTeacherSetup() {
   // Ověřovací pole si pamatuje poslední vytvořený test i po reloadu.
   try {
     const last = localStorage.getItem('dtLastTest');
-    if (last) { teacher.testCode = last; $('#dt-verify-test').value = last; }
+    // Učitelé, kteří odkaz vytvořili ještě před zavedením seznamu testů, mají
+    // uložený jen ten poslední — ať i jejich kódy mají proti čemu se ověřit.
+    if (last) { teacher.testCode = last; $('#dt-verify-test').value = last; dtRememberTest(last); }
   } catch (_) {}
 }
 
@@ -4858,6 +4861,66 @@ function dtVerifyCode(line, testCode) {
   return { ...p, valid: dtParseCode(expected)?.sum === p.sum };
 }
 
+// Kód putuje přes Teams, Classroom, mail i papírek — cestou se z mezer stanou
+// nezlomitelné, z oddělovače „·“ jiná odrážka a leckde přibude zero-width znak.
+// Bez téhle normalizace by se takový kód nerozebral a učiteli by se ukázal jako
+// neplatný, přestože žák nic neupravil.
+function dtNormalizeCodeLine(s) {
+  return String(s)
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/[\u00A0\u2007\u202F]/g, ' ')
+    .replace(/[\u2022\u2219\u2027\u30FB]/g, '\u00B7')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+}
+
+// Jméno i vyplněné tvary píše žák a do tabulky učitele jdou přes innerHTML.
+function dtEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
+  ));
+}
+
+// Do políčka pro test smí učitel vložit i celý odkaz — kód si z něj vezmeme sami.
+function dtTestCodeFrom(input) {
+  const s = String(input || '').trim();
+  const m = /#\/test\/([0-9a-z]+)/i.exec(s);
+  return (m ? m[1] : s).toLowerCase();
+}
+
+// Testy vytvořené na tomhle zařízení (nejnovější první). Učitel typicky zadá
+// víc testů a kódy sbírá později — ověřit se proto musí proti všem, ne jen
+// proti tomu poslednímu, jinak starší kódy hlásí „nesedí“.
+function dtKnownTests() {
+  try {
+    const arr = JSON.parse(localStorage.getItem('dtTests') || '[]');
+    return Array.isArray(arr) ? arr.filter((x) => typeof x === 'string') : [];
+  } catch (_) { return []; }
+}
+
+function dtRememberTest(code) {
+  try {
+    const list = [code, ...dtKnownTests().filter((c) => c !== code)].slice(0, 40);
+    localStorage.setItem('dtTests', JSON.stringify(list));
+  } catch (_) {}
+}
+
+// Zalomený kód (mail, chat) přijde jako víc řádků. Řádek, který se sám o sobě
+// nerozebere, proto zkusíme přilepit k dalšímu, než ho prohlásíme za neplatný.
+function dtSplitCodeLines(raw) {
+  const lines = String(raw).split('\n').map(dtNormalizeCodeLine).filter(Boolean);
+  const out = [];
+  let buf = '';
+  for (const line of lines) {
+    const candidate = buf ? `${buf} ${line}` : line;
+    if (dtParseCode(candidate)) { out.push(candidate); buf = ''; }
+    else if (dtParseCode(line)) { if (buf) out.push(buf); out.push(line); buf = ''; }
+    else buf = candidate;
+  }
+  if (buf) out.push(buf);
+  return out;
+}
+
 // --- Žákovská strana ---
 
 // Kolikátý pokus to na tomhle zařízení je. Smazat úložiště jde, ale běžný
@@ -5109,6 +5172,7 @@ function dtCreateLink() {
   const code = dtEncode(cfg);
   teacher.testCode = code;
   try { localStorage.setItem('dtLastTest', code); } catch (_) {}
+  dtRememberTest(code);
   const url = `${location.origin}${location.pathname}#/test/${code}`;
   $('#dt-link-box').classList.remove('hidden');
   $('#dt-link').value = url;
@@ -5124,28 +5188,39 @@ function dtCopyLink() {
 }
 
 function dtRunVerify() {
-  const testCode = $('#dt-verify-test').value.trim();
+  const field = $('#dt-verify-test');
+  const testCode = dtTestCodeFrom(field.value);
+  if (testCode && testCode !== field.value) field.value = testCode; // vložený odkaz → kód
   const raw = $('#dt-verify-input').value.trim();
   const out = $('#dt-verify-out');
-  if (!testCode) { toast(t('dt_verify_no_test'), 'error'); return; }
+  // Ověřujeme proti všem testům z tohohle zařízení, ne jen proti tomu v poli —
+  // učitel zadá víc testů a kódy sbírá později.
+  const candidates = [...new Set([testCode, ...dtKnownTests()].filter(Boolean))];
+  if (!candidates.length) { toast(t('dt_verify_no_test'), 'error'); return; }
   if (!raw) { toast(t('dt_verify_empty'), 'error'); return; }
-  const rows = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+  const rows = dtSplitCodeLines(raw);
   let ok = 0;
   const body = rows.map((line) => {
-    const r = dtVerifyCode(line, testCode);
+    let r = null;
+    for (const c of candidates) {
+      const res = dtVerifyCode(line, c);
+      if (!res) break;          // řádek se nerozebral — jiný test to nespraví
+      if (!r) r = res;
+      if (res.valid) { r = res; break; }
+    }
     if (!r) {
-      return `<tr class="dt-row-bad"><td colspan="4">${line}</td><td>${t('dt_verify_bad')}</td></tr>`;
+      return `<tr class="dt-row-bad"><td colspan="4">${dtEsc(line)}</td><td title="${t('dt_verify_bad_hint')}">${t('dt_verify_bad')}</td></tr>`;
     }
     if (r.valid) ok++;
     const wrongCells = (r.wrong || []).length
-      ? r.wrong.map((w) => `<span class="dt-wrong-item"><b>${w.i}.</b> ${w.typed.join(' / ')}</span>`).join('')
+      ? r.wrong.map((w) => `<span class="dt-wrong-item"><b>${w.i}.</b> ${dtEsc(w.typed.join(' / '))}</span>`).join('')
       : `<span class="dt-all-ok">${t('dt_verify_no_mistakes')}</span>`;
     return `<tr class="${r.valid ? '' : 'dt-row-bad'}">
-      <td>${r.name || '—'}${r.verified ? ` <span class="dt-verified" title="${t('dt_verify_verified')}">✓</span>` : ''}</td>
+      <td>${dtEsc(r.name) || '—'}${r.verified ? ` <span class="dt-verified" title="${t('dt_verify_verified')}">✓</span>` : ''}</td>
       <td>${r.score}/${r.total}${r.timedOut ? ` <span class="dt-timeout" title="${t('dt_verify_timeout')}">⏱</span>` : ''}</td>
       <td>${r.attempt}.</td>
       <td class="dt-wrong-cell">${wrongCells}</td>
-      <td>${r.valid ? t('dt_verify_ok') : t('dt_verify_bad')}</td>
+      <td${r.valid ? '' : ` title="${t('dt_verify_bad_hint')}"`}>${r.valid ? t('dt_verify_ok') : t('dt_verify_bad')}</td>
     </tr>`;
   }).join('');
   out.innerHTML = `
