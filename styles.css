@@ -795,6 +795,15 @@ main { flex: 1; padding: 28px 0 48px; }
 .quiz-option:disabled { cursor: default; }
 .quiz-fill-inputs { display: flex; flex-direction: column; gap: 4px; max-width: 460px; margin: 0 auto 14px; }
 .quiz-fill-inputs:not(:has(.fill-row)) { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+/* Všechny tři tvary (česky → infinitiv/past/participle) pod sebe: vedle sebe se
+   na užších displejích stejně lámaly a bylo hůř poznat, co kam patří. */
+.quiz-fill-inputs:not(:has(.fill-row)):has(input:nth-of-type(3)) {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 8px;
+  max-width: 320px;
+}
 .quiz-fill-inputs input {
   padding: 10px 12px;
   border: 2px solid var(--border);
