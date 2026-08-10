@@ -594,6 +594,31 @@ def build_group_page(sub_idx, sub, parent_sec):
         </div>
       </section>
 
+      <section class="seo-pdf-section">
+        <h2 id="pdf">Czasowniki nieregularne do pobrania w PDF</h2>
+        <p>
+          Nie tylko tę grupę, ale <strong>całą tabelę {TOTAL} czasowników</strong>
+          możesz pobrać za darmo w PDF — przejrzyście, grupa po grupie,
+          z kolorowo zaznaczoną zmianą w każdym słowie. Do wydruku do zeszytu
+          i do nauki offline.
+        </p>
+        <a class="seo-pdf-download" href="/{PDF}" download data-track="pdf_grupa_{sub_slug}">
+          <span class="seo-pdf-ico" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="38" height="38">
+              <rect x="5" y="2" width="22" height="28" rx="3" fill="#ffffff" stroke="#e0dcd3" stroke-width="1.4"/>
+              <path d="M20 2v6h7" fill="none" stroke="#e0dcd3" stroke-width="1.4"/>
+              <rect x="7" y="17" width="18" height="9" rx="2" fill="#e2483d"/>
+              <text x="16" y="23.6" font-size="6.4" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif">PDF</text>
+            </svg>
+          </span>
+          <span class="seo-pdf-text">
+            <strong>Pobierz zestawienie w PDF</strong>
+            <span>Wszystkie {TOTAL} czasowników w grupach — do druku i offline</span>
+          </span>
+          <span class="seo-pdf-arrow" aria-hidden="true">⬇</span>
+        </a>
+      </section>
+
       <section class="why-groups">
         <h2>Dlaczego warto uczyć się czasowników grupami?</h2>
         <p>
