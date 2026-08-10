@@ -5758,12 +5758,19 @@ body.theme-dark .streak-info-badge {
 .dt-verify-block textarea { margin-top: 10px; }
 
 /* Chybné odpovědi v tabulce ověření */
-.dt-wrong-cell { max-width: 260px; }
+.dt-wrong-cell { max-width: 340px; }
 .dt-wrong-item {
-  display: inline-block; margin: 1px 6px 1px 0;
-  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.84em;
+  display: block; margin: 0 0 7px; font-size: 0.84em; line-height: 1.35;
 }
-.dt-wrong-item b { color: var(--text-muted); font-weight: 600; }
+.dt-wrong-item:last-child { margin-bottom: 0; }
+.dt-wrong-item b { color: var(--text-muted); font-weight: 700; margin-right: 3px; }
+/* Zadání (české sloveso + správné tvary) nad tím, co žák skutečně napsal */
+.dt-wrong-verb { display: block; color: var(--text-muted); }
+.dt-wrong-typed {
+  display: block; color: var(--error); font-weight: 600;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.dt-wrong-blank { display: block; color: var(--text-muted); font-style: italic; }
 .dt-all-ok { color: var(--success); font-size: 0.85em; }
 
 /* Odpočet času v testu */

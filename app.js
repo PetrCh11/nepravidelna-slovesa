@@ -737,6 +737,7 @@ const TEXTS = {
   dt_limit_note_test: (txt) => `⏱ Na celý test máš ${txt}.`,
   dt_limit_note_word: (txt) => `⏱ Na každé sloveso máš ${txt} — pak se otázka uzavře.`,
   dt_verify_no_mistakes: 'bez chyby',
+  dt_verify_blank: 'nevyplněno',
   dt_verify_ok: '✅ platný',
   dt_verify_bad: '❌ nesedí',
   dt_verify_verified: 'jméno z účtu Google',
@@ -5220,20 +5221,44 @@ function dtRunVerify() {
   if (!raw) { toast(t('dt_verify_empty'), 'error'); return; }
   const rows = dtSplitCodeLines(raw);
   let ok = 0;
+  // Zadání testu je deterministické (seed v kódu testu), takže ze samotného
+  // kódu poskládáme tu samou sadu slov a víme, které sloveso bylo otázka č. N.
+  // Bez toho učitel u nevyplněné odpovědi vidí jen číslo.
+  const pools = new Map();
+  const poolFor = (code) => {
+    if (!pools.has(code)) {
+      const cfg = dtDecode(code);
+      pools.set(code, cfg ? dtBuildPool(cfg) : null);
+    }
+    return pools.get(code);
+  };
   const body = rows.map((line) => {
     let r = null;
+    let matched = null;
     for (const c of candidates) {
       const res = dtVerifyCode(line, c);
       if (!res) break;          // řádek se nerozebral — jiný test to nespraví
-      if (!r) r = res;
-      if (res.valid) { r = res; break; }
+      if (!r) { r = res; matched = c; }
+      if (res.valid) { r = res; matched = c; break; }
     }
     if (!r) {
       return `<tr class="dt-row-bad"><td colspan="4">${dtEsc(line)}</td><td title="${t('dt_verify_bad_hint')}">${t('dt_verify_bad')}</td></tr>`;
     }
     if (r.valid) ok++;
+    const pool = r.valid ? poolFor(matched) : null;
     const wrongCells = (r.wrong || []).length
-      ? r.wrong.map((w) => `<span class="dt-wrong-item"><b>${w.i}.</b> ${dtEsc(w.typed.join(' / '))}</span>`).join('')
+      ? r.wrong.map((w) => {
+        const v = pool && pool[w.i - 1];
+        const verbPart = `<span class="dt-wrong-verb"><b>${w.i}.</b>${v
+          ? ` ${dtEsc(v.cs)} → ${dtEsc(v.inf)} – ${dtEsc(pickForm(v, 'past', state.dialect))} – ${dtEsc(pickForm(v, 'pp', state.dialect))}`
+          : ''}</span>`;
+        // Samé pomlčky = žák nevyplnil nic; „—/—/—“ by vypadalo jako odpověď.
+        const filled = w.typed.filter((x) => x && x !== '—' && String(x).trim());
+        const typedPart = filled.length
+          ? `<span class="dt-wrong-typed">${dtEsc(w.typed.join(' / '))}</span>`
+          : `<span class="dt-wrong-blank">${t('dt_verify_blank')}</span>`;
+        return `<span class="dt-wrong-item">${verbPart}${typedPart}</span>`;
+      }).join('')
       : `<span class="dt-all-ok">${t('dt_verify_no_mistakes')}</span>`;
     return `<tr class="${r.valid ? '' : 'dt-row-bad'}">
       <td>${dtEsc(r.name) || '—'}${r.verified ? ` <span class="dt-verified" title="${t('dt_verify_verified')}">✓</span>` : ''}</td>
