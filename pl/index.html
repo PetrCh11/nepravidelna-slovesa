@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="styles.css" />
   <!-- Jazykový pack — musí se načíst PŘED app.js (docs/i18n.md).
        ?v=N bumpni při každé změně packu (cache busting; stejný ?v patří do sw.js ASSETS). -->
-  <script src="lang/pl.js?v=7"></script>
+  <script src="lang/pl.js?v=8"></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
   <script>
@@ -436,6 +436,12 @@
         </div>
       </div>
 
+      <!-- Odliczanie przed startem zadanego testu -->
+      <div class="dt-countdown hidden" id="dt-countdown" aria-live="polite">
+        <div class="dt-countdown-num" id="dt-countdown-num">5</div>
+        <p class="dt-countdown-msg" id="dt-countdown-msg"></p>
+      </div>
+
       <div class="quiz-play hidden">
         <div class="quiz-progress">
           <div class="quiz-counter"><span id="quiz-current">1</span> / <span id="quiz-total">10</span></div>
@@ -455,6 +461,11 @@
             <code id="dt-code"></code>
             <button id="dt-copy-code" class="btn btn-primary btn-sm" type="button">Kopiuj kod</button>
           </div>
+        </div>
+        <!-- Przy teście zadanym linkiem wyniki odblokowują się dopiero po wysłaniu kodu -->
+        <div class="dt-reveal hidden" id="dt-reveal">
+          <p class="dt-reveal-note">Gdy wyślesz kod nauczycielowi, możesz zobaczyć, jak ci poszło.</p>
+          <button id="dt-reveal-btn" class="btn btn-secondary" type="button">📊 Kod wysłany — pokaż wyniki</button>
         </div>
         <div id="quiz-review" class="quiz-review"></div>
         <button id="quiz-restart" class="btn btn-primary">Spróbuj jeszcze raz</button>
@@ -611,7 +622,7 @@
         <div class="teacher-block dt-verify-block">
           <h3 class="teacher-block-title">✅ Sprawdź kody od uczniów</h3>
           <p class="dt-note">Wklej kody (choćby całą kolumnę, jeden na wiersz) i sprawdź je za jednym razem.</p>
-          <input id="dt-verify-test" type="text" class="dt-verify-test" placeholder="kod testu (uzupełni się sam po utworzeniu linku)" />
+          <input id="dt-verify-test" type="text" class="dt-verify-test" placeholder="kod testu lub link, który wysłałeś(-aś) uczniom (uzupełni się sam)" />
           <textarea id="dt-verify-input" rows="4" placeholder="Jan Kowalski ✓ · 8/10 · 1. próba · K3F9"></textarea>
           <button id="dt-verify-btn" class="btn btn-primary btn-sm" type="button">Sprawdź</button>
           <div id="dt-verify-out" class="dt-verify-out hidden"></div>
@@ -808,5 +819,9 @@
       });
     })();
   </script>
+
+  <!-- Teacher zone: kontener wydruku — na ekranie ukryty, przy drukowaniu
+       jedyna widoczna treść strony (patrz @media print w styles.css) -->
+  <div id="print-area" aria-hidden="true"></div>
 </body>
 </html>

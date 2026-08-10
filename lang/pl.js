@@ -430,8 +430,20 @@
       dt_verify_bad: '❌ nie zgadza się',
       dt_verify_verified: 'imię z konta Google',
       dt_verify_empty: 'Wklej przynajmniej jeden kod.',
-      dt_verify_no_test: 'Najpierw utwórz link do testu — kody sprawdzane są względem niego.',
+      dt_verify_no_test: 'Wklej kod testu — albo od razu link, który wysłałeś(-aś) uczniom. Na jego podstawie sprawdzane są kody.',
       dt_verify_summary: function (ok, total) { return 'Prawidłowych ' + ok + ' z ' + total; },
+      dt_verify_blank: 'nie wypełniono',
+      // Jde do atributu title="…" — bez uvozovek uvnitř.
+      dt_verify_bad_hint: 'Kod nie pasuje do żadnego testu utworzonego na tym urządzeniu. Sprawdź, czy w polu powyżej jest ten test, z którego pochodzi kod.',
+
+      // ---- Odliczanie przed startem zadanego testu ---------------------------
+      dt_countdown_ready: 'Przygotuj się…',
+      dt_countdown_go: 'Powodzenia! 🍀',
+
+      // Czas przeszły w polszczyźnie ma rodzaj — pack trzyma konwencję „(-aś)”
+      // (por. toast_resume), żeby tekst pasował do uczennicy i ucznia.
+      review_typed: function (s) { return 'Twoja odpowiedź: ' + s; },
+      review_skipped: 'Nie zdążyłeś(-aś) odpowiedzieć',
     },
 
     // ---- Překlady dat (localizeData v app.js) -------------------------------
