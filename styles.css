@@ -5470,6 +5470,8 @@ body.theme-dark .streak-info-badge {
   border-left: 5px solid var(--accent);
   border-radius: var(--radius);
 }
+/* PDF ke stažení nesmí lepit na hero box s nadpisem Teacher zone */
+#view-teacher .pdf-download { margin-top: 20px; }
 .teacher-block { border-left: 4px solid var(--accent); }
 .teacher-block-title { color: var(--accent); }
 .teacher-check-strong { font-weight: 700; }
