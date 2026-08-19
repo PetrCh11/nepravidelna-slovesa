@@ -971,25 +971,46 @@ function _allVoices() {
   try { return window.speechSynthesis.getVoices() || []; } catch (_) { return []; }
 }
 
+// macOS a Chrome nabízí i „hlasy pro zábavu" (Grandma, Rocko, Bells…), které
+// znějí komicky. Jméno hlasu jimi vždycky začíná, takže kotvíme na začátek.
+const NOVELTY_VOICE_RE = /^(grandma|grandpa|rocko|flo|eddy|reed|sandy|shelley|bells|trinoids|albert|bad news|good news|bahh|boing|bubbles|cellos|jester|organ|superstar|whisper|zarvox|wobble|deranged|hysterical|junior|ralph|fred|kathy|princess)\b/i;
+
+// Ze všech anglických hlasů vybereme nejvhodnější podle skóre. Lokální hlas má
+// přednost před síťovým („Google …"): síťový potřebuje připojení a při jeho
+// výpadku Chrome spadne na výchozí hlas systému — na českém Windows tedy
+// anglické slovo přečte česky.
 function pickEnglishVoice(lang) {
   const voices = _allVoices();
   if (!voices.length) return null;
   const wanted = (lang || 'en-GB').toLowerCase();
-  // 1) Exact match
-  let v = voices.find((vv) => (vv.lang || '').toLowerCase() === wanted);
-  if (v) return v;
-  // 2) Same region prefix (en-us vs en-US-variant)
-  const region = wanted.split('-')[1];
-  if (region) {
-    v = voices.find((vv) => (vv.lang || '').toLowerCase().startsWith('en-' + region));
-    if (v) return v;
-  }
-  // 3) Any English voice — prefer non-novelty (no "Bells", "Trinoids" etc.) by
-  //    sorting localService voices first (those are the OS-quality ones).
-  const enVoices = voices.filter((vv) => (vv.lang || '').toLowerCase().startsWith('en'));
-  if (enVoices.length === 0) return null;
-  enVoices.sort((a, b) => (b.localService ? 1 : 0) - (a.localService ? 1 : 0));
-  return enVoices[0];
+  const region = wanted.split('-')[1] || '';
+  const enVoices = voices.filter((v) => (v.lang || '').toLowerCase().startsWith('en'));
+  if (!enVoices.length) return null;
+  const score = (v) => {
+    const l = (v.lang || '').toLowerCase();
+    let s = 0;
+    if (l === wanted) s += 8;                            // přesně en-GB / en-US
+    else if (region && l.startsWith('en-' + region)) s += 6;
+    if (v.localService) s += 4;                          // offline, bez výpadků
+    if (v.default) s += 2;                               // volba uživatele v systému
+    if (NOVELTY_VOICE_RE.test(v.name || '')) s -= 5;
+    return s;
+  };
+  return enVoices.slice().sort((a, b) => score(b) - score(a))[0];
+}
+
+// Chromium plní getVoices() asynchronně. Když student klikne na sloveso dřív,
+// než se seznam načte, zůstane utterance bez hlasu a prohlížeč sáhne po
+// výchozím hlase systému — na české Windows tedy anglické slovo přečte česky.
+// Proto s prvním vyslovením počkáme, až seznam dorazí (max ~250 ms).
+// Když už hlasy jsou (Safari je plní synchronně), voláme rovnou, aby se
+// nepřerušil řetěz uživatelského gesta, který iOS pro první speak() vyžaduje.
+function whenVoicesReady(run) {
+  if (_allVoices().length) { run(); return; }
+  let fired = false;
+  const go = () => { if (fired) return; fired = true; run(); };
+  try { window.speechSynthesis.addEventListener('voiceschanged', go, { once: true }); } catch (_) {}
+  setTimeout(go, 250);
 }
 
 let _noEnVoiceWarned = false;
@@ -1024,13 +1045,15 @@ if ('speechSynthesis' in window) {
 
 function speak(text, dialect) {
   if (!('speechSynthesis' in window)) return;
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = dialect === 'AmE' ? 'en-US' : 'en-GB';
-  const v = pickEnglishVoice(utter.lang);
-  if (v) utter.voice = v;
-  utter.rate = 0.9;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utter);
+  whenVoicesReady(() => {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = dialect === 'AmE' ? 'en-US' : 'en-GB';
+    const v = pickEnglishVoice(utter.lang);
+    if (v) utter.voice = v;
+    utter.rate = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  });
 }
 
 // ============================================================
@@ -3612,14 +3635,17 @@ function speakCs(text) {
 function speakEn(text) {
   return new Promise((resolve) => {
     if (!('speechSynthesis' in window) || autoSession?.aborted || autoSession?.paused) return resolve();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = state.dialect === 'AmE' ? 'en-US' : 'en-GB';
-    const v = pickEnglishVoice(u.lang);
-    if (v) u.voice = v;
-    u.rate = autoSession?.tempo?.rateEn || 0.85;
-    u.onend = () => resolve();
-    u.onerror = () => resolve();
-    window.speechSynthesis.speak(u);
+    whenVoicesReady(() => {
+      if (autoSession?.aborted || autoSession?.paused) return resolve();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = state.dialect === 'AmE' ? 'en-US' : 'en-GB';
+      const v = pickEnglishVoice(u.lang);
+      if (v) u.voice = v;
+      u.rate = autoSession?.tempo?.rateEn || 0.85;
+      u.onend = () => resolve();
+      u.onerror = () => resolve();
+      window.speechSynthesis.speak(u);
+    });
   });
 }
 
