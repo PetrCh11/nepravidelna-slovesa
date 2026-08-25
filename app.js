@@ -1455,6 +1455,14 @@ function handleDeepLink() {
     dtOpen(testMatch[1]);
     return;
   }
+  // Teacher zone: #/teacher — odkaz z /pro-skoly/ a z mailů školám, aby učitel
+  // nemusel generátor testů hledat v menu.
+  if (/^#\/teacher\/?$/i.test(window.location.hash || '')) {
+    history.replaceState(null, '', window.location.pathname);
+    track('deeplink_teacher');
+    setView('teacher');
+    return;
+  }
   let target = null;
   const hashMatch = (window.location.hash || '').match(/^#\/skupina\/([\w.\-]+)/);
   if (hashMatch) target = hashMatch[1];

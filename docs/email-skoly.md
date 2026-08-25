@@ -1,10 +1,124 @@
 # Cold-outreach email pro učitele a školy
 
-## Verze A — krátká, osobní (doporučená)
+> **Aktualizováno 2026-08-25.** Nabídka se posunula: hlavní lákadlo už není
+> „appka pro studenty", ale **generátor písemek v Teacher zone** — ten učiteli
+> ušetří práci hned, zatímco appka pro studenty se vyplatí až za měsíce.
+> Starší znění (jen appka) je na konci souboru v archivu.
 
-**Předmět:** Appka na nepravidelná slovesa — pro vaše studenty zdarma
+## Dvě kampaně
+
+| | komu | kdy | šablona |
+|---|---|---|---|
+| **A** | ředitelé / vedení (adresy z rejstříku MŠMT) | přípravný týden a konec srpna | **C1** |
+| **B** | učitelé AJ (adresy ručně z webů škol) | první dva týdny září | **A1**, follow-up **B1** |
+
+Kampaň A jde na objem, kampaň B na konverzi. Nemíchat v jednom týdnu — když
+ředitel mail přepošle a učiteli přijde paralelně vlastní, vypadá to jako spam.
 
 ---
+
+## Šablona C1 — ředitel / vedení školy (kampaň A)
+
+**Předmět:** Generátor písemek na nepravidelná slovesa — zdarma pro vaše učitele AJ
+
+---
+
+Dobrý den,
+
+jsem lektor angličtiny a provozuju web **ucseslovesa.cz** na anglická nepravidelná slovesa. Pro učitele jsem na něm postavil věc, která by se mohla hodit vašim vyučujícím angličtiny hned v září:
+
+**Generátor písemek.** Učitel vybere skupiny sloves, počet slov a typ zadání a web vysází hotovou písemku **i s klíčem pro opravu** — volitelně ve dvou variantách A/B proti opisování. Nebo z toho udělá odkaz, který žáci vyplní na mobilu. Je to **zdarma, bez registrace a bez omezení počtu testů**.
+
+Odkaz rovnou na generátor: **https://ucseslovesa.cz/#/teacher**
+Popis pro učitele: **https://ucseslovesa.cz/pro-skoly/**
+
+Dvě věci, které bývají pro školu podstatné:
+
+- **Digitální test neukládá o žácích vůbec nic** — žádné účty, žádná registrace, žádná databáze. Výsledek se přenese jen krátkým kódem, který žák opíše.
+- Vedle generátoru je i **přehled všech 106 sloves v PDF** k vytištění, taky zdarma.
+
+Byl bych rád, kdybyste to přeposlal/a vyučujícím angličtiny — ať posoudí sami, jestli jim to ušetří čas. Kdyby se cokoli hodilo doplnit, rád odpovím.
+
+S pozdravem
+
+Petr Chamula
+lektor angličtiny · hello@ucseslovesa.cz · ucseslovesa.cz
+
+*Pokud si nepřejete další sdělení, odpovězte prosím slovem „nezasílat" a už se neozvu.*
+
+---
+
+## Šablona A1 — učitel AJ (kampaň B, září)
+
+**Předmět:** Písemka na nepravidelná slovesa i s klíčem — zdarma
+
+---
+
+Dobrý den paní/pane [příjmení],
+
+jsem lektor angličtiny. Postavil jsem web na nepravidelná slovesa a součástí je generátor písemek, který by se vám teď v září mohl hodit na opakování po prázdninách:
+
+**https://ucseslovesa.cz/#/teacher**
+
+Vyberete skupiny sloves a počet slov, kliknete a máte zadání **i klíč pro opravu**. Dvě varianty A/B proti opisování jsou zaškrtávátko. Když chcete test zadat digitálně, vygeneruje se odkaz — žáci ho vyplní na mobilu a odevzdají krátký kód, který zkontrolujete hromadně. Nic se o nich nikam neukládá.
+
+Zdarma, bez registrace, bez limitu na počet testů. [JEDNA VĚTA NAVÍC — personalizace]
+
+Kdyby se to hodilo, budu rád. A kdyby vám něco chybělo, napište — dělám to sám a připomínky od učitelů zapracovávám.
+
+Petr Chamula
+hello@ucseslovesa.cz
+
+*Pokud si nepřejete další sdělení, odpovězte prosím slovem „nezasílat" a už se neozvu.*
+
+---
+
+## Šablona B1 — velmi krátká (LinkedIn DM, follow-up po měsíci)
+
+Dobrý den,
+
+jsem lektor AJ — postavil jsem generátor písemek na nepravidelná slovesa: **ucseslovesa.cz/#/teacher**. Vybrat skupiny, kliknout, vytisknout zadání i klíč. Zdarma, bez registrace.
+
+Kdyby se hodil, budu rád.
+
+Petr Chamula
+
+---
+
+## Tipy k použití
+
+- **Personalizace:** u kampaně B vždy oslovení jménem + jedna věta navíc. U kampaně A
+  (oficiální adresy škol) oslovení jménem nemusí sedět — radši neutrální „Dobrý den"
+  než špatně vyskloňované jméno z rejstříku.
+- **Posílej přes MailerSend** z hello@ucseslovesa.cz. Doména má SPF i DKIM
+  (`mlsend2._domainkey`); maily ručně ze Zoner webmailu DKIM podepsané nejsou.
+- **Žádný attachement.** Žádné PDF. Jen odkaz.
+- **Nikdy nepiš „premium", „freemium", „onboarding"** — používej „zdarma", „kód", „vyzkoušet".
+- **Neprodávej v prvním mailu školní licenci.** Cílem je, aby si učitel otevřel
+  generátor. Cena přijde na řadu, až sám napíše.
+- **Opt-out věta je povinná** (zákon 480/2004) a je součástí každé šablony výše.
+  Nemazat ji kvůli délce mailu.
+
+## Pravidla objemu
+
+Platí pravidla z `docs/oslovene-skoly.md` (lokální soubor, necommitovat).
+Pro kampaň A navíc:
+
+- **Ramp doručitelnosti:** 1. týden 60–80 mailů, 2. týden 120, pak až 200.
+  Doména má za sebou 8 odeslaných mailů celkem — skok na stovky vypadá jako spam.
+- **Jedna adresa na školu.** U kampaně A píšeme na oficiální adresu vedení,
+  ne na učitele. Ti přijdou na řadu v kampani B.
+- **Zaznamenávej odpovědi**, ne jen odeslání. Po prvních ~50 mailech se pozná,
+  jestli má smysl posílat dalších 200.
+
+---
+
+## Archiv — původní znění (jen appka pro studenty, do června 2026)
+
+Tato verze neprodávala generátor testů, jen aplikaci pro studenty. Zaznamenaná
+odezva: 8 odeslaných, 0 odpovědí. Nepoužívat, ponecháno pro srovnání.
+
+**Předmět:** Appka na nepravidelná slovesa — pro vaše studenty zdarma
 
 Dobrý den paní/pane [příjmení],
 
@@ -20,60 +134,3 @@ Díky za čas.
 
 Petr Chamula
 hello@ucseslovesa.cz
-
----
-
-## Verze B — ještě kratší (follow-up nebo LinkedIn DM)
-
-**Předmět:** Appka na irregular verbs — pro vás zdarma
-
-Dobrý den,
-
-jsem lektor AJ, postavil jsem appku na nepravidelná slovesa: **ucseslovesa.cz**. 106 sloves, 24 výslovnostních skupin, spaced repetition, offline.
-
-Pro učitele rok zdarma — kód **UCITELE8892**.
-
-Kdyby se hodila vašim studentům, budu rád.
-
-Petr Chamula
-
----
-
-## Verze C — pro ředitele / vedení školy
-
-**Předmět:** Appka na nepravidelná slovesa pro vaše učitele AJ — nabídka zdarma
-
----
-
-Dobrý den paní ředitelko / pane řediteli [příjmení],
-
-jsem lektor angličtiny a poslední rok jsem ve volném čase stavěl webovou appku na nepravidelná slovesa pro své studenty: **https://ucseslovesa.cz**
-
-106 sloves ve 24 výslovnostních skupinách, spaced repetition, audio, funguje offline, bez reklam.
-
-Pro učitele AJ na vaší škole nabízím **rok zdarma** — kód **UCITELE8892**. Pokud by se osvědčila ve výuce, máme i **roční licenci pro celou školu za 2 490 Kč** (neomezený počet studentů, bez automatické obnovy, DPA na vyžádání). Detaily: https://ucseslovesa.cz/pro-skoly/
-
-Píšu paralelně i [jméno učitele AJ], aby si appku mohl/a rovnou vyzkoušet. Kdyby vás cokoli zajímalo, rád zodpovím.
-
-S pozdravem
-
-Petr Chamula
-hello@ucseslovesa.cz
-
----
-
-## Tipy k použití
-
-- **Personalizace:** vždy minimálně oslovení jménem. Ideálně jedna věta navíc („viděl jsem váš článek o…", „učíte na [škola], že?"). Bez toho to jde do spamu.
-- **Posílej z hello@ucseslovesa.cz**, ne z gmailu — vážnější dojem.
-- **Žádný attachement.** Žádné PDF. Jen odkaz.
-- **Follow-up po 7 dnech** jednou, pak nech být.
-- **Nikdy nepiš „premium", „freemium", „onboarding"** — používej „rok zdarma", „kód", „vyzkoušet".
-
-## Strategie: učitel + ředitel paralelně
-
-1. **Učiteli AJ pošli verzi A** (osobnější, lektor lektorovi). Učitel je ten, kdo to reálně použije ve třídě.
-2. **Řediteli pošli verzi C** ve stejný den, **NE BCC** — každému zvlášť. V mailu řediteli zmiň jménem učitele, kterému píšeš paralelně. Vedení tak ví, že to není pokoutní, a učitel má krytá záda.
-3. **Mailové adresy hledej na webu školy** v sekci „Pedagogický sbor" / „Kontakty" / „Vyučující — angličtina". Nepoužívej `info@` ani `skola@` — to je trash bin.
-4. Pokud na webu není přímý mail učitele, pošli **jen řediteli verzi C** s prosbou o předání. Slabší, ale stále lepší než info@.
-5. **Tracking:** jednoduchá tabulka — Škola | Učitel | Mail učitele | Mail ředitele | Datum odeslání | Odpověď | Follow-up. Bez toho se v 30 školách ztratíš.
