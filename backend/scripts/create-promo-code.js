@@ -14,9 +14,11 @@ const admin = require('firebase-admin');
 
 const CONFIG = {
   // What teachers will type into the paywall.
-  code: 'UCITELE2026',
+  // POZOR: musí sedět s kódem na /pro-skoly/ a v docs/email-skoly.md.
+  code: 'UCITELE8892',
   // How many distinct teachers can redeem it (each uid only once).
-  maxUses: 10,
+  // 500 = strop pro celou kampaň na školy 2026/27, ne pro jednu dávku mailů.
+  maxUses: 500,
   // 365-day premium per redeemer. Backend reads this in /redeem-code.
   durationDays: 365,
   // Stop accepting NEW redemptions after this date. Already-redeemed teachers
@@ -25,7 +27,7 @@ const CONFIG = {
   expiresAt: Date.UTC(2027, 7, 31, 21, 59, 59), // Aug = month 7 (0-indexed)
   active: true,
   plan: 'annual_teacher',
-  note: 'uciteleucitelum.cz — batch 2026',
+  note: 'ucseslovesa.cz/pro-skoly — kampaň na školy 2026/27',
 };
 
 (async () => {

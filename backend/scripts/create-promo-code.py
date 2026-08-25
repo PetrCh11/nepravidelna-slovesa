@@ -12,6 +12,7 @@ Usage:
 """
 
 import base64
+import datetime
 import json
 import os
 import subprocess
@@ -22,17 +23,22 @@ import urllib.parse
 
 # --- CONFIG (mirror of the JS sibling) ---------------------------------------
 CONFIG = {
-    "code": "UCITELE2026",
-    "maxUses": 10,
+    # POZOR: musí sedět s kódem na /pro-skoly/ a v docs/email-skoly.md.
+    "code": "UCITELE8892",
+    # 500 = strop pro celou kampaň na školy 2026/27, ne pro jednu dávku mailů.
+    "maxUses": 500,
     "durationDays": 365,
     # Redemption deadline — new redemptions blocked after this date. Already
     # redeemed teachers keep their full durationDays regardless. Matches the
     # `expiresAt` check in backend/server.js /redeem-code.
-    # 31. 8. 2027 23:59:59 CEST (= 21:59:59 UTC) in ms
-    "expiresAt": 1788292799000,
+    # 31. 8. 2027 23:59:59 CEST (= 21:59:59 UTC). Počítáme, ať to nemůže ujet —
+    # napevno tu dřív byla konstanta o rok mimo (1788292799000 = 1. 9. 2026).
+    "expiresAt": int(datetime.datetime(
+        2027, 8, 31, 21, 59, 59, tzinfo=datetime.timezone.utc
+    ).timestamp() * 1000),
     "active": True,
     "plan": "annual_teacher",
-    "note": "uciteleucitelum.cz — batch 2026",
+    "note": "ucseslovesa.cz/pro-skoly — kampaň na školy 2026/27",
 }
 # -----------------------------------------------------------------------------
 
