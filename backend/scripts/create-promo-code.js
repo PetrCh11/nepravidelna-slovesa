@@ -17,8 +17,9 @@ const CONFIG = {
   // POZOR: musí sedět s kódem na /pro-skoly/ a v docs/email-skoly.md.
   code: 'UCITELE8892',
   // How many distinct teachers can redeem it (each uid only once).
-  // 500 = strop pro celou kampaň na školy 2026/27, ne pro jednu dávku mailů.
-  maxUses: 500,
+  // 100 pro kampaň na školy 2026/27. Musí sedět s hodnotou ve Firestore —
+  // když dojde, učitel uvidí „Kód byl vyčerpán", tak hlídej usedCount.
+  maxUses: 100,
   // 365-day premium per redeemer. Backend reads this in /redeem-code.
   durationDays: 365,
   // Stop accepting NEW redemptions after this date. Already-redeemed teachers

@@ -25,8 +25,9 @@ import urllib.parse
 CONFIG = {
     # POZOR: musí sedět s kódem na /pro-skoly/ a v docs/email-skoly.md.
     "code": "UCITELE8892",
-    # 500 = strop pro celou kampaň na školy 2026/27, ne pro jednu dávku mailů.
-    "maxUses": 500,
+    # 100 pro kampaň na školy 2026/27. Musí sedět s hodnotou ve Firestore —
+    # když dojde, učitel uvidí „Kód byl vyčerpán", tak hlídej usedCount.
+    "maxUses": 100,
     "durationDays": 365,
     # Redemption deadline — new redemptions blocked after this date. Already
     # redeemed teachers keep their full durationDays regardless. Matches the
