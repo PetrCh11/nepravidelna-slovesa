@@ -21,6 +21,8 @@ cp -R data lang dist-pl/
 # PDF přehled (generuje tools/build-pdf.sh pl) — do rootu, ZÁMĚRNĚ mimo sw.js
 # precache: ~1 MB, stahuje se živě stejně jako české PDF.
 cp pl/czasowniki-nieregularne-lista.pdf dist-pl/
+# Vstupní stránka pro učitele — ručně psaná, generátor ji nesahá (obdoba /pro-skoly/)
+cp -R pl/dla-nauczycieli dist-pl/
 
 # 2) index.html — pryč <base href="/"> (včetně vysvětlujícího komentáře),
 #    manifest z pl/manifest.json na manifest.json

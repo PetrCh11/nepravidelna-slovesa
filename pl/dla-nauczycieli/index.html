@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Dla nauczycieli angielskiego | czasowniki.pl – czasowniki nieregularne</title>
+  <meta name="description" content="Generator sprawdzianów z czasowników nieregularnych razem z kluczem odpowiedzi — za darmo dla nauczycieli. Do tego aplikacja dla uczniów: 106 czasowników w 24 grupach według wzorców, tabela w PDF, rok dostępu gratis. Bez instalacji, bez reklam." />
+  <link rel="canonical" href="https://czasowniki.pl/dla-nauczycieli/" />
+  <link rel="alternate" hreflang="pl" href="https://czasowniki.pl/dla-nauczycieli/" />
+  <link rel="alternate" hreflang="cs" href="https://ucseslovesa.cz/pro-skoly/" />
+  <meta name="theme-color" content="#5dc9bd" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Czasowniki nieregularne dla twojej klasy – czasowniki.pl" />
+  <meta property="og:description" content="Generator sprawdzianów z czasowników nieregularnych z kluczem odpowiedzi, tabela w PDF i aplikacja dla uczniów. Dla nauczycieli rok za darmo z kodem NAUCZYCIEL8892." />
+  <meta property="og:url" content="https://czasowniki.pl/dla-nauczycieli/" />
+  <meta property="og:locale" content="pl_PL" />
+  <meta property="og:site_name" content="Czasowniki nieregularne – raz na zawsze" />
+  <meta property="og:image" content="https://czasowniki.pl/icon-512.png" />
+  <meta name="twitter:card" content="summary" />
+
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icon-180.png" />
+
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+
+  <link rel="stylesheet" href="/lista/lista.css" />
+  <style>
+    /* Strona dla nauczycieli — rozszerzenia nad /lista/lista.css */
+    .ts-lede {
+      font-size: 1.1rem;
+      line-height: 1.55;
+      color: #3b454f;
+      margin: 8px 0 24px;
+    }
+    .ts-lede strong { color: #1d2329; }
+
+    /* Benefits grid */
+    .ts-benefits {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin: 20px 0 8px;
+    }
+    .ts-benefit {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.07);
+      border-radius: 14px;
+      padding: 16px 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .ts-benefit-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .ts-benefit-h {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0 0 4px;
+      color: #1d2329;
+    }
+    .ts-benefit p {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      color: #4a5562;
+    }
+
+    /* Steps */
+    .ts-steps {
+      counter-reset: ts-step;
+      padding: 0;
+      list-style: none;
+      margin: 18px 0 0;
+    }
+    .ts-steps li {
+      position: relative;
+      padding: 14px 16px 14px 56px;
+      border-left: 3px solid #5dc9bd;
+      background: linear-gradient(90deg, rgba(93,201,189,0.07), transparent 60%);
+      margin-bottom: 10px;
+      border-radius: 0 12px 12px 0;
+      counter-increment: ts-step;
+    }
+    .ts-steps li::before {
+      content: counter(ts-step);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #5dc9bd, #7c6ff5);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .ts-steps strong { display: block; margin-bottom: 2px; color: #1d2329; }
+    .ts-steps p { margin: 2px 0 0; font-size: 0.94rem; color: #4a5562; line-height: 1.45; }
+
+    /* Promo code box */
+    .ts-promo {
+      background: linear-gradient(135deg, #fff5d6, #ffe8a8);
+      border: 2px dashed #d4a300;
+      border-radius: 18px;
+      padding: 22px 24px;
+      margin: 30px 0;
+      text-align: center;
+    }
+    .ts-promo-eyebrow {
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8a6500;
+      margin: 0 0 8px;
+    }
+    .ts-promo-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #5a4400;
+      margin: 0 0 12px;
+    }
+    .ts-promo-code-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px 8px 8px 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+      max-width: 100%;
+    }
+    .ts-promo-code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #1d2329;
+    }
+    .ts-copy-btn {
+      background: linear-gradient(135deg, #5dc9bd, #7c6ff5);
+      color: #fff;
+      border: 0;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.2s;
+    }
+    .ts-copy-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,111,245,0.35); }
+    .ts-copy-btn.copied { background: #22a06b; }
+    .ts-promo-note {
+      margin: 12px 0 0;
+      font-size: 0.88rem;
+      color: #7a5a2b;
+    }
+    .ts-promo-howto {
+      margin: 14px auto 0;
+      font-size: 0.85rem;
+      color: #6e4a14;
+      max-width: 460px;
+      text-align: left;
+      background: rgba(255,255,255,0.5);
+      border-radius: 10px;
+      padding: 10px 14px;
+    }
+    .ts-promo-howto ol { margin: 4px 0 0; padding-left: 20px; }
+    .ts-promo-howto li { margin: 2px 0; }
+
+    /* Pricing strip */
+    .ts-pricing {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .ts-price {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.07);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+    .ts-price-label { font-size: 0.82rem; color: #6c7783; text-transform: uppercase; letter-spacing: 0.04em; }
+    .ts-price-amount { font-size: 1.3rem; font-weight: 800; color: #1d2329; margin: 4px 0 2px; }
+    .ts-price-note { font-size: 0.82rem; color: #6c7783; }
+    .ts-price.is-free .ts-price-amount { color: #22a06b; }
+
+    /* Bulk contact box */
+    .ts-bulk {
+      background: #f0f7ff;
+      border: 1px solid #c9dcf2;
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin: 24px 0;
+    }
+    .ts-bulk-h {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 6px;
+      color: #1d2329;
+    }
+    .ts-bulk p { margin: 0 0 12px; color: #4a5562; }
+    .ts-bulk a.seo-cta { font-size: 0.9rem; padding: 9px 16px; }
+
+    /* Author note */
+    .ts-author {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px 18px;
+      border: 1px solid rgba(0,0,0,0.07);
+      margin: 22px 0;
+    }
+    .ts-author-emoji { font-size: 1.8rem; line-height: 1; }
+    .ts-author p { margin: 0 0 4px; font-size: 0.94rem; color: #3b454f; line-height: 1.5; }
+    .ts-author strong { color: #1d2329; }
+
+    @media (max-width: 540px) {
+      .ts-promo { padding: 18px 16px; }
+      .ts-promo-title { font-size: 1.1rem; }
+      .ts-promo-code { font-size: 1.05rem; }
+      .ts-promo-code-row { padding: 6px 6px 6px 12px; flex-wrap: wrap; }
+    }
+
+    /* Ciemny motyw nie dotyczy stron lądowania — są tylko jasne. */
+  </style>
+</head>
+<body>
+  <header class="seo-header">
+    <div class="container">
+      <a class="seo-logo" href="/">
+        <img src="/icon-192.png" alt="" width="40" height="40" />
+        <div class="seo-logo-text">
+          <span class="seo-logo-name">Czasowniki nieregularne</span>
+          <span class="seo-logo-sub">… raz na zawsze.</span>
+        </div>
+      </a>
+      <a class="seo-cta seo-cta-header" href="/" data-track="cta_header_teachers">Uruchom aplikację →</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <article>
+      <nav class="breadcrumb" aria-label="Nawigacja okruszkowa">
+        <a href="/">Strona główna</a> <span aria-hidden="true">›</span>
+        <span aria-current="page">Dla nauczycieli</span>
+      </nav>
+
+      <h1>Czasowniki nieregularne dla twojej klasy</h1>
+      <p class="ts-lede">
+        Interaktywna aplikacja, w której uczniowie ćwiczą <strong>106 angielskich czasowników nieregularnych</strong>
+        podzielonych na <strong>24 grupy według wzorca wymowy</strong>. Działa na telefonie, tablecie i komputerze.
+        Bez instalacji, bez reklam, bez zakładania konta.
+      </p>
+
+      <!-- Główne CTA — kod promocyjny na górze strony -->
+      <div class="ts-promo">
+        <p class="ts-promo-eyebrow">Oferta dla nauczycieli</p>
+        <p class="ts-promo-title">Rok pełnego dostępu za darmo 🎓</p>
+        <div class="ts-promo-code-row">
+          <span class="ts-promo-code" id="ts-code">NAUCZYCIEL8892</span>
+          <button class="ts-copy-btn" id="ts-copy" type="button" data-track="teacher_code_copied">Kopiuj</button>
+        </div>
+        <p class="ts-promo-note">Kod ważny do 31.08.2027 · 365 dni dostępu od aktywacji</p>
+        <div class="ts-promo-howto">
+          <strong>Jak użyć kodu:</strong>
+          <ol>
+            <li>Otwórz <a href="/" data-track="teacher_open_app">czasowniki.pl</a> i zaloguj się przez Google.</li>
+            <li>Kliknij dowolną zablokowaną grupę (🔒) — otworzy się okno z ofertą.</li>
+            <li>W oknie kliknij <em>„🎟️ Mam kod rabatowy"</em>, wpisz <code>NAUCZYCIEL8892</code> i kliknij <em>Aktywuj</em>.</li>
+            <li>Gotowe — masz rok pełnego dostępu do wszystkich grup.</li>
+          </ol>
+        </div>
+      </div>
+
+      <section>
+        <h2 id="tryb-nauczyciela">Tryb nauczyciela: sprawdzian z kluczem w dwie minuty</h2>
+        <p>
+          Częścią aplikacji jest <strong>generator sprawdzianów dla nauczycieli</strong> — za darmo,
+          bez zakładania konta, bez limitu utworzonych testów. Wybierasz grupy czasowników,
+          liczbę słów i typ zadania, a aplikacja składa gotowy test razem z <strong>kluczem odpowiedzi</strong>.
+        </p>
+        <div class="ts-benefits">
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🖨️</span>
+            <h3 class="ts-benefit-h">Na papier, razem z kluczem</h3>
+            <p>Drukujesz zadanie i klucz do sprawdzania. Opcjonalnie <strong>dwie wersje A + B</strong> przeciwko ściąganiu oraz wydruk czarno-biały, który oszczędza toner.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">💻</span>
+            <h3 class="ts-benefit-h">Albo linkiem na telefon</h3>
+            <p>Tworzysz link i wysyłasz go przez Google Classroom, Teams, Librus czy mailem. Uczniowie rozwiązują test na telefonie i oddają krótki kod, który sprawdzasz hurtem.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🎚️</span>
+            <h3 class="ts-benefit-h">Cztery typy zadania</h3>
+            <p>Bezokolicznik → dwie formy, po polsku → trzy formy, brakująca forma w każdym wierszu albo wybór z podanych odpowiedzi. Do tego limit czasu na cały test lub na pojedynczy czasownik.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🔒</span>
+            <h3 class="ts-benefit-h">Bez kont i bez danych uczniów</h3>
+            <p>Test cyfrowy <strong>nie zapisuje o uczniach niczego</strong> — żadnych kont, żadnej rejestracji, żadnej bazy danych. Wynik przenosi wyłącznie ten kod, który uczeń przepisuje.</p>
+          </div>
+        </div>
+        <p style="margin-top:14px;">
+          <a class="seo-cta" href="/#/teacher" data-track="teacher_zone_open">🧑‍🏫 Otwórz Tryb nauczyciela</a>
+        </p>
+      </section>
+
+      <section class="seo-pdf-section">
+        <h2 id="pdf">Tabela czasowników w PDF dla twojej klasy</h2>
+        <p>
+          Tabelę wszystkich 106 czasowników nieregularnych możesz
+          <strong>pobrać za darmo w PDF</strong> — po grupach, z kolorem
+          zaznaczającym zmianę w każdym słowie. Wydrukuj i rozdaj uczniom
+          do zeszytów albo wykorzystaj jako materiał na lekcję.
+        </p>
+        <a class="seo-pdf-download" href="/czasowniki-nieregularne-lista.pdf" download data-track="pdf_dla_nauczycieli">
+          <span class="seo-pdf-ico" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="38" height="38">
+              <rect x="5" y="2" width="22" height="28" rx="3" fill="#ffffff" stroke="#e0dcd3" stroke-width="1.4"/>
+              <path d="M20 2v6h7" fill="none" stroke="#e0dcd3" stroke-width="1.4"/>
+              <rect x="7" y="17" width="18" height="9" rx="2" fill="#e2483d"/>
+              <text x="16" y="23.6" font-size="6.4" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif">PDF</text>
+            </svg>
+          </span>
+          <span class="seo-pdf-text">
+            <strong>Pobierz tabelę w PDF</strong>
+            <span>Wszystkie 106 czasowników w grupach — do druku i offline</span>
+          </span>
+          <span class="seo-pdf-arrow" aria-hidden="true">⬇</span>
+        </a>
+      </section>
+
+      <section>
+        <h2>Co daje aplikacja</h2>
+        <div class="ts-benefits">
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🧠</span>
+            <h3 class="ts-benefit-h">Powtórki rozłożone w czasie</h3>
+            <p>Czasowniki, które uczeń myli, wracają częściej. Te opanowane schodzą na dalszy plan. Żadnego mechanicznego wkuwania całej tabeli.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🎨</span>
+            <h3 class="ts-benefit-h">24 grupy według wzorca</h3>
+            <p>Czasowniki podzielone według wzorca zmiany (i-a-u, ought-aught, …). Zamiast 106 niepowiązanych wierszy 24 możliwe do zapamiętania reguły.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🔊</span>
+            <h3 class="ts-benefit-h">Wymowa i Car Mode</h3>
+            <p>Audio przy każdym czasowniku (brytyjska i amerykańska). „Car Mode" czyta na głos polskie tłumaczenie, a po pauzie wszystkie trzy formy — dla uczniów dojeżdżających do szkoły.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">📱</span>
+            <h3 class="ts-benefit-h">Działa offline</h3>
+            <p>Aplikacja webowa (PWA) — instaluje się prosto z przeglądarki. Po pierwszym otwarciu działa też bez wifi. Bez App Store i Google Play.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🔥</span>
+            <h3 class="ts-benefit-h">Seria odblokowuje grupy</h3>
+            <p>Za regularne codzienne ćwiczenie uczniom stopniowo odblokowują się kolejne grupy — im dłuższa seria, tym więcej treści za darmo. Motywacja bez reklam i mikropłatności.</p>
+          </div>
+          <div class="ts-benefit">
+            <span class="ts-benefit-icon">🇵🇱</span>
+            <h3 class="ts-benefit-h">W całości po polsku</h3>
+            <p>Interfejs, objaśnienia wzorców i skojarzenia po polsku. Poziom A2–B2, czyli klasy 7–8 szkoły podstawowej oraz liceum i technikum.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Jak wdrożyć to w klasie</h2>
+        <ol class="ts-steps">
+          <li>
+            <strong>Sprawdź sam(a) — 5 minut</strong>
+            <p>Aktywuj kod <code>NAUCZYCIEL8892</code> i przejdź 1–2 grupy. Zobaczysz, jak aplikacja prowadzi ucznia od pierwszej lekcji.</p>
+          </li>
+          <li>
+            <strong>Pokaż uczniom na lekcji — 5 minut</strong>
+            <p>Wyświetl na tablicy i otwórz jedną grupę (np. <a href="/grupa/i-a-u/">I → A → U</a>). Uczniowie dodają aplikację na ekran główny telefonu i zaczynają ćwiczyć.</p>
+          </li>
+          <li>
+            <strong>Zadaj jako pracę domową</strong>
+            <p>Na przykład „do następnej lekcji zrobić serię 7 dni" albo „skończyć pierwsze 3 grupy". Postęp uczeń widzi sam, ty nie musisz nic sprawdzać.</p>
+          </li>
+          <li>
+            <strong>Sprawdź wiedzę sprawdzianem</strong>
+            <p>W Trybie nauczyciela wygenerujesz sprawdzian dokładnie z tych grup, które klasa przerobiła — na papier albo linkiem na telefon.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Ile to kosztuje uczniów</h2>
+        <p>3 grupy według wzorca (15 czasowników) są <strong>całkowicie za darmo</strong>, bez zakładania konta. Jeśli uczeń chce wszystkie 106 czasowników i Car Mode, wybiera jeden z wariantów:</p>
+        <div class="ts-pricing">
+          <div class="ts-price is-free">
+            <div class="ts-price-label">Za darmo</div>
+            <div class="ts-price-amount">0 zł</div>
+            <div class="ts-price-note">3 grupy · 15 czasowników</div>
+          </div>
+          <div class="ts-price">
+            <div class="ts-price-label">Miesięcznie</div>
+            <div class="ts-price-amount">9,99 zł</div>
+            <div class="ts-price-note">7 dni za darmo · można anulować</div>
+          </div>
+          <div class="ts-price">
+            <div class="ts-price-label">Rocznie</div>
+            <div class="ts-price-amount">49,99 zł</div>
+            <div class="ts-price-note">7 dni za darmo · ok. 4,17 zł/mies.</div>
+          </div>
+          <div class="ts-price">
+            <div class="ts-price-label">Dożywotnio</div>
+            <div class="ts-price-amount">89,99 zł</div>
+            <div class="ts-price-note">Jednorazowo · na zawsze</div>
+          </div>
+        </div>
+        <p style="font-size:0.9rem;color:#6c7783;margin-top:8px;">
+          Aplikację tworzy jeden programista. Żadnych reklam, żadnej sprzedaży danych. Premium pokrywa tylko utrzymanie serwera i dalszy rozwój.
+        </p>
+      </section>
+
+      <div class="ts-bulk">
+        <p class="ts-bulk-h">Roczna licencja dla całej szkoły</p>
+        <p style="font-size:1.4rem;font-weight:800;color:#1d2329;margin:8px 0 4px;">449 zł / rok / nieograniczona liczba uczniów</p>
+        <p style="margin-top:0;">
+          Jednorazowy zakup ważny <strong>12 miesięcy</strong>. <strong>Bez automatycznego odnowienia</strong> — żadnego zobowiązania
+          na kolejny rok budżetowy. Po roku wyślemy maila z ofertą przedłużenia i wystawimy nową fakturę, jeśli zechcesz kontynuować.
+        </p>
+        <p style="margin-top:8px;">
+          Dostajesz jeden szkolny kod promocyjny, który rozdajesz uczniom — każdy odblokowuje nim pełną wersję
+          (wszystkie 106 czasowników, Car Mode, synchronizacja) na cały rok szkolny. Faktura z 14-dniowym
+          terminem płatności, przelewem.
+        </p>
+        <p style="font-size:0.9rem;color:#475058;margin:8px 0 4px;">
+          <strong>RODO i umowa powierzenia:</strong> na życzenie prześlemy szkole standardową umowę powierzenia
+          przetwarzania danych do podpisu. Aplikacja przetwarza wyłącznie adres e-mail i imię z logowania Google
+          oraz postęp w ćwiczeniach.
+        </p>
+        <p style="font-size:0.9rem;color:#475058;margin:4px 0 12px;">
+          Dla <strong>małych szkół do 30 uczniów</strong> oraz inicjatyw non-profit obowiązuje indywidualna umowa —
+          często za darmo. Napisz, dogadamy się.
+        </p>
+        <a class="seo-cta" href="mailto:hello@czasowniki.pl?subject=Roczna%20licencja%20szkolna%20%E2%80%94%20czasowniki.pl&amp;body=Dzie%C5%84%20dobry%2C%0A%0Ajestem%20nauczycielem%20angielskiego%20w%20%5Bnazwa%20szko%C5%82y%5D%20i%20chcia%C5%82%28a%29bym%20zam%C3%B3wi%C4%87%20roczn%C4%85%20licencj%C4%99%20szkoln%C4%85.%0A%0ALiczba%20uczni%C3%B3w%3A%20%0ADane%20szko%C5%82y%20do%20faktury%3A%20%0AUmowa%20powierzenia%20przetwarzania%20danych%20%28tak%2Fnie%29%3A%20%0A%0ADzi%C4%99kuj%C4%99%2C%0A%5Bimi%C4%99%20i%20nazwisko%5D" data-track="teacher_bulk_email">✉️ Zamów roczną licencję szkolną</a>
+      </div>
+
+      <section>
+        <h2>Najczęstsze pytania</h2>
+        <div class="faq">
+          <details class="faq-item">
+            <summary>Czy uczniowie muszą zakładać konto?</summary>
+            <p>
+              <strong>Nie, to nie jest konieczne.</strong> Aplikacja działa od razu po otwarciu, a postęp zapisuje się w przeglądarce.
+              Jeśli uczeń zaloguje się przez Google, jego postęp synchronizuje się między urządzeniami (telefon + komputer).
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Czy aplikacja śledzi dane uczniów?</summary>
+            <p>
+              Aplikacja korzysta z <strong>Plausible Analytics</strong> — alternatywy dla Google Analytics przyjaznej prywatności.
+              Żadnych ciasteczek śledzących, żadnej sprzedaży danych, żadnego profilowania. Jeśli uczeń się zaloguje, jego postęp
+              w ćwiczeniach zapisuje się w Firebase (Google) — wyłącznie po to, żeby synchronizować go między urządzeniami.
+              <strong>Zgodnie z RODO.</strong>
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Jak wygląda instalacja? Czy uczniowie muszą coś pobierać?</summary>
+            <p>
+              <strong>Nie.</strong> czasowniki.pl to <em>Progressive Web App</em> — otwiera się w dowolnej przeglądarce
+              (Chrome, Safari, Edge, Firefox). Uczniowie mogą dodać aplikację na ekran główny telefonu jak zwykłą apkę
+              (Safari: przycisk udostępniania → „Do ekranu początkowego"; Chrome: menu → „Zainstaluj aplikację"), ale nie muszą.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Dla jakiego poziomu uczniów jest przeznaczona?</summary>
+            <p>
+              Celujemy w <strong>klasy 7–8 szkoły podstawowej oraz liceum i technikum</strong>, czyli poziom <em>A2 – B2</em>.
+              Czasowniki są podzielone na 24 grupy — od najprostszych (trzy takie same formy, np. <em>put–put–put</em>)
+              po trudniejsze (<em>ought–aught</em>, <em>silne zmiany samogłoski</em>). Interfejs i objaśnienia wzorców są w całości po polsku.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Czy mogę używać aplikacji na lekcji, np. na tablicy interaktywnej?</summary>
+            <p>
+              Jasne. Otwórz <a href="/">czasowniki.pl</a> w przeglądarce na komputerze w klasie i przejdźcie razem jedną grupę.
+              Albo pozwól uczniom pracować indywidualnie na telefonach — postęp całej klasy zobaczysz po tym, jak długie serie mają u siebie.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Czym różni się sprawdzian na papier od testu linkiem?</summary>
+            <p>
+              <strong>Na papier</strong> dostajesz gotowy wydruk z kluczem, opcjonalnie w dwóch wersjach A i B.
+              <strong>Linkiem</strong> uczniowie rozwiązują test na telefonie, a na końcu dostają krótki kod z wynikiem,
+              który wklejasz hurtem do sprawdzarki w Trybie nauczyciela. Kod ma sumę kontrolną, więc przepisanie sobie
+              lepszego wyniku od biurka się nie uda.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>A jeśli potrzebuję kodów dla całej klasy, nie tylko dla siebie?</summary>
+            <p>
+              Jest <strong>roczna licencja szkolna za 449 zł</strong> — nieograniczona liczba uczniów w ramach jednej szkoły,
+              ważność 12 miesięcy, <strong>bez automatycznego odnowienia</strong>.
+              Dostajesz jeden szkolny kod promocyjny, który rozdajesz uczniom (na kartce, w Librusie, gdziekolwiek).
+              Faktura z terminem płatności 14 dni.
+            </p>
+            <p style="margin-top:6px;">
+              Dla <strong>małych szkół do 30 uczniów</strong>, szkół w mniejszych miejscowościach i inicjatyw non-profit
+              dogadamy się indywidualnie — często za darmo. Napisz na <a href="mailto:hello@czasowniki.pl">hello@czasowniki.pl</a>.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Kto tworzy aplikację?</summary>
+            <p>
+              Tworzę ją sam — jestem programistą, który chciał ułatwić własnym dzieciom zapamiętywanie słówek. Celem nie było
+              zbudowanie kolejnego generycznego narzędzia do nauki, ale aplikacji, która naprawdę wykorzystuje wnioski psychologii
+              poznawczej (powtórki rozłożone w czasie, grupowanie, nauka w kontekście). Jeśli chcesz napisać o aplikacji artykuł,
+              zrobić prezentację czy cokolwiek innego — odezwij się, chętnie pomogę z materiałami.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <div class="ts-author">
+        <span class="ts-author-emoji">👋</span>
+        <div>
+          <p><strong>Petr Chamula</strong> — twórca czasowniki.pl</p>
+          <p>Masz uwagi, pomysły albo chcesz nawiązać współpracę? Napisz na <a href="mailto:hello@czasowniki.pl">hello@czasowniki.pl</a>. Zwykle odpowiadam w ciągu jednego dnia.</p>
+        </div>
+      </div>
+
+      <div class="seo-cta-banner">
+        <div>
+          <strong>Sprawdź aplikację od razu</strong>
+          <p>Otworzy się natychmiast w przeglądarce. Na start bez zakładania konta. Kod <code>NAUCZYCIEL8892</code> aktywujesz po zalogowaniu.</p>
+        </div>
+        <a class="seo-cta" href="/" data-track="cta_bottom_teachers">Uruchom aplikację →</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="seo-footer">
+    <div class="container">
+      <p>© czasowniki.pl · <a href="/">Aplikacja</a> · <a href="/lista/">Lista</a> · <a href="/dla-nauczycieli/">Dla nauczycieli</a> · <a href="mailto:hello@czasowniki.pl">✉️ kontakt</a></p>
+      <p class="seo-foot-meta">Aktualizacja: 2026-08-31</p>
+    </div>
+  </footer>
+
+  <script>
+    // Kopiowanie kodu promocyjnego do schowka
+    (function () {
+      const btn = document.getElementById('ts-copy');
+      const codeEl = document.getElementById('ts-code');
+      if (!btn || !codeEl) return;
+      btn.addEventListener('click', async () => {
+        const code = codeEl.textContent.trim();
+        try {
+          await navigator.clipboard.writeText(code);
+        } catch {
+          // Awaryjnie dla starszych przeglądarek / kontekstu bez HTTPS
+          const range = document.createRange();
+          range.selectNode(codeEl);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          try { document.execCommand('copy'); } catch {}
+          sel.removeAllRanges();
+        }
+        btn.classList.add('copied');
+        btn.textContent = '✓ Skopiowano';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.textContent = 'Kopiuj';
+        }, 2000);
+        if (window.plausible) window.plausible('teacher_code_copied');
+      });
+    })();
+
+    // Śledzenie kliknięć w CTA przez Plausible
+    document.querySelectorAll('[data-track]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const name = el.getAttribute('data-track');
+        if (window.plausible && name) window.plausible(name);
+      });
+    });
+
+    // Zdarzenie odsłony strony
+    if (window.plausible) window.plausible('teacher_lp_view');
+  </script>
+</body>
+</html>

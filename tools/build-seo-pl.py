@@ -386,7 +386,7 @@ jumbo = f'''<!DOCTYPE html>
 
   <footer class="seo-footer">
     <div class="container">
-      <p>© czasowniki.pl · <a href="../">Aplikacja</a> · <a href="#lista">Lista</a> · <a href="#faq">FAQ</a> · <a href="mailto:hello@ucseslovesa.cz">✉️ kontakt</a></p>
+      <p>© czasowniki.pl · <a href="../">Aplikacja</a> · <a href="#lista">Lista</a> · <a href="#faq">FAQ</a> · <a href="mailto:hello@czasowniki.pl">✉️ kontakt</a></p>
       <p class="seo-foot-meta">Aktualizacja: {TODAY}</p>
     </div>
   </footer>
@@ -654,7 +654,7 @@ def build_group_page(sub_idx, sub, parent_sec):
 
   <footer class="seo-footer">
     <div class="container">
-      <p>© czasowniki.pl · <a href="/">Aplikacja</a> · <a href="/lista/">Lista</a> · <a href="mailto:hello@ucseslovesa.cz">✉️ kontakt</a></p>
+      <p>© czasowniki.pl · <a href="/">Aplikacja</a> · <a href="/lista/">Lista</a> · <a href="mailto:hello@czasowniki.pl">✉️ kontakt</a></p>
       <p class="seo-foot-meta">Aktualizacja: {TODAY}</p>
     </div>
   </footer>
@@ -687,6 +687,8 @@ sitemap_lines = ['<?xml version="1.0" encoding="UTF-8"?>',
                  '        xmlns:xhtml="http://www.w3.org/1999/xhtml">']
 sitemap_lines += url_entry(f'{SITE}/', f'{SITE_CS}/', 'weekly', '1.0')
 sitemap_lines += url_entry(f'{SITE}/lista/', f'{SITE_CS}/seznam/', 'monthly', '0.9')
+# Ručně psaná vstupní stránka pro učitele (pl/dla-nauczycieli/, kopíruje build-pl.sh)
+sitemap_lines += url_entry(f'{SITE}/dla-nauczycieli/', f'{SITE_CS}/pro-skoly/', 'monthly', '0.85')
 # PDF přehled — bez hreflang alternates (stejně jako v české sitemapě).
 sitemap_lines += ['  <url>',
                   f'    <loc>{SITE}/{PDF}</loc>',
@@ -703,7 +705,7 @@ sitemap_lines.append('</urlset>')
 sitemap_lines.append('')
 with open(os.path.join(OUT, 'sitemap.xml'), 'w', encoding='utf-8') as f:
     f.write('\n'.join(sitemap_lines))
-print(f'Wrote sitemap.xml ({3 + len(ORDERED_SUBS)} URLs)')
+print(f"Wrote sitemap.xml ({4 + len(ORDERED_SUBS)} URLs)")
 
 # ---------- robots.txt ----------
 with open(os.path.join(OUT, 'robots.txt'), 'w', encoding='utf-8') as f:
