@@ -7,3 +7,8 @@ dist-pl/
 
 # Lokální tracking oslovených škol (osobní údaje — NEcommitovat)
 docs/oslovene-skoly.md
+
+# Plán rozeslání školám (osobní údaje — NEcommitovat)
+plan-rozeslani*.numbers
+plan-rozeslani*.csv
+Adresar*.csv
