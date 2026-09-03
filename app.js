@@ -1447,7 +1447,30 @@ function subProgress(sub) {
 // Deep link entry point used by SEO landing pages.
 // URL convention: https://ucseslovesa.cz/#/skupina/1-1-0  (dashes ↔ dots)
 // Also accepts ?skupina=1.1.0 in the query string for share/paste-friendly links.
+// Styl z URL: ucseslovesa.cz/?styl=student — odkaz z mailu školám otevře appku
+// rovnou ve „Školním prostředí", aby učitel viděl hlášky, které uvidí i žáci.
+// Musí běžet před větvemi níž, které z URL uklízí hash.
+function applyStyleFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const wanted = String(params.get('styl') || params.get('style') || '').toLowerCase();
+  if (!['pro', 'student', 'hantec'].includes(wanted)) return;
+  state.style = wanted;
+  localStorage.setItem('style', wanted);
+  // Odkaz je vědomá volba odesílatele — ať se pak appka na styl neptá znovu.
+  localStorage.setItem('styleAsked', 'true');
+  $$('.menu-style-btn').forEach((b) => b.classList.toggle('active', b.dataset.style === state.style));
+  applyStyleTexts();
+  try { cloud.pushSoon && cloud.pushSoon(); } catch (_) {}
+  try { track('style_from_url', { style: wanted }); } catch (_) {}
+  // Vyhoď jen ?styl=, zbytek dotazu (?skupina=) i hash (#/teacher) nech být.
+  params.delete('styl');
+  params.delete('style');
+  const q = params.toString();
+  history.replaceState(null, '', window.location.pathname + (q ? `?${q}` : '') + window.location.hash);
+}
+
 function handleDeepLink() {
+  applyStyleFromUrl();
   // Zadaný test od učitele: #/test/<kód> — má přednost před ostatními odkazy.
   const testMatch = (window.location.hash || '').match(/^#\/test\/([0-9a-z]+)/i);
   if (testMatch) {
