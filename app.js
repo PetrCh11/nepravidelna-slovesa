@@ -401,10 +401,10 @@ const TEXTS = {
   s1_done_btn:   { pro: 'Hotovo, jdu psát ✍️ →', student: 'OK, jdu na to ✍️ →' },
   // Mezifáze
   mh_title:      { pro: 'Hold your horses! / Zadrž! ✋', student: 'Hold your horses! / Zadrž! ✋' },
-  mh_sub:        { pro: 'Která ti vypadají záludně? Označ je — věnujeme jim potom víc péče.',
+  mh_sub:        { pro: 'Která slovesa ti připadají záludná? Označ je — věnujeme jim potom víc péče.',
                    student: 'Která vypadají, že tě potrápí? Cvakni je. Pak si na ně dáme bacha.' },
   mh_intro_desc: { pro: 'Označ slovesa, u kterých si myslíš, že ti budou dělat největší problém.',
-                   student: 'Která ti vypadají záludně? Označ je. Pak si na ně dáme bacha.' },
+                   student: 'Která slovesa ti připadají záludná? Označ je. Pak si na ně dáme bacha.' },
   mh_done_btn:   { pro: 'Hotovo, jdu na to →', student: 'Hotovo, jedem dál →' },
   // Fáze 2 — combined pass (1) + finále (2)
   s2_intro_title:{ pro: 'Fáze 2 — Psaní tvarů', student: 'Fáze 2 — Píšeme to ✍️' },
