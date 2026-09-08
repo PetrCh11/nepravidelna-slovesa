@@ -1658,7 +1658,9 @@ function startSectionReview(sec, customVerbs = null) {
     });
   }
   if (verbs.length === 0) return;
-  shuffle(verbs);
+  // shuffle() vrací NOVÉ pole, původní nemění — bez přiřazení se zamíchání
+  // zahodilo a slice(0,10) níž bral pořád prvních 10 sloves v pořadí z dat.
+  verbs = shuffle(verbs);
   // Cap náhodného mixu na 10 sloves — víc je v jedné dávce na hlavu moc
   if (verbs.length > 10) verbs = verbs.slice(0, 10);
   // Synthetic "sub" used by lesson code: id is sec.id, pattern reflects review mode
