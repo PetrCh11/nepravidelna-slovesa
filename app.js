@@ -609,6 +609,35 @@ const TEXTS = {
   slaba_cold: 'Zatím není dost dat — udělej pár lekcí a vrať se. 🌱',
   slaba_title: 'Slabá místa',
   slaba_pattern: (n) => `Dnešní porce slabin · ${n} ${t('plur_verbs', n)}`,
+  // Připomínka cílovky na výsledkové obrazovce (po každé druhé skupině)
+  slaba_nudge_title: {
+    pro: 'Ještě chvilku neodcházej 🎯',
+    student: 'Boss na tebe čeká 👾',
+    hantec: 'Ešče nechoď 🛠️',
+  },
+  slaba_nudge_line: {
+    pro: [
+      'Skupiny ti jdou. Ale slovesa, na kterých pořád klopýtáš, se novou skupinou nespraví.',
+      'Nejrychleji porosteš na těch pár slovesech, co ti opakovaně utíkají. Přesně z nich je složená cílovka.',
+      'Pár minut nad slabými místy udělá víc než další nová skupina.',
+      'Cílovka bere jen to, co ti dělá problém. Proto funguje.',
+    ],
+    student: [
+      'Hustý! Ale slovesa, co tě pořád vytáčejí, samy nezmizí.',
+      'Boss mode je nabitý přesně tím, co ti nejde. Dej mu pět minut.',
+      'Nová skupina je fajn, ale bosse máš furt nedoraženýho.',
+      'Pět minut na slabiny > hodina nových sloves. Fakt.',
+    ],
+    hantec: [
+      'Betelné! Ale slovesa, co ťa serou, se sama nespravijou.',
+      'Betelná šichta má v sobě přesně to, co ti nejde. Prubni to.',
+      'Nové skupiny sú dobré, ale slabiny ťa dojedou.',
+      'Pár minut na slabiny a budeš gómat jak king.',
+    ],
+  },
+  slaba_nudge_count: (n) => `${n} ${t('plur_verbs', n)} · pár minut`,
+  slaba_nudge_go: { pro: 'Jdu na cílovku', student: 'Jdu na bosse 👾', hantec: 'Du na to' },
+  slaba_nudge_later: { pro: 'Až příště', student: 'Teď ne', hantec: 'Enem ne' },
   premium_badge: 'Premium',
   practice_cta: 'Procvič si to!',
   flash_hint: 'klikni pro otočení',
@@ -2626,9 +2655,16 @@ function finishLesson() {
     const intensity = 0.55 + successRate * 1.05;
     window.celebrate && window.celebrate({ intensity });
   } catch (_) {}
+  // Připomínka cílovky má přednost před bannerem s instalací — dvě výzvy na
+  // jedné obrazovce se perou a student neudělá ani jednu.
+  const nudged = maybeShowSlabaNudge(
+    L.sub && L.sub.id === 'slabaMista' ? 'slaba' : isReview ? 'review' : 'group'
+  );
   // Offer "Install app" after the success moment — short delay so the user
   // first sees their result. Throttled to once per 7 days via install.js.
-  setTimeout(() => { try { window.showInstallBanner && window.showInstallBanner(); } catch (_) {} }, 1800);
+  if (!nudged) {
+    setTimeout(() => { try { window.showInstallBanner && window.showInstallBanner(); } catch (_) {} }, 1800);
+  }
   const list = $('#results-list');
   list.innerHTML = '';
   L.verbs.forEach((v) => {
@@ -3209,6 +3245,68 @@ function renderTryAppTile() {
     first.addEventListener('animationend', stop);
   });
   row.appendChild(tile);
+}
+
+// ---------- Připomínka cílovky ----------
+// Studenti sami od sebe sahají po nových skupinách a slabá místa jim utíkají.
+// Po každé N-té dokončené skupině proto na výsledkové obrazovce nabídneme
+// dnešní cílovku. Dokončená cílovka počítadlo nuluje, takže kdo ji dělá
+// pravidelně, hlášku nikdy neuvidí.
+const SLABA_NUDGE_EVERY = 2;
+const SLABA_NUDGE_MIN_PICKS = 3; // pod tři slovesa nemá dávka smysl nabízet
+
+function slabaNudgeCount() {
+  return Number(localStorage.getItem('lessonsSinceSlaba') || 0) || 0;
+}
+
+function setSlabaNudgeCount(n) {
+  try { localStorage.setItem('lessonsSinceSlaba', String(n)); } catch (_) {}
+}
+
+function markSlabaDoneToday() {
+  setSlabaNudgeCount(0);
+  try { localStorage.setItem('slabaDoneAt', todayKey()); } catch (_) {}
+}
+
+// Vrací true, když se hláška zobrazila — finishLesson pak přeskočí banner
+// s instalací, ať se na výsledkovou obrazovku nesypou dvě výzvy naráz.
+function maybeShowSlabaNudge(kind) {
+  const box = $('#results-slaba-nudge');
+  if (box) box.classList.add('hidden');
+  if (kind === 'slaba') { markSlabaDoneToday(); return false; }
+  if (kind === 'review') return false; // Zamíchaně není dokončená skupina
+  const count = slabaNudgeCount() + 1;
+  setSlabaNudgeCount(count);
+  if (!box) return false;
+  if (localStorage.getItem('slabaDoneAt') === todayKey()) return false;
+  if (count % SLABA_NUDGE_EVERY !== 0) return false;
+  const picks = selectSlabaMista();
+  if (!picks || picks.length < SLABA_NUDGE_MIN_PICKS) return false;
+
+  box.innerHTML = `
+    <span class="slaba-nudge-icon" aria-hidden="true">${t('slaba_icon')}</span>
+    <div class="slaba-nudge-body">
+      <strong class="slaba-nudge-title">${t('slaba_nudge_title')}</strong>
+      <p class="slaba-nudge-line">${t('slaba_nudge_line')}</p>
+      <p class="slaba-nudge-count">${t('slaba_nudge_count', picks.length)}</p>
+    </div>
+    <div class="slaba-nudge-actions">
+      <button type="button" class="btn btn-primary btn-sm" id="slaba-nudge-go">${t('slaba_nudge_go')}</button>
+      <button type="button" class="btn-link" id="slaba-nudge-later">${t('slaba_nudge_later')}</button>
+    </div>`;
+  box.classList.remove('hidden');
+  track('slaba_nudge_shown', { after: count });
+  $('#slaba-nudge-go').onclick = () => {
+    box.classList.add('hidden');
+    track('slaba_nudge_accepted');
+    state.lesson = null;
+    startSlabaMista();
+  };
+  $('#slaba-nudge-later').onclick = () => {
+    box.classList.add('hidden');
+    track('slaba_nudge_dismissed');
+  };
+  return true;
 }
 
 function startSlabaMista() {

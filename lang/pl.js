@@ -283,6 +283,28 @@
       slaba_cold: 'Jeszcze za mało danych — zrób kilka lekcji i wróć. 🌱',
       slaba_title: 'Słabe punkty',
       slaba_pattern: function (n) { return 'Dzisiejsza porcja słabych punktów · ' + n + ' ' + plVerbs(n); },
+      // Przypomnienie o dziennej porcji na ekranie wyników (co drugą grupę)
+      slaba_nudge_title: {
+        pro: 'Zostań jeszcze chwilę 🎯',
+        student: 'Boss na ciebie czeka 👾',
+      },
+      slaba_nudge_line: {
+        pro: [
+          'Grupy idą ci dobrze. Ale czasowniki, na których się potykasz, nowa grupa nie naprawi.',
+          'Najszybciej urośniesz na tych kilku czasownikach, które wciąż ci uciekają. Dokładnie z nich składa się dzisiejszy target.',
+          'Kilka minut nad słabymi punktami zrobi więcej niż kolejna nowa grupa.',
+          'Target bierze tylko to, co sprawia ci problem. Dlatego działa.',
+        ],
+        student: [
+          'Mocne! Ale czasowniki, które cię wkurzają, same nie znikną.',
+          'Boss mode jest nabity dokładnie tym, co ci nie idzie. Daj mu pięć minut.',
+          'Nowa grupa spoko, ale bossa wciąż masz niedobitego.',
+          'Pięć minut na słabe punkty > godzina nowych czasowników. Serio.',
+        ],
+      },
+      slaba_nudge_count: function (n) { return n + ' ' + plVerbs(n) + ' · kilka minut'; },
+      slaba_nudge_go: { pro: 'Biorę target', student: 'Idę na bossa 👾' },
+      slaba_nudge_later: { pro: 'Innym razem', student: 'Teraz nie' },
       premium_badge: 'Premium',
       practice_cta: 'Poćwicz to!',
       flash_hint: 'kliknij, aby odwrócić',

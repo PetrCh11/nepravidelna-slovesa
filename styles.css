@@ -4614,6 +4614,68 @@ body.practicing .app-footer { display: none; }
   box-shadow: 0 8px 22px rgba(255, 90, 60, 0.38);
 }
 .slaba-mista-tile:active { transform: translateY(0); }
+
+/* ---------- Připomínka cílovky na výsledkové obrazovce ---------- */
+/* Stejná barevná řeč jako dlaždice cílovky, ale karta místo tlačítka —
+   student má volbu, ne jen jeden velký terč. */
+.slaba-nudge {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  align-items: start;
+  max-width: 560px;
+  margin: 18px auto 4px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ff7a45 0%, #ff5c8a 100%);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(255, 90, 60, 0.3);
+  text-align: left;
+  animation: slaba-nudge-in 0.35s ease both;
+}
+@keyframes slaba-nudge-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slaba-nudge { animation: none; }
+}
+.slaba-nudge-icon { font-size: 1.8rem; line-height: 1.1; }
+.slaba-nudge-body { min-width: 0; }
+.slaba-nudge-title { display: block; font-size: 1.02rem; }
+.slaba-nudge-line { margin: 4px 0 0; font-size: 0.92rem; line-height: 1.45; opacity: 0.95; }
+.slaba-nudge-count { margin: 6px 0 0; font-size: 0.8rem; opacity: 0.8; }
+.slaba-nudge-actions {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+/* Bílé tlačítko na barevném podkladu čte líp než další oranžové */
+.slaba-nudge-actions .btn-primary {
+  background: #fff;
+  color: #d9414f;
+}
+.slaba-nudge-actions .btn-primary:hover { background: #fff; opacity: 0.92; }
+.slaba-nudge-actions .btn-link {
+  color: #fff;
+  opacity: 0.85;
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.88rem;
+  padding: 0;
+}
+.slaba-nudge-actions .btn-link:hover { opacity: 1; }
+@media (max-width: 480px) {
+  .slaba-nudge { grid-template-columns: 1fr; }
+  .slaba-nudge-icon { display: none; }
+  .slaba-nudge-actions { grid-column: 1; }
+}
 .slaba-mista-icon { font-size: 1.6rem; line-height: 1; }
 .slaba-mista-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; overflow: hidden; }
 .slaba-mista-title { font-size: 0.95rem; font-weight: 800; }
