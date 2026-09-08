@@ -439,7 +439,7 @@ const TEXTS = {
   res_new:       { pro: 'Nová lekce', student: 'Nová skupina' },
   res_back_all:  { pro: 'Zpět na všechny skupiny', student: 'Zpět na skupiny' },
   // Section chip
-  chip_default:  { pro: 'Zamíchaně 🎲', student: 'Náhodný mix 🎲' },
+  chip_default:  { pro: 'Zamíchat 🎲', student: 'Náhodný mix 🎲' },
   chip_mastered: { pro: 'Velký test 🏆', student: 'Final boss 🏆' },
   // Group modal
   gsm_title:     { pro: 'Jak budeš procvičovat?', student: 'Jak na to půjdeš?' },
@@ -3274,7 +3274,7 @@ function maybeShowSlabaNudge(kind) {
   const box = $('#results-slaba-nudge');
   if (box) box.classList.add('hidden');
   if (kind === 'slaba') { markSlabaDoneToday(); return false; }
-  if (kind === 'review') return false; // Zamíchaně není dokončená skupina
+  if (kind === 'review') return false; // Zamíchat není dokončená skupina
   const count = slabaNudgeCount() + 1;
   setSlabaNudgeCount(count);
   if (!box) return false;
