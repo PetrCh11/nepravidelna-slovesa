@@ -982,11 +982,22 @@ function flattenVerbs(data, onlySections = null) {
 // infinitive but pronounces differently. TTS reads literal letters, so we
 // substitute a phonetic spelling for the audio only. UI text is unchanged.
 //   read /riːd/  → past/pp /rɛd/  → spell as "red"
+// Respellingy pro TTS. Hlas čte psanou podobu, takže u homografů mu podstrčíme
+// jinak zapsané slovo se stejnou výslovností. Na displeji zůstává originál —
+// mění se jen to, co jde do speechSynthesis.
 const PHON_PAST_PP = { read: 'red' };
+// „tear" (trhat) je homograf se slzou: hlasy ho čtou /tɪə/ místo /tɛː/.
+// „tare" je reálné slovo s přesně správnou výslovností — /tɛː/ v BrE, /ter/ v AmE.
+const PHON_INF = { tear: 'tare' };
 function phon(word) {
   if (!word) return word;
   const key = String(word).toLowerCase().trim();
   return PHON_PAST_PP[key] || word;
+}
+function phonInf(word) {
+  if (!word) return word;
+  const key = String(word).toLowerCase().trim();
+  return PHON_INF[key] || word;
 }
 
 // ---------- TTS voice selection ----------
@@ -2060,7 +2071,7 @@ function stage1Study() {
         <div class="study-num">${i + 1}</div>
         <div class="study-emoji">${v.emoji || '❓'}</div>
         <div class="study-forms">
-          <span class="study-form" data-speak="${v.inf}">
+          <span class="study-form" data-speak="${phonInf(v.inf)}">
             <span class="study-form-label">${t('form_inf')}</span>
             <span class="study-form-word">${highlightVowel(v.inf, infV)}</span>
           </span>
@@ -2075,7 +2086,7 @@ function stage1Study() {
             <span class="study-form-word">${highlightVowel(pp, ppV)}</span>
           </span>
         </div>
-        <button class="speak-btn study-speak" data-speak="${v.inf}, ${phon(past)}, ${phon(pp)}" title="${t('speak_all_title')}">🔊</button>
+        <button class="speak-btn study-speak" data-speak="${phonInf(v.inf)}, ${phon(past)}, ${phon(pp)}" title="${t('speak_all_title')}">🔊</button>
         <div class="study-cs">${v.cs}</div>
       </div>
     `;
@@ -2463,7 +2474,7 @@ function askStage2Verb(verb, step) {
     // top-right toggle. Small delay so the feedback text + cue play first.
     if (state.audioAfterAnswer) {
       setTimeout(() => {
-        try { speak(`${verb.inf}, ${phon(past)}, ${phon(pp)}`, state.dialect); } catch (_) {}
+        try { speak(`${phonInf(verb.inf)}, ${phon(past)}, ${phon(pp)}`, state.dialect); } catch (_) {}
       }, 600);
     }
     persistProgress();
@@ -2559,7 +2570,7 @@ function askStage2Verb(verb, step) {
       // If the student just turned audio on AFTER finalizing, play the forms now
       // so they don't have to wait for the next verb.
       if (on && finalized) {
-        try { speak(`${verb.inf}, ${phon(past)}, ${phon(pp)}`, state.dialect); } catch (_) {}
+        try { speak(`${phonInf(verb.inf)}, ${phon(past)}, ${phon(pp)}`, state.dialect); } catch (_) {}
       }
     });
   }
@@ -3452,10 +3463,10 @@ function renderVerbCard(verb) {
   if (verb.ppAlt) altParts.push(`alt pp: ${verb.ppAlt}`);
   card.innerHTML = `
     <div class="verb-emoji">${verb.emoji || '❓'}</div>
-    <span class="verb-form" data-speak="${verb.inf}">${highlightVowel(verb.inf, infV)}</span>
+    <span class="verb-form" data-speak="${phonInf(verb.inf)}">${highlightVowel(verb.inf, infV)}</span>
     <span class="verb-form" data-speak="${phon(past)}">${highlightVowel(past, pastV)}</span>
     <span class="verb-form" data-speak="${phon(pp)}">${highlightVowel(pp, ppV)}</span>
-    <button class="speak-btn" data-speak="${verb.inf}, ${phon(past)}, ${phon(pp)}" title="${t('speak_all_title')}">🔊</button>
+    <button class="speak-btn" data-speak="${phonInf(verb.inf)}, ${phon(past)}, ${phon(pp)}" title="${t('speak_all_title')}">🔊</button>
     <div class="verb-cs">${verb.cs}${altParts.length ? `<div class="verb-alt">${altParts.join(' · ')}</div>` : ''}</div>
   `;
   card.querySelectorAll('[data-speak]').forEach((el) =>
@@ -3904,7 +3915,7 @@ async function renderAutoVerb(verb) {
   const pp = pickForm(verb, 'pp', state.dialect);
   const forms = [verb.inf, past, pp];
   // For TTS, past/pp may need a phonetic respelling (e.g. read → red).
-  const ttsForms = [verb.inf, phon(past), phon(pp)];
+  const ttsForms = [phonInf(verb.inf), phon(past), phon(pp)];
   for (let i = 0; i < forms.length; i++) {
     if (!autoSession || autoSession.aborted || autoSession.paused) return;
     items[i].textContent = forms[i];
@@ -3937,7 +3948,7 @@ function renderFlashCard(verb, side) {
           <span>${highlightVowel(past, pastV)}</span>
           <span>${highlightVowel(pp, ppV)}</span>
         </div>
-        <button class="speak-btn flash-speak" data-speak="${verb.inf}, ${phon(past)}, ${phon(pp)}" title="${t('speak_title')}">🔊</button>
+        <button class="speak-btn flash-speak" data-speak="${phonInf(verb.inf)}, ${phon(past)}, ${phon(pp)}" title="${t('speak_title')}">🔊</button>
       </div>
     </div>
   `;
