@@ -5704,6 +5704,29 @@ async function init() {
     }
   });
 
+  // Enter posouvá lekci i mezi kroky. Přechodové obrazovky (intro fáze, konec
+  // seznámení, mezifáze) neměly nic zafocusovaného, takže Enter nedělal nic a
+  // student musel sáhnout po myši uprostřed psaní.
+  const LESSON_ENTER_BTNS = [
+    '#lesson-stage-intro:not(.hidden) #stage-intro-start', // „Začít" na intru fáze
+    '#lesson-question #study-done',                        // Fáze 1 → „Hotovo, jdu psát"
+    '#lesson-question #mark-done',                         // mezifáze → „Hotovo, jdu na to"
+    '#lesson-question .next-btn-corner',                   // po vyhodnocení → „Další →"
+  ];
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.repeat) return;
+    if (state.currentView !== 'lesson') return;
+    // Psaní tvarů řeší vlastní handler na inputu — ten musí mít přednost.
+    const tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    // Otevřený modal (paywall, odměna za streak, výběr skupiny…) překrývá lekci.
+    if (document.querySelector('[role="dialog"]:not(.hidden)')) return;
+    for (const sel of LESSON_ENTER_BTNS) {
+      const btn = document.querySelector(sel);
+      if (btn && !btn.disabled && btn.offsetParent) { e.preventDefault(); btn.click(); return; }
+    }
+  });
+
   // Restore last visited view across reload (so refresh doesn't always dump
   // the user back to Lekce). Deep links and payment returns below can still
   // override by calling setView() themselves.
