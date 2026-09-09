@@ -1531,6 +1531,21 @@ main { flex: 1; padding: 28px 0 48px; }
 @media (max-width: 600px) {
   .enter-tip { margin-bottom: 4px; font-size: 0.72rem; }
 }
+/* Student přeskakuje mezi poli prstem/myší → decentně upozorníme na Enter.
+   Jen zvýraznění a jedno lupnutí, žádné blikání dokola. */
+.enter-tip.is-nudging {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.84rem;
+  animation: enter-tip-pop 0.5s ease-out 2;
+}
+@keyframes enter-tip-pop {
+  0%, 100% { transform: scale(1); }
+  40%      { transform: scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .enter-tip.is-nudging { animation: none; }
+}
 .enter-tip kbd {
   display: inline-block;
   padding: 1px 6px;

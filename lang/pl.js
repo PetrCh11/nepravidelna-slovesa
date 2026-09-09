@@ -78,6 +78,10 @@
     'Nowy zeszyt, nowy flow. ✍️',
     'Wrzesień, a ty już śmigasz. Nauczyciel się zdziwi. 👀',
   ];
+  // Do puli serii tylko wycinek — jest mała, cała piątka by ją zdominowała.
+  var SZKOLA_STREAK_PRO = SZKOLA_PRO.slice(0, 2);
+  var SZKOLA_STREAK_STUDENT = SZKOLA_STUDENT.slice(0, 2);
+
   function isSchoolStartSeason() {
     var d = new Date(), m = d.getMonth() + 1;
     return (m === 8 && d.getDate() >= 25) || m === 9;
@@ -149,6 +153,10 @@
       s2_finale_desc: 'Wszystkie czasowniki w losowej kolejności. Wpisujesz wszystkie 3 formy naraz, wynik zobaczysz po Enterze — 1× bez błędu wystarczy, żeby czasownik wypadł z kolejki.',
       tip_atomic: '<kbd>Enter</kbd> = następne pole, sprawdzenie na końcu',
       tip_field: 'Po każdej formie naciśnij <kbd>Enter</kbd>',
+      tip_enter_nudge: {
+        pro: '👆 Spróbuj <kbd>Enter</kbd> zamiast klikania — od razu zobaczysz, czy forma jest dobra.',
+        student: '👆 Daj <kbd>Enter</kbd> zamiast klikania — od razu wiesz, czy się zgadza.',
+      },
       giveup_btn: 'Nie wiem 😭',
       giveup_confirm: 'Na pewno? Kliknij jeszcze raz 😭',
       // Feedback (pooly; hantec spada na pro)
@@ -160,7 +168,7 @@
       get fb_finale_ok()    { return posPools(); },
       fb_finale_wrong: { pro: NEG_PRO, student: NEG_STUDENT },
       get fb_streak() {
-        return { pro: withSeason(STREAK_PRO, SZKOLA_PRO), student: withSeason(STREAK_STUDENT, SZKOLA_STUDENT) };
+        return { pro: withSeason(STREAK_PRO, SZKOLA_STREAK_PRO), student: withSeason(STREAK_STUDENT, SZKOLA_STREAK_STUDENT) };
       },
       // Wyniki
       results_h2: 'Gotowe! 🎉',

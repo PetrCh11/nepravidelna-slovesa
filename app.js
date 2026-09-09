@@ -248,6 +248,7 @@ const state = {
 // {name} → user's first name (Google account); lines with {name} are
 // skipped when no user is signed in.
 const POS_PRO = [
+  'Ty bys mohl učit Babiše planety! 🪐',
   'Approved bez připomínek! ✅',
   'Tohle mělo skvělý drive. 🚀',
   'Čistej win-win. 🤝',
@@ -267,6 +268,7 @@ const POS_PRO = [
   'Skoro tak dobrý pocit, jako když v pátek padne čtrnáctá hodina. 🍻',
 ];
 const NEG_PRO = [
+  'Jde ti to, jak Babišovi vyjmenovávání planet. 🪐',
   'Tenhle draft ještě potřebuje revizi. 📝',
   'Chybička v matrixu. Pojďme na re-work. 🔄',
   'Tady nám to trochu uletělo z rozpočtu. 📉',
@@ -283,6 +285,7 @@ const NEG_PRO = [
   'Nevadí, po celém dni v práci máš právo na jeden fail. 🤝',
 ];
 const POS_STUDENT = [
+  'Ty bys mohl učit Babiše planety! 🪐',
   'Clean! ✨',
   'Pure skill! 🧠',
   'Flexíš solidně! 💪',
@@ -323,6 +326,7 @@ const STREAK_STUDENT = [
   'Moje databáze přímo přede blahem. 🤖',
 ];
 const NEG_STUDENT = [
+  'Jde ti to, jak Babišovi vyjmenovávání planet. 🪐',
   'Auuu, tak tohle docela bolelo. 💀',
   'Tohle sloveso tě totálně vyoutovalo. ❌',
   'Trochu missclick, ne? 🎯',
@@ -349,6 +353,7 @@ const NEG_STUDENT = [
   'Eeeej, vedle. 🥶',
 ];
 const POS_HANTEC = [
+  'Ty bys Babiša naučil aj planety! 🪐',
   'Betelný! 👌',
   'Seš borec jak hrom. 💪',
   'Zgómls to jak nic. 🧠',
@@ -363,6 +368,7 @@ const POS_HANTEC = [
   'To byla čurina, co? Máš to za jedna. 😎',
 ];
 const NEG_HANTEC = [
+  'Jde ti to, jak Babišovi vyjmenovávání planet. 🪐',
   'Hmm, tohle negómu. Zkus to ešče raz. 🤔',
   'Tos trochu zvoral, kámo. Nevadí. 😅',
   'Ujela ti šalina. Počkej na další a jeď znova. 🚋',
@@ -395,6 +401,12 @@ const SKOLNI_ROK_HANTEC = [
   'Zatímco druzí hledajú třídu, ty gómeš slovesa. 📚',
   'Prázdniny ti palicu nerozpustily. 🧠',
 ];
+
+// Do poolu série jen malý výběr. Ten pool má sám o sobě jen pár hlášek, takže
+// celá sezónní pětice by ho zaplavila a školní hlášky by se pořád opakovaly.
+const SKOLNI_ROK_STREAK_PRO = SKOLNI_ROK_PRO.slice(0, 2);
+const SKOLNI_ROK_STREAK_STUDENT = SKOLNI_ROK_STUDENT.slice(0, 2);
+const SKOLNI_ROK_STREAK_HANTEC = SKOLNI_ROK_HANTEC.slice(0, 1);
 
 function isSchoolStartSeason() {
   const d = new Date();
@@ -459,6 +471,11 @@ const TEXTS = {
                    student: 'Náhodně, všechno najednou. Napíšeš 3 tvary, mrkneš na výsledek a jedem dál. 1× bez chyby = hotovo. 🔀' },
   tip_atomic:    { pro: '<kbd>Enter</kbd> = další pole, vyhodnotí se na konci',
                    student: '<kbd>Enter</kbd> = další pole. Vyhodnocení až na konci.' },
+  tip_enter_nudge: {
+    pro: '👆 Zkus <kbd>Enter</kbd> místo klikání — hned uvidíš, jestli je tvar správně.',
+    student: '👆 Dej <kbd>Enter</kbd> místo klikání — hned víš, jestli to sedí.',
+    hantec: '👆 Praš do <kbd>Enteru</kbd> místo klikání — hned víš, jak si na tom.',
+  },
   tip_field:     { pro: 'Po každém tvaru zmáčkni <kbd>Enter</kbd>',
                    student: 'Po každym tvaru <kbd>Enter</kbd>' },
   giveup_btn:    { pro: 'Nevím 😭', student: 'Vzdávám 🏳️' },
@@ -477,9 +494,9 @@ const TEXTS = {
   // tenhle pool, takže bez něj by se školní hlášky skoro neukázaly.
   get fb_streak() {
     return {
-      pro: withSeason(STREAK_PRO, SKOLNI_ROK_PRO),
-      student: withSeason(STREAK_STUDENT, SKOLNI_ROK_STUDENT),
-      hantec: withSeason(STREAK_HANTEC, SKOLNI_ROK_HANTEC),
+      pro: withSeason(STREAK_PRO, SKOLNI_ROK_STREAK_PRO),
+      student: withSeason(STREAK_STUDENT, SKOLNI_ROK_STREAK_STUDENT),
+      hantec: withSeason(STREAK_HANTEC, SKOLNI_ROK_STREAK_HANTEC),
     };
   },
   // Results
@@ -1548,6 +1565,27 @@ function nextOpenSubAfter(subId) {
 
 // Opakovací režimy mají pseudo-sub, který neodpovídá kartě v přehledu:
 // slabá místa (sub.isReview + id 'slabaMista') a souhrn sekce (lesson.isReview).
+// Připomínka Enteru pro studenty, kteří mezi tvary překlikávají prstem/myší.
+// Počítá se přes celou lekci; hlášku ukážeme až při druhém přeskočení a jen
+// jednou — víc už by bylo otravné.
+function noteManualFieldSwitch() {
+  const L = state.lesson;
+  if (!L || L.enterHintShown) return;
+  L.manualSwitches = (L.manualSwitches || 0) + 1;
+  if (L.manualSwitches < 2) return;
+  const tip = document.querySelector('.enter-tip');
+  if (!tip) return;
+  L.enterHintShown = true;
+  const original = tip.innerHTML;
+  tip.innerHTML = t('tip_enter_nudge');
+  tip.classList.add('is-nudging');
+  setTimeout(() => {
+    tip.classList.remove('is-nudging');
+    // Text vracíme jen když mezitím nepřišla další otázka (ta si tip překreslí).
+    if (document.body.contains(tip)) tip.innerHTML = original;
+  }, 4000);
+}
+
 function isRealGroupLesson(L) {
   return !!(L && L.sub && !L.isReview && !L.sub.isReview && L.sub.id !== 'slabaMista');
 }
@@ -2610,7 +2648,16 @@ function askStage2Verb(verb, step) {
       inp.addEventListener('focusin', () => {
         if (finalized) return;
         // Focus se pohnul kvůli dotyku prstem → nekontrolovat, jen přesunout.
-        if (Date.now() - lastPointerDownAt < 700) return;
+        if (Date.now() - lastPointerDownAt < 700) {
+          // Přeskakováním mezi poli prstem/myší se pole nezkontroluje a fáze
+          // ztrácí smysl — student nedostane zpětnou vazbu po každém tvaru.
+          // Když nechal za sebou vyplněné a nezkontrolované pole, připomeneme
+          // Enter (jednou za lekci, až napodruhé, ať to není otravné).
+          const nechalNezkontrolovane = inputs.some((o) =>
+            o !== inp && o.value.trim() !== '' && !(o.dataset.form in fieldResults));
+          if (nechalNezkontrolovane) noteManualFieldSwitch();
+          return;
+        }
         let marked = false;
         inputs.forEach((other) => {
           if (other === inp) return;
