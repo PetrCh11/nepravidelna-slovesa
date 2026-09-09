@@ -308,7 +308,7 @@ const STREAK_PRO = [
 const STREAK_STUDENT = [
   'Tak to je streak jako býk! 🐂',
   'Ty seš mašina! 🚂',
-  'Někdo to zastavte, hoříš! ☄️',
+  'Ty jedeš. Zastavte jej někdo! ☄️',
   'God mode aktivován. 👑',
   'Ty ten algoritmus úplně ničíš. 💥',
   'Unstoppable! 🌪️',
