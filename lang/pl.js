@@ -139,6 +139,7 @@
       res_again_all: 'Poćwicz jeszcze raz',
       res_new: 'Nowa lekcja',
       res_back_all: 'Wróć do wszystkich grup',
+      res_next_sub: { pro: 'Następna grupa ⏭️', student: 'Lecimy dalej ⏭️' },
       // Chip sekcji
       chip_default: 'Losowy mix 🎲',
       chip_mastered: 'Wielki test 🏆',

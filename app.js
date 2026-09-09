@@ -438,6 +438,7 @@ const TEXTS = {
   res_again_all: { pro: 'Procvičit znovu', student: 'Dát si to ještě jednou' },
   res_new:       { pro: 'Nová lekce', student: 'Nová skupina' },
   res_back_all:  { pro: 'Zpět na všechny skupiny', student: 'Zpět na skupiny' },
+  res_next_sub:  { pro: 'Další skupina ⏭️', student: 'Jedeme dál ⏭️', hantec: 'Šup na další ⏭️' },
   // Section chip
   chip_default:  { pro: 'Zamíchat 🎲', student: 'Náhodný mix 🎲' },
   chip_mastered: { pro: 'Velký test 🏆', student: 'Final boss 🏆' },
@@ -1459,6 +1460,43 @@ function maybeHighlightBonusSub() {
     toast(t('bonus_free_toast'), 'success', 4000);
     setTimeout(() => el.classList.remove('group-card-bonus-pulse'), 6000);
   }, 450);
+}
+
+// Ploché pořadí podskupin tak, jak jdou v přehledu za sebou.
+function flatSubs() {
+  const out = [];
+  state.data.sections.forEach((sec) => sec.subsections.forEach((sub) => out.push(sub)));
+  return out;
+}
+
+// Následující skupina, kterou student reálně může otevřít. Zamčené přeskakuje,
+// aby tlačítko „Další skupina" nikdy nevedlo rovnou do paywallu.
+function nextOpenSubAfter(subId) {
+  const all = flatSubs();
+  const i = all.findIndex((s) => s.id === subId);
+  if (i < 0) return null;
+  for (let j = i + 1; j < all.length; j++) {
+    if (state.premium || isFreeSub(all[j].id)) return all[j];
+  }
+  return null;
+}
+
+// Opakovací režimy mají pseudo-sub, který neodpovídá kartě v přehledu:
+// slabá místa (sub.isReview + id 'slabaMista') a souhrn sekce (lesson.isReview).
+function isRealGroupLesson(L) {
+  return !!(L && L.sub && !L.isReview && !L.sub.isReview && L.sub.id !== 'slabaMista');
+}
+
+// Po návratu z dokončené skupiny na přehled: sjet na její kartu a pulznout,
+// aby student viděl, kde skončil a kam pokračovat.
+function highlightJustDoneSub(subId) {
+  setTimeout(() => {
+    const el = document.querySelector(`.group-card[data-sub="${CSS.escape(subId)}"]`);
+    if (!el || !el.offsetParent) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('group-card-just-done');
+    setTimeout(() => el.classList.remove('group-card-just-done'), 3600);
+  }, 260);
 }
 
 function subProgress(sub) {
@@ -2655,6 +2693,20 @@ function finishLesson() {
     const intensity = 0.55 + successRate * 1.05;
     window.celebrate && window.celebrate({ intensity });
   } catch (_) {}
+  // „Další skupina ⏭️" — po dokončené skupině se dá pokračovat rovnou, bez
+  // návratu do přehledu. U opakovacích režimů žádná „další" skupina není.
+  const nextSubBtn = $('#results-next-sub');
+  if (nextSubBtn) {
+    const nextSub = isRealGroupLesson(L) ? nextOpenSubAfter(L.sub.id) : null;
+    nextSubBtn.classList.toggle('hidden', !nextSub);
+    nextSubBtn.onclick = nextSub ? () => {
+      track('results_next_sub', { from: L.sub.id, to: nextSub.id });
+      state.lesson = null;
+      startLesson(nextSub);
+    } : null;
+    if (nextSub) nextSubBtn.textContent = t('res_next_sub');
+  }
+
   // Připomínka cílovky má přednost před bannerem s instalací — dvě výzvy na
   // jedné obrazovce se perou a student neudělá ani jednu.
   const nudged = maybeShowSlabaNudge(
@@ -3037,6 +3089,10 @@ function renderStatsStrip() {
 }
 
 function exitLesson() {
+  // Jen po DOKONČENÉ skupině — odchod tlačítkem „Zpět" uprostřed lekce
+  // (#lesson-exit) nic zvýrazňovat nemá.
+  const justDone = (state.lesson && state.lesson.done && isRealGroupLesson(state.lesson))
+    ? state.lesson.sub.id : null;
   state.lesson = null;
   $('.lesson-active').classList.add('hidden');
   document.body.classList.remove('practicing');
@@ -3046,6 +3102,7 @@ function exitLesson() {
   $('#verb-chips').innerHTML = '';
   renderLessonPicker();
   renderStatsStrip();
+  if (justDone) highlightJustDoneSub(justDone);
 }
 
 function stageIntroStart() {
@@ -3192,6 +3249,9 @@ function renderSlabaMistaTile() {
   const tile = document.createElement('button');
   tile.type = 'button';
   tile.className = 'slaba-mista-tile';
+  // Po víc než třech skupinách bez cílovky dlaždice dostane výraznou auru,
+  // ať se sama připomene i tomu, kdo hlášku na výsledkovce odklikl.
+  if (slabaNudgeCount() > SLABA_AURA_AFTER) tile.classList.add('is-overdue');
   tile.innerHTML = `
     <span class="slaba-mista-icon" aria-hidden="true">${icon}</span>
     <span class="slaba-mista-text">
@@ -3254,6 +3314,7 @@ function renderTryAppTile() {
 // pravidelně, hlášku nikdy neuvidí.
 const SLABA_NUDGE_EVERY = 2;
 const SLABA_NUDGE_MIN_PICKS = 3; // pod tři slovesa nemá dávka smysl nabízet
+const SLABA_AURA_AFTER = 3;      // víc skupin bez cílovky → aura na dlaždici
 
 function slabaNudgeCount() {
   return Number(localStorage.getItem('lessonsSinceSlaba') || 0) || 0;

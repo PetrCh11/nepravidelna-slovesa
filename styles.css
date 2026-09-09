@@ -1684,8 +1684,22 @@ main { flex: 1; padding: 28px 0 48px; }
   display: flex;
   gap: 10px;
   justify-content: center;
+  align-items: center;
   flex-wrap: wrap;
   margin-bottom: 30px;
+}
+/* „Další skupina ⏭️" stojí stranou od dvojice vlevo — je to jiný směr akce
+   (jedeme dál), ne varianta opakování. Zelená ho odliší od oranžového
+   „Procvičit znovu", aby vedle sebe nestála dvě stejná primární tlačítka. */
+.results-next-sub { margin-left: 28px; }
+.results-next-sub.btn-primary {
+  background: var(--success);
+  box-shadow: 0 4px 14px rgba(46, 160, 67, 0.3);
+}
+.results-next-sub.btn-primary:hover { background: #278c39; }
+@media (max-width: 560px) {
+  /* Na mobilu se tlačítka lámou pod sebe — odsazení by vypadalo jako chyba. */
+  .results-next-sub { margin-left: 0; }
 }
 
 /* ---------- Study view (Lesson Stage 1) ---------- */
@@ -4615,6 +4629,28 @@ body.practicing .app-footer { display: none; }
 }
 .slaba-mista-tile:active { transform: translateY(0); }
 
+/* Víc než 3 skupiny bez cílovky — dlaždice si řekne o pozornost sama.
+   Pulzuje prstenec kolem, ne obsah, aby text zůstal čitelný. */
+.slaba-mista-tile.is-overdue {
+  animation: slaba-aura 2.1s ease-in-out infinite;
+}
+@keyframes slaba-aura {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(255, 90, 60, 0.28), 0 0 0 0 rgba(255, 90, 60, 0.55);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(255, 90, 60, 0.4), 0 0 0 8px rgba(255, 90, 60, 0.12);
+  }
+}
+.slaba-mista-tile.is-overdue:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .slaba-mista-tile.is-overdue {
+    animation: none;
+    box-shadow: 0 4px 14px rgba(255, 90, 60, 0.28), 0 0 0 5px rgba(255, 90, 60, 0.2);
+  }
+  .group-card-just-done { animation: none; outline: 3px solid hsl(var(--sub-hue) 70% 55% / 0.6); }
+}
+
 /* ---------- Připomínka cílovky na výsledkové obrazovce ---------- */
 /* Stejná barevná řeč jako dlaždice cílovky, ale karta místo tlačítka —
    student má volbu, ne jen jeden velký terč. */
@@ -5443,6 +5479,11 @@ body.theme-dark .streak-info-badge {
   padding: 2px 8px;
   border-radius: 999px;
   box-shadow: 0 2px 6px rgba(255, 92, 60, 0.35);
+}
+
+/* ===== Právě dokončená skupina po návratu na přehled ===== */
+.group-card-just-done {
+  animation: bonus-pulse 1.1s ease-in-out 3;
 }
 
 /* ===== Jednorázové zvýraznění bonusové free skupiny (1.2.5) ===== */
