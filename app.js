@@ -372,6 +372,50 @@ const NEG_HANTEC = [
   'Tady to drhlo jak stará šalina do kopca. 📉',
   'Tohle sloveso na tebe vyzrálo. Oplať mu to. 👾',
 ];
+// ---- Sezónní hlášky: začátek školního roku (25. 8. – 30. 9.) --------------
+// Přimíchávají se do poolu správných odpovědí a 1. října zmizí samy, bez
+// nasazování. Datum bere z hodin zařízení — u vtipné hlášky to nevadí.
+const SKOLNI_ROK_PRO = [
+  'Nový školní rok, nová KPI. 📈',
+  'Q1 školního roku právě odstartoval. 🗓️',
+  'Onboarding do nového ročníku zvládnut bez připomínek. 🎒',
+  'Zatímco ostatní hledají rozvrh, ty plníš cíle. 🎯',
+  'Letní kapacity naběhly zpátky na 100 %. 🔋',
+];
+const SKOLNI_ROK_STUDENT = [
+  'Škola sotva začala a ty už makáš. Respekt. 🎒',
+  'Zatímco ostatní řeší rozvrh, ty řešíš slovesa. 📚',
+  'První písemka tě nezaskočí. 😎',
+  'Prázdniny ti mozek nerozpustily. 🧠',
+  'Nový sešit, nový flow. ✍️',
+  'Září a ty už frčíš. Učitel bude koukat. 👀',
+];
+const SKOLNI_ROK_HANTEC = [
+  'Škola načatá a ty už makáš. Betelné. 🎒',
+  'Zatímco druzí hledajú třídu, ty gómeš slovesa. 📚',
+  'Prázdniny ti palicu nerozpustily. 🧠',
+];
+
+function isSchoolStartSeason() {
+  const d = new Date();
+  const m = d.getMonth() + 1; // 1–12
+  const day = d.getDate();
+  return (m === 8 && day >= 25) || m === 9;
+}
+
+function withSeason(base, seasonal) {
+  return isSchoolStartSeason() ? base.concat(seasonal) : base;
+}
+
+// Pool pro správnou odpověď, sezónně rozšířený. Volá se z getterů v TEXTS.
+function posPools() {
+  return {
+    pro: withSeason(POS_PRO, SKOLNI_ROK_PRO),
+    student: withSeason(POS_STUDENT, SKOLNI_ROK_STUDENT),
+    hantec: withSeason(POS_HANTEC, SKOLNI_ROK_HANTEC),
+  };
+}
+
 const STREAK_HANTEC = [
   'Jedeš jak šalina bez zastávek! 🚋💨',
   'Betelná šňůra, kámo! 🔥',
@@ -420,14 +464,24 @@ const TEXTS = {
   giveup_btn:    { pro: 'Nevím 😭', student: 'Vzdávám 🏳️' },
   giveup_confirm:{ pro: 'Vážně? Klikni znovu 😭', student: 'Fakt? Klikni ještě jednou 😭' },
   // Feedback — combined pass (random pick from phrase pools above)
-  fb_pass_ok:     { pro: POS_PRO, student: POS_STUDENT, hantec: POS_HANTEC },
-  fb_pass_redo_ok:{ pro: POS_PRO, student: POS_STUDENT, hantec: POS_HANTEC },
+  // Gettery, ne statické objekty: pool se skládá při každém vyvolání t(),
+  // takže sezónní hlášky naskočí i zmizí bez nasazování a bez reloadu appky.
+  get fb_pass_ok()      { return posPools(); },
+  get fb_pass_redo_ok() { return posPools(); },
   fb_pass_wrong:  { pro: NEG_PRO, student: NEG_STUDENT, hantec: NEG_HANTEC },
   // Feedback — finále
-  fb_finale_ok:   { pro: POS_PRO, student: POS_STUDENT, hantec: POS_HANTEC },
+  get fb_finale_ok()    { return posPools(); },
   fb_finale_wrong:{ pro: NEG_PRO, student: NEG_STUDENT, hantec: NEG_HANTEC },
   // Streak — 3+ correct in a row (student only; pro reuses positive pool)
-  fb_streak:      { pro: STREAK_PRO, student: STREAK_STUDENT, hantec: STREAK_HANTEC },
+  // Taky sezónně — kdo odpovídá správně v sérii, vidí od 3. správné právě
+  // tenhle pool, takže bez něj by se školní hlášky skoro neukázaly.
+  get fb_streak() {
+    return {
+      pro: withSeason(STREAK_PRO, SKOLNI_ROK_PRO),
+      student: withSeason(STREAK_STUDENT, SKOLNI_ROK_STUDENT),
+      hantec: withSeason(STREAK_HANTEC, SKOLNI_ROK_HANTEC),
+    };
+  },
   // Results
   results_h2:    { pro: 'Hotovo! 🎉', student: 'Hotovo, válíš! 🎉' },
   stat_green:    { pro: 'zvládnuto', student: 'v kapse' },

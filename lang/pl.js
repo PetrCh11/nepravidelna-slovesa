@@ -61,6 +61,34 @@
     'Te czasowniki same wpadają. 🔥',
     'No i o to chodzi, {name}! ⚽️',
   ];
+  // ---- Sezonowe: początek roku szkolnego (25.08 – 30.09) -------------------
+  // Dokładają się do puli poprawnych odpowiedzi i 1 października znikają same.
+  var SZKOLA_PRO = [
+    'Nowy rok szkolny, nowe KPI. 📈',
+    'Q1 roku szkolnego właśnie wystartował. 🗓️',
+    'Onboarding do nowego rocznika zaliczony bez uwag. 🎒',
+    'Inni szukają planu lekcji, ty realizujesz cele. 🎯',
+    'Wakacyjne moce przerobowe wróciły na 100 %. 🔋',
+  ];
+  var SZKOLA_STUDENT = [
+    'Szkoła ledwo ruszyła, a ty już działasz. Szacun. 🎒',
+    'Inni ogarniają plan lekcji, ty ogarniasz czasowniki. 📚',
+    'Pierwsza kartkówka cię nie zaskoczy. 😎',
+    'Wakacje nie rozpuściły ci mózgu. 🧠',
+    'Nowy zeszyt, nowy flow. ✍️',
+    'Wrzesień, a ty już śmigasz. Nauczyciel się zdziwi. 👀',
+  ];
+  function isSchoolStartSeason() {
+    var d = new Date(), m = d.getMonth() + 1;
+    return (m === 8 && d.getDate() >= 25) || m === 9;
+  }
+  function withSeason(base, seasonal) {
+    return isSchoolStartSeason() ? base.concat(seasonal) : base;
+  }
+  function posPools() {
+    return { pro: withSeason(POS_PRO, SZKOLA_PRO), student: withSeason(POS_STUDENT, SZKOLA_STUDENT) };
+  }
+
   var NEG_STUDENT = [
     'Auć, to trochę zabolało. 💀',
     'Ten czasownik cię wyautował. ❌',
@@ -124,12 +152,16 @@
       giveup_btn: 'Nie wiem 😭',
       giveup_confirm: 'Na pewno? Kliknij jeszcze raz 😭',
       // Feedback (pooly; hantec spada na pro)
-      fb_pass_ok:      { pro: POS_PRO, student: POS_STUDENT },
-      fb_pass_redo_ok: { pro: POS_PRO, student: POS_STUDENT },
+      // Gettery: pool se skládá při každém volání t(), takže sezónní hlášky
+      // naskočí i zmizí samy podle data (viz posPools výše).
+      get fb_pass_ok()      { return posPools(); },
+      get fb_pass_redo_ok() { return posPools(); },
       fb_pass_wrong:   { pro: NEG_PRO, student: NEG_STUDENT },
-      fb_finale_ok:    { pro: POS_PRO, student: POS_STUDENT },
+      get fb_finale_ok()    { return posPools(); },
       fb_finale_wrong: { pro: NEG_PRO, student: NEG_STUDENT },
-      fb_streak:       { pro: STREAK_PRO, student: STREAK_STUDENT },
+      get fb_streak() {
+        return { pro: withSeason(STREAK_PRO, SZKOLA_PRO), student: withSeason(STREAK_STUDENT, SZKOLA_STUDENT) };
+      },
       // Wyniki
       results_h2: 'Gotowe! 🎉',
       stat_green: 'opanowane',
