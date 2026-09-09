@@ -1510,6 +1510,28 @@ function highlightJustDoneSub(subId) {
   }, 260);
 }
 
+// Vzorce skupin jsou od 5 do 30 znaků („I → U" vs „změna samohlásky, bez
+// pravidla"). V hlavičce studia stojí vedle nadpisu, takže ten dlouhý ho bez
+// zmenšení vytlačí do sloupce po jednom slově. Třídu volíme podle délky —
+// stejný princip jako .is-small u karet skupin.
+function patternLength(pattern) {
+  return String(pattern || '').replace(/<[^>]*>/g, '').length;
+}
+
+function patternSizeClass(pattern) {
+  const n = patternLength(pattern);
+  if (n > 24) return ' is-xlong';
+  if (n > 15) return ' is-long';
+  return '';
+}
+
+// Nejdelší vzorce (nad 21 znaků) by ve třech sloupcích nechaly nadpisu ~190 px,
+// tedy tři řádky po jednom slově. Karta se pro ně přepne do dvou řad —
+// vzorec s počtem nahoře, nadpis přes celou šířku pod nimi.
+function heroStackedClass(pattern) {
+  return patternLength(pattern) > 21 ? ' is-stacked' : '';
+}
+
 function subProgress(sub) {
   const g = { green: 0, yellow: 0, red: 0 };
   sub.verbs.forEach((v) => {
@@ -2094,8 +2116,8 @@ function stage1Study() {
   const q = $('#lesson-question');
   q.innerHTML = `
     <div class="study-view" style="--sub-hue:${hue}">
-      <div class="study-hero">
-        <div class="study-hero-pattern">${L.sub.pattern}</div>
+      <div class="study-hero${heroStackedClass(L.sub.pattern)}">
+        <div class="study-hero-pattern${patternSizeClass(L.sub.pattern)}">${L.sub.pattern}</div>
         <div class="study-hero-text">
           <div class="study-hero-eyebrow">${t('s1_eyebrow')}</div>
           <div class="study-hero-title">${t('s1_title')}</div>
