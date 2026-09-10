@@ -180,6 +180,7 @@
       res_new: 'Nowa lekcja',
       res_back_all: 'Wróć do wszystkich grup',
       res_next_sub: { pro: 'Następna grupa ⏭️', student: 'Lecimy dalej ⏭️' },
+      res_review_again: { pro: 'Wymieszaj jeszcze raz 🎲', student: 'Nowy mix 🎲' },
       // Chip sekcji
       chip_default: 'Losowy mix 🎲',
       chip_mastered: 'Wielki test 🏆',

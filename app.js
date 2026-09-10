@@ -510,6 +510,7 @@ const TEXTS = {
   res_new:       { pro: 'Nová lekce', student: 'Nová skupina' },
   res_back_all:  { pro: 'Zpět na všechny skupiny', student: 'Zpět na skupiny' },
   res_next_sub:  { pro: 'Další skupina ⏭️', student: 'Jedeme dál ⏭️', hantec: 'Šup na další ⏭️' },
+  res_review_again: { pro: 'Zamíchat znovu 🎲', student: 'Nový mix 🎲', hantec: 'Zamíchat znova 🎲' },
   // Section chip
   chip_default:  { pro: 'Zamíchat 🎲', student: 'Náhodný mix 🎲' },
   chip_mastered: { pro: 'Velký test 🏆', student: 'Final boss 🏆' },
@@ -2798,6 +2799,20 @@ function finishLesson() {
         state.lesson = null;
         startSlabaMista();
       });
+      freshNew.textContent = t('res_back_all');
+      freshNew.addEventListener('click', exitLesson);
+    } else if (L.isReview) {
+      // Souhrn sekce („🎲 Zamíchat"): „Nová skupina" tu nedává smysl a
+      // „Procvičit znovu" by spustilo celou lekci i se studiem místo dalšího mixu.
+      const sec = state.data.sections.find((s) => s.id === L.sub.id);
+      const missed = L.verbs.filter((v) => L.perVerb.get(v.inf).status !== 'green');
+      if (!allGreen && sec) {
+        freshAgain.textContent = t('res_again');
+        freshAgain.addEventListener('click', () => { state.lesson = null; startSectionReview(sec, missed); });
+      } else {
+        freshAgain.textContent = t('res_review_again');
+        freshAgain.addEventListener('click', () => { state.lesson = null; if (sec) startSectionReview(sec); else exitLesson(); });
+      }
       freshNew.textContent = t('res_back_all');
       freshNew.addEventListener('click', exitLesson);
     } else if (allGreen) {
