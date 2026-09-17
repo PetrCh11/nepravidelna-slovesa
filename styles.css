@@ -2482,6 +2482,18 @@ body {
 }
 .dialect-switch select { padding: 7px 12px; }
 
+/* Teacher zone v menu: jemně oranžově, ať ji učitelé najdou na první pohled */
+.menu-item.menu-item-teacher {
+  color: #d9621f;
+  font-weight: 700;
+  background: rgba(255, 122, 69, 0.1);
+}
+.menu-item.menu-item-teacher:hover { background: rgba(255, 122, 69, 0.2); }
+.menu-item.menu-item-teacher.menu-item-active {
+  background: rgba(255, 122, 69, 0.18);
+  box-shadow: inset 3px 0 0 #ff7a45;
+}
+[data-theme="dark"] .menu-item.menu-item-teacher { color: #ff9a6b; }
 .menu-item-danger { color: var(--danger, #d04848); }
 .menu-item-danger:hover { background: rgba(208, 72, 72, 0.12); }
 
