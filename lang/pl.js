@@ -347,6 +347,30 @@
       slaba_nudge_count: function (n) { return n + ' ' + plVerbs(n) + ' · kilka minut'; },
       slaba_nudge_go: { pro: 'Biorę target', student: 'Idę na bossa 👾' },
       slaba_nudge_later: { pro: 'Innym razem', student: 'Teraz nie' },
+      slaba_intro_title: { pro: 'Czym jest Dzisiejszy target?', student: 'Czym jest Boss mode?' },
+      slaba_intro_sub: {
+        pro: 'Pierwszą grupę masz za sobą. Teraz jeszcze jedna rzecz, która zaoszczędzi ci najwięcej czasu.',
+        student: 'Pierwsza grupa zaliczona! 🎉 A teraz najważniejsze: dzięki temu czasowniki naprawdę zostaną ci w głowie.',
+      },
+      slaba_intro_p1: {
+        pro: '<strong>10 czasowników z całej aplikacji</strong>. Głównie te, w których się mylisz, plus kilka opanowanych dla kontroli.',
+        student: '<strong>10 czasowników z całej aplikacji</strong>. Głównie te, które ci nie idą, plus kilka opanowanych dla kontroli.',
+      },
+      slaba_intro_p2: {
+        pro: 'Układa się <strong>sam na podstawie twoich wyników</strong>. Im więcej ćwiczysz, tym celniej trafia.',
+        student: 'Składa się <strong>sam z tego, gdzie się mylisz</strong>. Im więcej grasz, tym lepiej cię zna.',
+      },
+      slaba_intro_p3: {
+        pro: 'Polecamy go <strong>po co drugiej grupie</strong>, najlepiej przynajmniej raz dziennie. Zajmuje kilka minut.',
+        student: 'Odpal go <strong>po co drugiej grupie</strong>, spokojnie codziennie. Pięć minut i słabe punkty znikają.',
+      },
+      slaba_intro_where: {
+        pro: 'Znajdziesz go zawsze u góry, nad grupami.',
+        student: 'Znajdziesz go zawsze u góry, nad grupami.',
+      },
+      slaba_intro_go: { pro: 'Spróbuj targetu teraz', student: 'Idę na bossa 👾' },
+      slaba_intro_later: { pro: 'Rozumiem, później', student: 'Jasne, później' },
+      slaba_intro_close: 'Zamknij',
       premium_badge: 'Premium',
       practice_cta: 'Poćwicz to!',
       flash_hint: 'kliknij, aby odwrócić',

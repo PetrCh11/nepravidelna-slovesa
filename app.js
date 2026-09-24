@@ -711,6 +711,36 @@ const TEXTS = {
   slaba_nudge_count: (n) => `${n} ${t('plur_verbs', n)} · pár minut`,
   slaba_nudge_go: { pro: 'Jdu na cílovku', student: 'Jdu na bosse 👾', hantec: 'Du na to' },
   slaba_nudge_later: { pro: 'Až příště', student: 'Teď ne', hantec: 'Enem ne' },
+  // Jednorázové vysvětlení cílovky po první dokončené skupině
+  slaba_intro_title: { pro: 'Co je Dnešní cílovka?', student: 'Co je Boss mode?', hantec: 'Co je Betelná šichta?' },
+  slaba_intro_sub: {
+    pro: 'První skupinu máš za sebou. Teď ještě jedna věc, která ti ušetří nejvíc času.',
+    student: 'První skupina je hotová! 🎉 A teď to hlavní, díky čemu ti slovesa fakt zůstanou v hlavě.',
+    hantec: 'První skupinu máš za sebó! Teď ešče jedna věc, co ti ušetří hromadu času.',
+  },
+  slaba_intro_p1: {
+    pro: '<strong>10 sloves z celé appky</strong>. Hlavně ta, na kterých chybuješ, plus pár zvládnutých na kontrolu.',
+    student: '<strong>10 sloves z celé appky</strong>. Hlavně ta, co ti nejdou, plus pár zvládnutých na kontrolu.',
+    hantec: '<strong>10 sloves z celé appky</strong>. Hlavně ty, co ti nejdou, plus pár zmáknutých na prubnutí.',
+  },
+  slaba_intro_p2: {
+    pro: 'Sestavuje se <strong>sama podle tvých výsledků</strong>. Čím víc cvičíš, tím přesněji míří.',
+    student: 'Skládá se <strong>sám podle toho, kde chybuješ</strong>. Čím víc hraješ, tím líp tě zná.',
+    hantec: 'Skládá se <strong>sama podle toho, kde zvoráš</strong>. Čím víc makáš, tím líp míří.',
+  },
+  slaba_intro_p3: {
+    pro: 'Doporučujeme ji <strong>po každé druhé skupině</strong>, ideálně aspoň jednou denně. Zabere pár minut.',
+    student: 'Dej si ho <strong>po každé druhé skupině</strong>, klidně každý den. Pět minut a slabiny mizí.',
+    hantec: 'Dej si ju <strong>po každé druhé skupině</strong>, klidně každý deň. Pár minut a máš hotovo.',
+  },
+  slaba_intro_where: {
+    pro: 'Najdeš ji vždy nahoře nad skupinami.',
+    student: 'Najdeš ho vždycky nahoře nad skupinami.',
+    hantec: 'Najdeš ju vždycky nahoře nad skupinama.',
+  },
+  slaba_intro_go: { pro: 'Zkusit cílovku teď', student: 'Jdu na bosse 👾', hantec: 'Du na to' },
+  slaba_intro_later: { pro: 'Rozumím, později', student: 'Jasně, později', hantec: 'Dobře, pozdějc' },
+  slaba_intro_close: 'Zavřít',
   premium_badge: 'Premium',
   practice_cta: 'Procvič si to!',
   flash_hint: 'klikni pro otočení',
@@ -3251,7 +3281,7 @@ function exitLesson() {
   $('#verb-chips').innerHTML = '';
   renderLessonPicker();
   renderStatsStrip();
-  if (justDone) highlightJustDoneSub(justDone);
+  if (justDone && !maybeShowSlabaIntro()) highlightJustDoneSub(justDone);
 }
 
 function stageIntroStart() {
@@ -3516,6 +3546,70 @@ function maybeShowSlabaNudge(kind) {
     box.classList.add('hidden');
     track('slaba_nudge_dismissed');
   };
+  return true;
+}
+
+// Jednorázové vysvětlení cílovky: po první dokončené skupině, jakmile na
+// přehledu existuje její dlaždice (cold start ji do ~5 sloves skrývá — pak
+// počkáme na další skupinu). Kdo už cílovku dělal, okno nedostane.
+function maybeShowSlabaIntro() {
+  try {
+    if (localStorage.getItem('slabaIntroSeen') || localStorage.getItem('slabaDoneAt')) return false;
+  } catch (_) { return false; }
+  const tile = document.querySelector('.lesson-picker .slaba-mista-tile:not(.try-app-tile)');
+  if (!tile) return false;
+  if (document.querySelector('[role="dialog"]:not(.hidden)')) return false;
+  try { localStorage.setItem('slabaIntroSeen', todayKey()); } catch (_) {}
+
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-backdrop slaba-intro';
+  wrap.setAttribute('role', 'dialog');
+  wrap.setAttribute('aria-modal', 'true');
+  wrap.setAttribute('aria-labelledby', 'slaba-intro-title');
+  const point = (icon, key) => `<li><span class="slaba-intro-ico" aria-hidden="true">${icon}</span><span>${t(key)}</span></li>`;
+  wrap.innerHTML = `
+    <div class="modal">
+      <button class="modal-close" type="button" aria-label="${t('slaba_intro_close')}">×</button>
+      <div class="modal-emoji">${t('slaba_icon')}</div>
+      <h2 class="modal-title" id="slaba-intro-title">${t('slaba_intro_title')}</h2>
+      <p class="modal-sub">${t('slaba_intro_sub')}</p>
+      <ul class="slaba-intro-list">
+        ${point('🧩', 'slaba_intro_p1')}
+        ${point('🔄', 'slaba_intro_p2')}
+        ${point('⏱️', 'slaba_intro_p3')}
+      </ul>
+      <p class="slaba-intro-where">📍 ${t('slaba_intro_where')}</p>
+      <div class="slaba-intro-actions">
+        <button type="button" class="btn btn-primary" data-act="go">${t('slaba_intro_go')}</button>
+        <button type="button" class="btn-link" data-act="later">${t('slaba_intro_later')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  track('slaba_intro_shown');
+
+  const close = (how) => {
+    wrap.remove();
+    document.removeEventListener('keydown', onKey, true);
+    track('slaba_intro_closed', { how });
+    if (how === 'go') { startSlabaMista(); return; }
+    // Ukážeme, kde dlaždice bydlí, a necháme ji chvíli zazářit.
+    tile.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    tile.classList.remove('slaba-intro-spot');
+    void tile.offsetWidth;
+    tile.classList.add('slaba-intro-spot');
+    setTimeout(() => tile.classList.remove('slaba-intro-spot'), 3600);
+  };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); close('esc'); }
+  };
+  document.addEventListener('keydown', onKey, true);
+  wrap.addEventListener('click', (e) => {
+    if (e.target === wrap) return close('backdrop');
+    const act = e.target.closest('[data-act]');
+    if (act) return close(act.dataset.act);
+    if (e.target.closest('.modal-close')) close('x');
+  });
+  wrap.querySelector('[data-act="go"]').focus();
   return true;
 }
 
