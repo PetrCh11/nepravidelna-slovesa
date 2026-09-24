@@ -371,6 +371,15 @@
       slaba_intro_go: { pro: 'Spróbuj targetu teraz', student: 'Idę na bossa 👾' },
       slaba_intro_later: { pro: 'Rozumiem, później', student: 'Jasne, później' },
       slaba_intro_close: 'Zamknij',
+      slaba_remind_title: { pro: 'Target na ciebie czeka', student: 'Boss się nudzi' },
+      slaba_remind_line: {
+        pro: function (n) { return 'Ostatnio robiłeś/aś go ' + n + ' dni temu. Kilka minut i znów zmniejszysz słabe punkty.'; },
+        student: function (n) { return 'Bossa nie ruszałeś/aś już od ' + n + ' dni. Pięć minut i jest twój.'; },
+      },
+      slaba_remind_line_never: {
+        pro: 'Jeszcze go nie próbowałeś/aś. Kilka minut i zobaczysz, gdzie najbardziej się zacinasz.',
+        student: 'Bossa jeszcze nie odpaliłeś/aś. Pięć minut i sprawdzisz, co ci naprawdę nie idzie.',
+      },
       premium_badge: 'Premium',
       practice_cta: 'Poćwicz to!',
       flash_hint: 'kliknij, aby odwrócić',

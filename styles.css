@@ -4731,6 +4731,8 @@ body.practicing .app-footer { display: none; }
   gap: 10px;
 }
 .slaba-intro-actions .btn-primary { width: 100%; }
+.slaba-intro.is-compact .modal { max-width: 380px; }
+.slaba-intro.is-compact .modal-sub { margin-bottom: 8px; }
 [data-theme="dark"] .slaba-intro-list li,
 body.theme-dark .slaba-intro-list li { background: rgba(255, 120, 90, 0.12); }
 .slaba-mista-tile.slaba-intro-spot { animation: slaba-aura 1.2s ease-in-out 3; }

@@ -741,6 +741,18 @@ const TEXTS = {
   slaba_intro_go: { pro: 'Zkusit cílovku teď', student: 'Jdu na bosse 👾', hantec: 'Du na to' },
   slaba_intro_later: { pro: 'Rozumím, později', student: 'Jasně, později', hantec: 'Dobře, pozdějc' },
   slaba_intro_close: 'Zavřít',
+  // Krátká připomínka po delší pauze od cílovky (n = počet dní, vždy ≥ 10)
+  slaba_remind_title: { pro: 'Cílovka na tebe čeká', student: 'Boss se nudí', hantec: 'Šichta čeká' },
+  slaba_remind_line: {
+    pro:     (n) => `Naposledy jsi ji dělal/a před ${n} dny. Pár minut a slabá místa zase zmenšíš.`,
+    student: (n) => `Na bosse jsi nesáhl/a už ${n} ${n < 5 ? 'dny' : 'dní'}. Pět minut a je tvůj.`,
+    hantec:  (n) => `Na šichtu si nesáhl už ${n} ${n < 5 ? 'dny' : 'dní'}. Pár minut a máš hotovo.`,
+  },
+  slaba_remind_line_never: {
+    pro:     'Pořád ji máš nevyzkoušenou. Pár minut a uvidíš, kde ti to nejvíc drhne.',
+    student: 'Bosse sis ještě nedal/a. Pět minut a zjistíš, co ti fakt nejde.',
+    hantec:  'Šichtu si ešče neprubl. Pár minut a víš, kde to drhne.',
+  },
   premium_badge: 'Premium',
   practice_cta: 'Procvič si to!',
   flash_hint: 'klikni pro otočení',
@@ -3556,41 +3568,111 @@ function maybeShowSlabaIntro() {
   try {
     if (localStorage.getItem('slabaIntroSeen') || localStorage.getItem('slabaDoneAt')) return false;
   } catch (_) { return false; }
-  const tile = document.querySelector('.lesson-picker .slaba-mista-tile:not(.try-app-tile)');
+  const tile = slabaTileForDialog();
   if (!tile) return false;
-  if (document.querySelector('[role="dialog"]:not(.hidden)')) return false;
   try { localStorage.setItem('slabaIntroSeen', todayKey()); } catch (_) {}
-
-  const wrap = document.createElement('div');
-  wrap.className = 'modal-backdrop slaba-intro';
-  wrap.setAttribute('role', 'dialog');
-  wrap.setAttribute('aria-modal', 'true');
-  wrap.setAttribute('aria-labelledby', 'slaba-intro-title');
   const point = (icon, key) => `<li><span class="slaba-intro-ico" aria-hidden="true">${icon}</span><span>${t(key)}</span></li>`;
-  wrap.innerHTML = `
-    <div class="modal">
-      <button class="modal-close" type="button" aria-label="${t('slaba_intro_close')}">×</button>
-      <div class="modal-emoji">${t('slaba_icon')}</div>
-      <h2 class="modal-title" id="slaba-intro-title">${t('slaba_intro_title')}</h2>
+  openSlabaDialog({
+    tile,
+    kind: 'intro',
+    title: t('slaba_intro_title'),
+    body: `
       <p class="modal-sub">${t('slaba_intro_sub')}</p>
       <ul class="slaba-intro-list">
         ${point('🧩', 'slaba_intro_p1')}
         ${point('🔄', 'slaba_intro_p2')}
         ${point('⏱️', 'slaba_intro_p3')}
       </ul>
-      <p class="slaba-intro-where">📍 ${t('slaba_intro_where')}</p>
+      <p class="slaba-intro-where">📍 ${t('slaba_intro_where')}</p>`,
+    go: t('slaba_intro_go'),
+    later: t('slaba_intro_later'),
+  });
+  return true;
+}
+
+// Krátká připomínka pro ty, kdo cílovku delší dobu nedělali. Ukáže se při
+// otevření appky na přehledu, nejdřív SLABA_REMIND_DAYS dní po poslední
+// cílovce (u toho, kdo ji ještě nedělal, po úvodním vysvětlení) a pak
+// nejvýš jednou za SLABA_REMIND_COOLDOWN dní.
+const SLABA_REMIND_DAYS = 10;
+const SLABA_REMIND_COOLDOWN = 10;
+
+function daysSinceKey(key) {
+  if (!key) return null;
+  const [y, m, d] = String(key).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const then = new Date(y, m - 1, d);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((today - then) / 86400000);
+}
+
+function maybeShowSlabaRemind() {
+  let doneAt, introAt, remindAt;
+  try {
+    doneAt = localStorage.getItem('slabaDoneAt');
+    introAt = localStorage.getItem('slabaIntroSeen');
+    remindAt = localStorage.getItem('slabaRemindAt');
+  } catch (_) { return false; }
+  // Kdo ještě neviděl úvodní vysvětlení, dostane nejdřív to.
+  if (!doneAt && !introAt) return false;
+  const since = daysSinceKey(doneAt || introAt);
+  if (since === null || since < SLABA_REMIND_DAYS) return false;
+  const sinceRemind = daysSinceKey(remindAt);
+  if (sinceRemind !== null && sinceRemind < SLABA_REMIND_COOLDOWN) return false;
+  const picks = selectSlabaMista();
+  if (!picks || picks.length < SLABA_NUDGE_MIN_PICKS) return false;
+  const tile = slabaTileForDialog();
+  if (!tile) return false;
+  try { localStorage.setItem('slabaRemindAt', todayKey()); } catch (_) {}
+  openSlabaDialog({
+    tile,
+    kind: 'remind',
+    compact: true,
+    title: t('slaba_remind_title'),
+    body: `
+      <p class="modal-sub">${t(doneAt ? 'slaba_remind_line' : 'slaba_remind_line_never', since)}</p>
+      <p class="slaba-intro-where">${t('slaba_nudge_count', picks.length)}</p>`,
+    go: t('slaba_nudge_go'),
+    later: t('slaba_nudge_later'),
+    extra: { days: since },
+  });
+  return true;
+}
+
+function slabaTileForDialog() {
+  const tile = document.querySelector('.lesson-picker .slaba-mista-tile:not(.try-app-tile)');
+  if (!tile) return null;
+  if (document.querySelector('[role="dialog"]:not(.hidden)')) return null;
+  return tile;
+}
+
+// Společná kostra obou oken: „go" spustí cílovku, cokoli jiného okno zavře
+// a ukáže dlaždici na přehledu.
+function openSlabaDialog({ tile, kind, compact, title, body, go, later, extra }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-backdrop slaba-intro' + (compact ? ' is-compact' : '');
+  wrap.setAttribute('role', 'dialog');
+  wrap.setAttribute('aria-modal', 'true');
+  wrap.setAttribute('aria-labelledby', 'slaba-dialog-title');
+  wrap.innerHTML = `
+    <div class="modal">
+      <button class="modal-close" type="button" aria-label="${t('slaba_intro_close')}">×</button>
+      <div class="modal-emoji">${t('slaba_icon')}</div>
+      <h2 class="modal-title" id="slaba-dialog-title">${title}</h2>
+      ${body}
       <div class="slaba-intro-actions">
-        <button type="button" class="btn btn-primary" data-act="go">${t('slaba_intro_go')}</button>
-        <button type="button" class="btn-link" data-act="later">${t('slaba_intro_later')}</button>
+        <button type="button" class="btn btn-primary" data-act="go">${go}</button>
+        <button type="button" class="btn-link" data-act="later">${later}</button>
       </div>
     </div>`;
   document.body.appendChild(wrap);
-  track('slaba_intro_shown');
+  track(`slaba_${kind}_shown`, extra || {});
 
   const close = (how) => {
     wrap.remove();
     document.removeEventListener('keydown', onKey, true);
-    track('slaba_intro_closed', { how });
+    track(`slaba_${kind}_closed`, { how });
     if (how === 'go') { startSlabaMista(); return; }
     // Ukážeme, kde dlaždice bydlí, a necháme ji chvíli zazářit.
     tile.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -3610,7 +3692,6 @@ function maybeShowSlabaIntro() {
     if (e.target.closest('.modal-close')) close('x');
   });
   wrap.querySelector('[data-act="go"]').focus();
-  return true;
 }
 
 function startSlabaMista() {
@@ -5764,6 +5845,11 @@ async function init() {
   // mark every milestone they passed as pending so they can claim retroactively.
   checkStreakMilestones();
   updateStreakRewardBadge();
+  // Připomínka cílovky po delší pauze — s odstupem, ať nepřebije jiná okna
+  // (volba stylu, odměna za streak), která se při startu otevírají.
+  setTimeout(() => {
+    if (state.currentView === 'lesson' && !state.lesson) maybeShowSlabaRemind();
+  }, 1800);
 
   // Cloud sync wiring
   cloud.setListeners({
