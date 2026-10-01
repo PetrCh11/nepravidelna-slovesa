@@ -582,7 +582,7 @@
         sink: 'tonąć, opadać', stink: 'śmierdzieć', swim: 'pływać',
         // 1.2.1
         blow: 'dmuchać, wiać', grow: 'rosnąć', know: 'znać, wiedzieć',
-        throw: 'rzucać', draw: 'rysować, ciągnąć', fly: 'latać',
+        throw: 'rzucać (czymś)', draw: 'rysować, ciągnąć', fly: 'latać',
         // 1.2.3
         drive: 'prowadzić (auto)', ride: 'jeździć', rise: 'wznosić się', write: 'pisać',
         // 1.2.4a
@@ -593,7 +593,7 @@
         shake: 'trząść, potrząsać', take: 'brać',
         // 1.2.6
         break: 'łamać, tłuc', choose: 'wybierać', freeze: 'zamarzać, mrozić',
-        speak: 'mówić', steal: 'kraść', wake: 'budzić (się)',
+        speak: 'mówić (w jakimś języku), rozmawiać', steal: 'kraść', wake: 'budzić (się)',
         // 1.2.7 (get też w 2.3.2 — jeden klíč stačí)
         forget: 'zapominać', get: 'dostawać',
         // 1.2.8
@@ -601,9 +601,9 @@
         // 1.2.9
         swear: 'przysięgać, przeklinać', tear: 'rwać, drzeć', wear: 'nosić (ubranie)',
         // 1.2.10
-        do: 'robić', go: 'iść, jechać', lie: 'leżeć',
+        do: 'robić (czynność)', go: 'iść, jechać', lie: 'leżeć',
         // 2.1.1
-        feel: 'czuć (się)', keep: 'trzymać, zachowywać', leave: 'wychodzić, opuszczać',
+        feel: 'czuć (się)', keep: 'zachowywać, trzymać (u siebie)', leave: 'wychodzić, opuszczać',
         meet: 'spotykać', sleep: 'spać', sweep: 'zamiatać',
         // 2.1.2
         deal: 'rozdawać, zajmować się', mean: 'znaczyć, mieć na myśli',
@@ -616,27 +616,27 @@
         // 2.1.5
         burn: 'palić (się), płonąć', learn: 'uczyć się', lose: 'przegrywać, gubić',
         // 2.2.1
-        bleed: 'krwawić', feed: 'karmić', lead: 'prowadzić',
+        bleed: 'krwawić', feed: 'karmić', lead: 'prowadzić (kogoś), przewodzić',
         // 2.2.2
-        lay: 'kłaść', pay: 'płacić', say: 'mówić, powiedzieć',
+        lay: 'kłaść, położyć', pay: 'płacić', say: 'powiedzieć (coś)',
         // 2.2.3
-        sell: 'sprzedawać', tell: 'mówić, opowiadać',
+        sell: 'sprzedawać', tell: 'powiedzieć (komuś), opowiadać',
         // 2.2.4
-        find: 'znajdować', have: 'mieć', hear: 'słyszeć', hold: 'trzymać',
+        find: 'znajdować', have: 'mieć', hear: 'słyszeć', hold: 'trzymać (w ręku)',
         read: 'czytać (uwaga na wymowę!)', stand: 'stać', understand: 'rozumieć',
         // 2.3.1
         dig: 'kopać', spin: 'wirować, kręcić (się)', stick: 'wtykać, utknąć, przyklejać',
         sting: 'żądlić, kłuć',
         // 2.3.2
-        hang: 'wisieć, wieszać', light: 'zapalać, oświetlać', make: 'robić, tworzyć',
-        shoot: 'strzelać', sit: 'siadać, siedzieć', strike: 'uderzać',
+        hang: 'wisieć, wieszać', light: 'zapalać, oświetlać', make: 'robić (wytwarzać), tworzyć',
+        shoot: 'strzelać', sit: 'siadać, siedzieć', strike: 'uderzać (o piorunie)',
         win: 'wygrywać, zwyciężać',
         // 2.4.0
         become: 'stawać się (kimś)', come: 'przychodzić, przyjeżdżać', run: 'biegać',
         // 3.0.0
         bet: 'zakładać się, obstawiać', cost: 'kosztować', cut: 'ciąć, kroić',
-        hit: 'uderzać', hurt: 'ranić, boleć', let: 'pozwalać', put: 'kłaść, stawiać',
-        quit: 'rzucać, kończyć', set: 'ustawiać, nastawiać', shut: 'zamykać',
+        hit: 'uderzać, trafiać', hurt: 'ranić, boleć', let: 'pozwalać', put: 'stawiać, wkładać',
+        quit: 'rzucać (pracę, nałóg), kończyć', set: 'ustawiać, nastawiać', shut: 'zamykać',
         spread: 'rozprzestrzeniać, rozsmarowywać', upset: 'denerwować, martwić',
       },
     },

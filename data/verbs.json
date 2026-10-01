@@ -49,7 +49,7 @@
           "verbs": [
             {"inf": "fall", "past": "fell", "pp": "fallen", "cs": "padat", "emoji": "🍂", "hl": {"inf": [1,2], "past": [1,2], "pp": [4,6]}},
             {"inf": "forgive", "past": "forgave", "pp": "forgiven", "cs": "odpustit", "emoji": "🙏", "hl": {"inf": [4,5], "past": [4,5], "pp": [[4,5],[6,8]]}},
-            {"inf": "give", "past": "gave", "pp": "given", "cs": "dát", "emoji": "🎁", "hl": {"inf": [1,2], "past": [1,2], "pp": [[1,2],[3,5]]}}
+            {"inf": "give", "past": "gave", "pp": "given", "cs": "dát (někomu), darovat", "emoji": "🎁", "hl": {"inf": [1,2], "past": [1,2], "pp": [[1,2],[3,5]]}}
           ]
         },
         {
@@ -203,7 +203,7 @@
           "verbs": [
             {"inf": "lay", "past": "laid", "pp": "laid", "cs": "pokládat, klást", "emoji": "🥚"},
             {"inf": "pay", "past": "paid", "pp": "paid", "cs": "platit", "emoji": "💰"},
-            {"inf": "say", "past": "said", "pp": "said", "cs": "říci", "emoji": "💬"}
+            {"inf": "say", "past": "said", "pp": "said", "cs": "říci (něco)", "emoji": "💬"}
           ]
         },
         {
@@ -212,7 +212,7 @@
           "pattern": "ELL → OLD",
           "verbs": [
             {"inf": "sell", "past": "sold", "pp": "sold", "cs": "prodat", "emoji": "🏷️"},
-            {"inf": "tell", "past": "told", "pp": "told", "cs": "říci", "emoji": "📢"}
+            {"inf": "tell", "past": "told", "pp": "told", "cs": "říci (někomu), vyprávět", "emoji": "📢"}
           ]
         },
         {
@@ -225,7 +225,7 @@
             {"inf": "hear", "past": "heard", "pp": "heard", "cs": "slyšet", "emoji": "👂"},
             {"inf": "hold", "past": "held", "pp": "held", "cs": "držet", "emoji": "✊"},
             {"inf": "read", "past": "read", "pp": "read", "cs": "číst (pozor na výslovnost!)", "emoji": "📖"},
-            {"inf": "stand", "past": "stood", "pp": "stood", "cs": "stát", "emoji": "🧍"},
+            {"inf": "stand", "past": "stood", "pp": "stood", "cs": "stát (na nohou)", "emoji": "🧍"},
             {"inf": "understand", "past": "understood", "pp": "understood", "cs": "rozumět", "emoji": "💡"}
           ]
         },
@@ -251,7 +251,7 @@
             {"inf": "make", "past": "made", "pp": "made", "cs": "udělat, vytvořit", "emoji": "🔨"},
             {"inf": "shoot", "past": "shot", "pp": "shot", "cs": "(za)střelit, střílet", "emoji": "🏹", "hl": {"inf": [2, 4], "past": [2, 3], "pp": [2, 3]}},
             {"inf": "sit", "past": "sat", "pp": "sat", "cs": "sednout, sedět", "emoji": "💺"},
-            {"inf": "strike", "past": "struck", "pp": "struck", "cs": "zasáhnout, udeřit", "emoji": "⚡"},
+            {"inf": "strike", "past": "struck", "pp": "struck", "cs": "zasáhnout, udeřit (o blesku)", "emoji": "⚡"},
             {"inf": "win", "past": "won", "pp": "won", "cs": "zvítězit, vyhrát", "emoji": "🏆"}
           ]
         },
@@ -277,12 +277,12 @@
           "pattern": "inf = past = pp",
           "verbs": [
             {"inf": "bet", "past": "bet", "pp": "bet", "cs": "sázet, vsadit (se, si)", "emoji": "🎲"},
-            {"inf": "cost", "past": "cost", "pp": "cost", "cs": "stát, mít cenu", "emoji": "🏷️"},
+            {"inf": "cost", "past": "cost", "pp": "cost", "cs": "stát (o ceně)", "emoji": "🏷️"},
             {"inf": "cut", "past": "cut", "pp": "cut", "cs": "řezat, sekat, krájet", "emoji": "✂️"},
             {"inf": "hit", "past": "hit", "pp": "hit", "cs": "udeřit, bouchnout", "emoji": "👊"},
             {"inf": "hurt", "past": "hurt", "pp": "hurt", "cs": "zranit, bolet, ublížit", "emoji": "🤕"},
             {"inf": "let", "past": "let", "pp": "let", "cs": "nechat, dovolit", "emoji": "🕊️"},
-            {"inf": "put", "past": "put", "pp": "put", "cs": "dát, položit", "emoji": "📥"},
+            {"inf": "put", "past": "put", "pp": "put", "cs": "dát (někam), položit", "emoji": "📥"},
             {"inf": "quit", "past": "quit", "pastAlt": "quitted", "pp": "quit", "ppAlt": "quitted", "cs": "skončit", "emoji": "🛑"},
             {"inf": "set", "past": "set", "pp": "set", "cs": "nastavit, určit", "emoji": "⚙️"},
             {"inf": "shut", "past": "shut", "pp": "shut", "cs": "zavřít", "emoji": "🚪"},

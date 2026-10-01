@@ -1,5 +1,5 @@
 // Simple cache-first service worker for offline PWA use
-const CACHE = 'slovesa-v221';
+const CACHE = 'slovesa-v222';
 const ASSETS = [
   './',
   './index.html',
@@ -20,7 +20,7 @@ const ASSETS = [
   './pl/icon-180.png',
   './pl/icon-192.png',
   './pl/icon-512.png',
-  './lang/pl.js?v=15',
+  './lang/pl.js?v=16',
 ];
 
 self.addEventListener('install', (e) => {
