@@ -510,10 +510,10 @@ const TEXTS = {
   res_new:       { pro: 'Nová lekce', student: 'Nová skupina' },
   res_back_all:  { pro: 'Zpět na všechny skupiny', student: 'Zpět na skupiny' },
   res_next_sub:  { pro: 'Další skupina ⏭️', student: 'Jedeme dál ⏭️', hantec: 'Šup na další ⏭️' },
-  res_review_again: { pro: 'Zamíchat znovu 🎲', student: 'Nový mix 🎲', hantec: 'Zamíchat znova 🎲' },
-  // Section chip
-  chip_default:  { pro: 'Zamíchat 🎲', student: 'Náhodný mix 🎲' },
-  chip_mastered: { pro: 'Velký test 🏆', student: 'Final boss 🏆' },
+  res_big_again: { pro: 'Dát si velký test znovu 🏆', student: 'Ještě jednou 🏆', hantec: 'Ešče jednó 🏆' },
+  // Section chip: cílovka sekce, po zvládnutí celé sekce velký test
+  chip_default:  { pro: 'Cílovka sekce', student: 'Boss sekce', hantec: 'Šichta sekce' },
+  chip_mastered: 'Velký test',
   // Group modal
   gsm_title:     { pro: 'Jak budeš procvičovat?', student: 'Jak na to půjdeš?' },
   gsm_sub:       { pro: 'Tuhle skupinu už znáš — vyber si režim.',
@@ -553,9 +553,6 @@ const TEXTS = {
   },
   streak_label_premium: { pro: '🔥 jen tak dál', student: '🔥 frčíš!' },
 
-  srm_title:     { pro: 'Zamíchané procvičení', student: 'Velký random 🎲' },
-  srm_sub_some:  { pro: 'Zamíchaná procházka napříč celou sekcí. Vyber si rozsah.',
-                   student: 'Náhodně přes celou sekci. Co dnes?' },
   srm_sub_clean: { pro: 'Celou sekci máš zelenou — žádná problematická slovesa. Klidně si všechna projdi znovu pro jistotu.',
                    student: 'Celá sekce v kapse! Žádný problémové, můžeš si všechno dát ještě jednou pro frajeřinu.' },
   // Paywall
@@ -606,16 +603,17 @@ const TEXTS = {
   plur_groups: (n) => (n === 1 ? 'skupina' : (n >= 2 && n <= 4 ? 'skupiny' : 'skupin')),
   plur_days_row: (n) => (n === 1 ? 'den v řadě' : (n >= 2 && n <= 4 ? 'dny v řadě' : 'dní v řadě')),
   plur_day: (n) => (n === 1 ? 'den' : (n >= 2 && n <= 4 ? 'dny' : 'dní')),
-  chip_title_mastered: (n) => `Souhrnný test celé sekce — všech ${n} sloves, zamíchaně`,
-  chip_title_default: (n) => `Zamíchaná procházka přes všech ${n} sloves této sekce`,
+  chip_title_mastered: (n) => `Velký test sekce — ${n} ${t('plur_verbs', n)} napříč celou sekcí, zamíchaně`,
+  chip_title_default: 'Cílovka jen z této sekce — hlavně slovesa, co ti nejdou',
   medal_all: 'Všechna slovesa zvládnuta!',
   medal_weak: 'Skoro! Jedno sloveso ti uklouzlo — oprav ho a medaile je zpět.',
   lock_premium: 'Pouze pro Premium',
   bonus_free_toast: '🎁 Tahle skupina je pro tebe odemčená zdarma!',
-  sec_review_pattern: (n) => `Souhrnný test · ${n} ${t('plur_verbs', n)}`,
-  sec_review_label: 'Souhrnný test',
-  sec_review_title: 'Souhrnný test sekce',
-  sec_review_desc: (n) => `Všech ${n} sloves z této sekce v náhodném pořadí. Napíšeš všechny tři tvary, stiskneš Enter — a 1× bez chyby stačí, aby sloveso vypadlo z fronty. Jdeme na to!`,
+  sec_review_pattern: (n) => `Cílovka sekce · ${n} ${t('plur_verbs', n)}`,
+  sec_review_desc: (n) => `${n} ${t('plur_verbs', n)} z této sekce — hlavně ta, co ti nejdou, plus pár zvládnutých na kontrolu. Napíšeš všechny tři tvary, stiskneš Enter — a 1× bez chyby stačí, aby sloveso vypadlo z fronty.`,
+  big_test_pattern: (n) => `Velký test · ${n} ${t('plur_verbs', n)}`,
+  big_test_title: 'Velký test sekce',
+  big_test_desc: (n) => `Celou sekci máš zvládnutou. Teď ${n} ${t('plur_verbs', n)} napříč sekcí v náhodném pořadí — ukaž, že ti to drží. 1× bez chyby stačí, aby sloveso vypadlo z fronty.`,
   resume_stage1: 'Fáze 1 · Seznámení',
   resume_stage15: 'Mezifáze · Označ obtížná',
   resume_stage2: 'Fáze 2 · Psaní',
@@ -1451,11 +1449,11 @@ function renderLessonPicker() {
     );
     const totalVerbs = sec.subsections.reduce((n, ss) => n + ss.verbs.length, 0);
     const sectionLocked = !state.premium && sec.subsections.some((sub) => !isFreeSub(sub.id));
-    const icon = allSecMastered ? '🏆' : '🎲';
+    const icon = allSecMastered ? '🏆' : t('slaba_icon');
     const chipLabel = allSecMastered ? t('chip_mastered') : t('chip_default');
     const chipTitle = allSecMastered
-      ? t('chip_title_mastered', totalVerbs)
-      : t('chip_title_default', totalVerbs);
+      ? t('chip_title_mastered', Math.min(totalVerbs, BIG_TEST_MAX))
+      : t('chip_title_default');
 
     const h = document.createElement('h3');
     h.className = 'lesson-sec-title';
@@ -1480,7 +1478,7 @@ function renderLessonPicker() {
         showPaywall(lockedSub);
         return;
       }
-      openSectionReviewChoice(sec);
+      startSectionReview(sec);
     });
     sec.subsections.forEach((sub) => {
       const hue = Math.round((subIdx / totalSubs) * 360);
@@ -1826,82 +1824,34 @@ function openGroupStartChoice(sub) {
   };
 }
 
-function openSectionReviewChoice(sec) {
-  const modal = $('#group-start-modal');
-  // Gather all + problematic counts
-  const all = [];
-  const problematic = [];
-  sec.subsections.forEach((sub) => {
-    sub.verbs.forEach((v) => {
-      all.push(v);
-      const s = state.progress[v.inf]?.status;
-      if (s === 'yellow' || s === 'red') problematic.push(v);
-    });
-  });
-  if (!modal) { startSectionReview(sec); return; }
-  $('#gsm-emoji').textContent = '🎲';
-  $('#gsm-title').textContent = t('srm_title');
-  $('#gsm-all').querySelector('.modal-option-name').textContent = t('gsm_all');
-  $('#gsm-problem').querySelector('.modal-option-name').textContent = t('gsm_problem');
-  const sw = (n) => `${n} ${t('plur_verbs', n)}`;
-  // Náhodný mix je capnutý na 10 — ukážeme reálnou velikost dávky, ne celé sekce
-  const allShown = Math.min(all.length, 10);
-  const problemShown = Math.min(problematic.length, 10);
-  $('#gsm-all-count').textContent = all.length > 10 ? `${sw(allShown)} z ${all.length}` : sw(all.length);
-  $('#gsm-problem-count').textContent = problematic.length > 10 ? `${sw(problemShown)} z ${problematic.length}` : sw(problematic.length);
-  const problemBtn = $('#gsm-problem');
-  if (problematic.length === 0) {
-    problemBtn.classList.add('disabled');
-    problemBtn.disabled = true;
-    $('#gsm-sub').textContent = t('srm_sub_clean');
-  } else {
-    problemBtn.classList.remove('disabled');
-    problemBtn.disabled = false;
-    $('#gsm-sub').textContent = t('srm_sub_some');
-  }
-  modal.classList.remove('hidden');
-  const close = () => {
-    modal.classList.add('hidden');
-    // Restore default emoji for the per-group choice modal
-    $('#gsm-emoji').textContent = '🔁';
-    $('#gsm-title').textContent = t('gsm_title');
-  };
-  $('#gsm-close').onclick = close;
-  modal.onclick = (e) => { if (e.target === modal) close(); };
-  $('#gsm-all').onclick = () => { close(); startSectionReview(sec); };
-  problemBtn.onclick = () => {
-    if (problematic.length === 0) return;
-    close();
-    startSectionReview(sec, problematic);
-  };
+// Tlačítko u sekce: dokud sekce není celá zelená, je to cílovka jen z této
+// sekce (stejný výběr jako dlaždice nahoře); po zvládnutí celé sekce velký
+// test (až BIG_TEST_MAX sloves napříč sekcí). customVerbs = „zopakovat chyby".
+const SECTION_SLABA_SIZE = 10;
+const BIG_TEST_MAX = 20;
+
+function isSectionMastered(sec) {
+  return sec.subsections.every((sub) => sub.verbs.every((v) => state.progress[v.inf]?.status === 'green'));
 }
 
-function startSectionReview(sec, customVerbs = null) {
-  track('section_review_started', { sec: sec.id, filtered: !!customVerbs });
-  // Gather all verbs across all subsections of the section, tagged with their original subId
+function startSectionReview(sec, customVerbs = null, mode = null) {
+  const big = mode ? mode === 'big' : isSectionMastered(sec);
+  const all = [];
+  sec.subsections.forEach((sub) => sub.verbs.forEach((v) => all.push({ ...v, subId: sub.id })));
+  const tag = (list) => list.map((v) => all.find((a) => a.inf === v.inf) || { ...v, subId: sec.id });
   let verbs;
-  if (customVerbs) {
-    // Filter passed in (e.g. only problematic). Re-tag with the right subId.
-    verbs = customVerbs.map((v) => {
-      const ownerSub = sec.subsections.find((s) => s.verbs.some((sv) => sv.inf === v.inf));
-      return { ...v, subId: ownerSub ? ownerSub.id : sec.id };
-    });
-  } else {
-    verbs = [];
-    sec.subsections.forEach((sub) => {
-      sub.verbs.forEach((v) => verbs.push({ ...v, subId: sub.id }));
-    });
+  if (customVerbs) verbs = shuffle(tag(customVerbs));
+  else if (big) verbs = shuffle(all).slice(0, BIG_TEST_MAX);
+  else {
+    // Málo procvičených sloves v sekci (cold start) → náhodná dávka ze sekce
+    const picks = selectSlabaMista(sec);
+    verbs = picks ? tag(picks) : shuffle(all).slice(0, SECTION_SLABA_SIZE);
   }
   if (verbs.length === 0) return;
-  // shuffle() vrací NOVÉ pole, původní nemění — bez přiřazení se zamíchání
-  // zahodilo a slice(0,10) níž bral pořád prvních 10 sloves v pořadí z dat.
-  verbs = shuffle(verbs);
-  // Cap náhodného mixu na 10 sloves — víc je v jedné dávce na hlavu moc
-  if (verbs.length > 10) verbs = verbs.slice(0, 10);
-  // Synthetic "sub" used by lesson code: id is sec.id, pattern reflects review mode
+  track('section_review_started', { sec: sec.id, mode: big ? 'big' : 'slaba', filtered: !!customVerbs });
   const pseudoSub = {
     id: sec.id,
-    pattern: t('sec_review_pattern', verbs.length),
+    pattern: t(big ? 'big_test_pattern' : 'sec_review_pattern', verbs.length),
     verbs,
   };
   state.lesson = {
@@ -1919,6 +1869,7 @@ function startSectionReview(sec, customVerbs = null) {
     stage2Q: verbs.slice(),
     markedHard: new Set(),
     isReview: true,
+    reviewMode: big ? 'big' : 'slaba',
     done: false,
   };
   clearActiveLesson(); // review doesn't compete with a regular saved lesson
@@ -1926,13 +1877,13 @@ function startSectionReview(sec, customVerbs = null) {
   $('.lesson-results').classList.add('hidden');
   $('.lesson-active').classList.remove('hidden');
   document.body.classList.add('practicing');
-  $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sec.subsections[0].id)} 65% 45%)">${sec.id}</span> 🏆 ${t('sec_review_label')}`;
+  $('#lesson-group-label').innerHTML = `<span class="subsection-id" style="background:hsl(${hueOf(sec.subsections[0].id)} 65% 45%)">${sec.id}</span> ${big ? '🏆 ' + t('chip_mastered') : t('slaba_icon') + ' ' + t('chip_default')}`;
   document.querySelector('.lesson-active').style.setProperty('--sub-hue', hueOf(sec.subsections[0].id));
   // Show a custom intro then jump straight to step 3
   $('#lesson-stage-intro').classList.remove('hidden');
-  $('#stage-intro-emoji').textContent = '🏆';
-  $('#stage-intro-title').textContent = t('sec_review_title');
-  $('#stage-intro-desc').textContent = t('sec_review_desc', verbs.length);
+  $('#stage-intro-emoji').textContent = big ? '🏆' : t('slaba_icon');
+  $('#stage-intro-title').textContent = big ? t('big_test_title') : t('chip_default');
+  $('#stage-intro-desc').textContent = t(big ? 'big_test_desc' : 'sec_review_desc', verbs.length);
   $('#lesson-question').innerHTML = '';
   updateStageDots();
   updateLessonBar();
@@ -2844,16 +2795,17 @@ function finishLesson() {
       freshNew.textContent = t('res_back_all');
       freshNew.addEventListener('click', exitLesson);
     } else if (L.isReview) {
-      // Souhrn sekce („🎲 Zamíchat"): „Nová skupina" tu nedává smysl a
-      // „Procvičit znovu" by spustilo celou lekci i se studiem místo dalšího mixu.
+      // Cílovka sekce / velký test: chyby → zopakovat jen je, jinak další
+      // dávka (u velkého testu nové zamíchání). „Nová skupina" tu nedává smysl.
       const sec = state.data.sections.find((s) => s.id === L.sub.id);
       const missed = L.verbs.filter((v) => L.perVerb.get(v.inf).status !== 'green');
+      const mode = L.reviewMode || 'slaba';
       if (!allGreen && sec) {
         freshAgain.textContent = t('res_again');
-        freshAgain.addEventListener('click', () => { state.lesson = null; startSectionReview(sec, missed); });
+        freshAgain.addEventListener('click', () => { state.lesson = null; startSectionReview(sec, missed, mode); });
       } else {
-        freshAgain.textContent = t('res_review_again');
-        freshAgain.addEventListener('click', () => { state.lesson = null; if (sec) startSectionReview(sec); else exitLesson(); });
+        freshAgain.textContent = t(mode === 'big' ? 'res_big_again' : 'next_weak_batch');
+        freshAgain.addEventListener('click', () => { state.lesson = null; if (sec) startSectionReview(sec, null, mode); else exitLesson(); });
       }
       freshNew.textContent = t('res_back_all');
       freshNew.addEventListener('click', exitLesson);
@@ -2901,7 +2853,7 @@ function finishLesson() {
   // Připomínka cílovky má přednost před bannerem s instalací — dvě výzvy na
   // jedné obrazovce se perou a student neudělá ani jednu.
   const nudged = maybeShowSlabaNudge(
-    L.sub && L.sub.id === 'slabaMista' ? 'slaba' : isReview ? 'review' : 'group'
+    (L.sub && L.sub.id === 'slabaMista') || L.isReview ? 'slaba' : isReview ? 'review' : 'group'
   );
   // Offer "Install app" after the success moment — short delay so the user
   // first sees their result. Throttled to once per 7 days via install.js.
@@ -3356,11 +3308,13 @@ const SLABA_PRIORITY_GREENS = new Set([
   'hurt', 'quit', 'spread', 'upset',
 ]);
 
-function selectSlabaMista() {
+function selectSlabaMista(sec = null) {
   if (!state.data) return null;
-  // Pool of verbs the student can practice (premium gate respected)
+  // Pool of verbs the student can practice (premium gate respected).
+  // S `sec` jen slovesa dané sekce — cílovka sekce.
+  const secSubs = sec ? new Set(sec.subsections.map((s) => s.id)) : null;
   const allVerbs = flattenVerbs(state.data).filter((v) =>
-    state.premium || isFreeSub(v.subId)
+    (state.premium || isFreeSub(v.subId)) && (!secSubs || secSubs.has(v.subId))
   );
   const seen = allVerbs.filter((v) => state.progress[v.inf]);
   if (seen.length < SLABA_COLD_START_MIN) return null; // cold start
