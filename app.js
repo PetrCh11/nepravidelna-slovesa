@@ -610,7 +610,7 @@ const TEXTS = {
   lock_premium: 'Pouze pro Premium',
   bonus_free_toast: '🎁 Tahle skupina je pro tebe odemčená zdarma!',
   sec_review_pattern: (n) => `Cílovka sekce · ${n} ${t('plur_verbs', n)}`,
-  sec_review_desc: (n) => `${n} ${t('plur_verbs', n)} z této sekce — hlavně ta, co ti nejdou, plus pár zvládnutých na kontrolu. Napíšeš všechny tři tvary, stiskneš Enter — a 1× bez chyby stačí, aby sloveso vypadlo z fronty.`,
+  sec_review_desc: (n) => `${n} ${t('plur_verbs', n)} z této sekce — hlavně ta, co ti nejdou, plus pár zvládnutých na kontrolu.`,
   big_test_pattern: (n) => `Velký test · ${n} ${t('plur_verbs', n)}`,
   big_test_title: 'Velký test sekce',
   big_test_desc: (n) => `Celou sekci máš zvládnutou. Teď ${n} ${t('plur_verbs', n)} napříč sekcí v náhodném pořadí — ukaž, že ti to drží. 1× bez chyby stačí, aby sloveso vypadlo z fronty.`,

@@ -251,7 +251,7 @@
       lock_premium: 'Tylko w Premium',
       bonus_free_toast: '🎁 Ta grupa jest dla ciebie odblokowana za darmo!',
       sec_review_pattern: function (n) { return 'Target sekcji · ' + n + ' ' + plVerbs(n); },
-      sec_review_desc: function (n) { return n + ' ' + plVerbs(n) + ' z tej sekcji — głównie te, które ci nie idą, plus kilka opanowanych dla kontroli. Wpisujesz wszystkie trzy formy, naciskasz Enter — 1× bez błędu wystarczy, żeby czasownik wypadł z kolejki.'; },
+      sec_review_desc: function (n) { return n + ' ' + plVerbs(n) + ' z tej sekcji — głównie te, które ci nie idą, plus kilka opanowanych dla kontroli.'; },
       big_test_pattern: function (n) { return 'Wielki test · ' + n + ' ' + plVerbs(n); },
       big_test_title: 'Wielki test sekcji',
       big_test_desc: function (n) { return 'Całą sekcję masz opanowaną. Teraz ' + n + ' ' + plVerbs(n) + ' z całej sekcji w losowej kolejności — pokaż, że to siedzi. 1× bez błędu wystarczy, żeby czasownik wypadł z kolejki.'; },
