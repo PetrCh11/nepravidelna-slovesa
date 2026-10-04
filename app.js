@@ -266,6 +266,12 @@ const POS_PRO = [
   'Lepší investice do sebe než do kryptoměn. 🪙',
   'Tohle sloveso prošlo auditem bez ztráty kytičky. 🕵️‍♂️',
   'Skoro tak dobrý pocit, jako když v pátek padne čtrnáctá hodina. 🍻',
+  'Tohle bych podepsal i bez čtení. ✍️',
+  'Deadline? Splněno s předstihem. ⏰',
+  'Tvůj LinkedIn právě zesílil o level. 💼',
+  'Board meeting by tě nechal mluvit první. 🎤',
+  'Synergie mezi mozkem a klávesnicí na 100 %. ⚙️',
+  'Tohle si dám do best practices. 📘',
 ];
 const NEG_PRO = [
   'Jde ti to, jak Babišovi vyjmenovávání planet. 🪐',
@@ -283,6 +289,12 @@ const NEG_PRO = [
   'Kofeinový deficit se projevil. 📉☕',
   'Prsty byly rychlejší než myšlenka. 🏎️',
   'Nevadí, po celém dni v práci máš právo na jeden fail. 🤝',
+  'Tohle bych do follow-up mailu raději nedával. 📧',
+  'Malé zaškobrtnutí, velký learning. 📚',
+  'Tohle sloveso ti hodilo meeting do kalendáře bez zeptání. 📅',
+  'Restartuj, refreshni, pošli znovu. 🔁',
+  'Na tohle si ještě naplánujme one-on-one. 🗓️',
+  'Prezentace se zasekla na tomhle slajdu. 🖥️',
 ];
 const POS_STUDENT = [
   'Ty bys mohl učit Babiše planety! 🪐',
@@ -297,6 +309,14 @@ const POS_STUDENT = [
   'No cap, tohle bylo perfektní. 🙌',
   'Slay! 💅',
   'Kdo neskáče, není {name}, HOP HOP HOP! ⚽️',
+  'Tohle je jednička s hvězdičkou. ⭐',
+  'Učebnice se ti klaní. 📖',
+  'Tahle odpověď by prošla i u nejpřísnější angličtinářky. ✅',
+  'W odpověď. 🏆',
+  'Tady šlo zaváhání na mute. 🔇',
+  'Tohle jde rovnou do highlights. 📸',
+  'Aura +1000. ✨',
+  'Tohle si můžeš dát na story. 📲',
 ];
 const STREAK_PRO = [
   'Tohle je na povýšení ještě před kvartálním hodnocením! 📈',
@@ -351,6 +371,12 @@ const NEG_STUDENT = [
   'Tudy ne, kámo. 🚷',
   'Fake news. 📰',
   'Eeeej, vedle. 🥶',
+  'Skoro! Jen jeden tvar ti utekl. 🏃',
+  'Tahák v penále by ti teď nepomohl. ✏️',
+  'Tohle si ještě zopakujeme, žádný stres. 📚',
+  'Aura −1000. 📉',
+  'To se stává i nejlepším. Znova! 🔁',
+  'Malý zádrhel, zkusíme to znovu. 🔁',
 ];
 const POS_HANTEC = [
   'Ty bys Babiša naučil aj planety! 🪐',
@@ -366,6 +392,12 @@ const POS_HANTEC = [
   'Kdo neskáče, není {name}, HOP HOP HOP! ⚽️',
   'Petrov by zazvonil na tvoju počest. 🔔',
   'To byla čurina, co? Máš to za jedna. 😎',
+  'Tak tohle bylo betelně odmáknuté! 🔥',
+  'Jak když Zbrojovka dá gól v poslední minutě! ⚽',
+  'Tak tohle je hokna jak má bět. 🛠️',
+  'Z tebe bude na štatlu frajer. 😎',
+  'Šichta odvedená jak hrom. 💪',
+  'To by aji Mendel s hráškama uznal. 🌱',
 ];
 const NEG_HANTEC = [
   'Jde ti to, jak Babišovi vyjmenovávání planet. 🪐',
@@ -377,6 +409,13 @@ const NEG_HANTEC = [
   'Švihls to moc hrr. Zkus to v klidu. 🐢',
   'Tady to drhlo jak stará šalina do kopca. 📉',
   'Tohle sloveso na tebe vyzrálo. Oplať mu to. 👾',
+  'Tos to trochu zmrvil, ale dobrý. 😅',
+  'To je vedle jak šalina do Bystrcu. 🚋',
+  'Tady se ti zasekla palica. 🧠',
+  'Ešče jednó a pořádně, kámo. 🔁',
+  'Tohle sloveso tě vyklopilo jak Prygl v bouřce. 🌊',
+  'Nic to, aji Kometa občas prohraje. 🏒',
+  'Zmrvené jak čurina na Cejlu. 🙈',
 ];
 // ---- Sezónní hlášky: začátek školního roku (25. 8. – 30. 9.) --------------
 // Přimíchávají se do poolu správných odpovědí a 1. října zmizí samy, bez

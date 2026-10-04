@@ -29,6 +29,12 @@
     'Ten czasownik przeszedł audyt bez zastrzeżeń. 🕵️‍♂️',
     'No i o to chodzi, {name}! ⚽️',
     'Prawie tak dobre uczucie jak piątek o 15:00. 🍻',
+    'Podpisałbym to nawet bez czytania. ✍️',
+    'Deadline? Dowiezione przed czasem. ⏰',
+    'Twój LinkedIn właśnie wskoczył level wyżej. 💼',
+    'Na zarządzie dostałbyś głos jako pierwszy. 🎤',
+    'Synergia mózgu i klawiatury na 100 %. ⚙️',
+    'To wpisuję do best practices. 📘',
   ];
   var NEG_PRO = [
     'Ten draft wymaga jeszcze rewizji. 📝',
@@ -41,6 +47,12 @@
     'Potrzebny jeszcze jeden łyk kawy. ☕',
     'Palce były szybsze niż myśl. 🏎️',
     'Po całym dniu pracy masz prawo do jednego faila. 🤝',
+    'Tego lepiej nie wpisuj do follow-upa. 📧',
+    'Małe potknięcie, duży learning. 📚',
+    'Ten czasownik wrzucił ci spotkanie do kalendarza bez pytania. 📅',
+    'Restart, refresh, wyślij jeszcze raz. 🔁',
+    'Na to umówmy jeszcze one-on-one. 🗓️',
+    'Prezentacja zacięła się na tym slajdzie. 🖥️',
   ];
   var STREAK_PRO = [
     'To jest wynik na awans jeszcze przed oceną kwartalną! 📈',
@@ -60,6 +72,14 @@
     'Slay! 💅',
     'Te czasowniki same wpadają. 🔥',
     'No i o to chodzi, {name}! ⚽️',
+    'Szóstka z plusem. ⭐',
+    'Podręcznik ci się kłania. 📖',
+    'Ta odpowiedź przeszłaby u najsurowszej anglistki. ✅',
+    'W odpowiedź. 🏆',
+    'Wahanie poszło na mute. 🔇',
+    'To idzie prosto do highlightów. 📸',
+    'Aura +1000. ✨',
+    'To możesz wrzucić na story. 📲',
   ];
   // ---- Sezonowe: początek roku szkolnego (25.08 – 30.09) -------------------
   // Dokładają się do puli poprawnych odpowiedzi i 1 października znikają same.
@@ -106,6 +126,12 @@
     'Bruh... serio? 💀',
     'Lagło ci, spróbuj jeszcze raz. 🌐',
     'Tuż obok, jak twój typ na sprawdzianie. 📉',
+    'Prawie! Uciekła ci tylko jedna forma. 🏃',
+    'Ściąga w piórniku by teraz nie pomogła. ✏️',
+    'To jeszcze powtórzymy, bez stresu. 📚',
+    'Aura −1000. 📉',
+    'Zdarza się najlepszym. Jeszcze raz! 🔁',
+    'Mała zacinka, próbujemy jeszcze raz. 🔁',
   ];
   var STREAK_STUDENT = [
     'Ale seria! 🐂',
