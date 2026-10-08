@@ -4783,7 +4783,7 @@ async function redeemPromo(rawCode, ctx) {
     const resp = await fetch(`${BACKEND_URL}/redeem-code`, {
       method: 'POST',
       headers: await backendAuthHeaders(),
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, lang: LANG }), // jazyk uvítacího mailu
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {

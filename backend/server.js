@@ -14,7 +14,7 @@ import express from 'express';
 import Stripe from 'stripe';
 import admin from 'firebase-admin';
 import cors from 'cors';
-import { sendEmail, welcomeEmail } from './email.js';
+import { sendEmail, welcomeEmail, normalizeLang } from './email.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -95,8 +95,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
               if (interval === 'year') plan = 'yearly';
               else if (interval === 'month') plan = 'monthly';
             } catch {}
-            const tpl = welcomeEmail({ plan, isPromo: false });
-            await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+            const tpl = welcomeEmail({ plan, isPromo: false, lang: meta.lang });
+            await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text, senderName: tpl.senderName });
             console.log('Welcome email sent →', email, plan);
           }
         } catch (e) {
@@ -131,16 +131,18 @@ app.post('/create-checkout-session', async (req, res) => {
   if (!['payment', 'subscription'].includes(mode)) {
     return res.status(400).json({ error: 'mode must be payment or subscription' });
   }
+  // Jazyková mutace (cs/pl) — řídí jazyk Stripe Checkoutu i uvítacího mailu.
+  const lang = normalizeLang(locale);
   try {
     const session = await stripe.checkout.sessions.create({
       mode,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${returnUrl}?premium=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${returnUrl}?premium=cancel`,
-      metadata: { uid, app: 'slovesa' },
+      metadata: { uid, app: 'slovesa', lang },
       ...(mode === 'subscription' ? {
         subscription_data: {
-          metadata: { uid, app: 'slovesa' },
+          metadata: { uid, app: 'slovesa', lang },
           // 7-day free trial on subscriptions (monthly + yearly).
           // Card is collected upfront; Stripe auto-charges at trial end unless cancelled.
           trial_period_days: 7,
@@ -157,7 +159,7 @@ app.post('/create-checkout-session', async (req, res) => {
       ...(email ? { customer_email: email } : {}),
       allow_promotion_codes: true,
       // Checkout UI language: language mutations send their own (e.g. 'pl').
-      locale: ['cs', 'pl'].includes(locale) ? locale : 'cs',
+      locale: lang,
     });
     res.json({ url: session.url });
   } catch (e) {
@@ -173,7 +175,7 @@ app.post('/create-checkout-session', async (req, res) => {
 app.post('/redeem-code', async (req, res) => {
   const uid = await verifyUid(req);
   if (!uid) return res.status(401).json({ error: 'unauthenticated' });
-  const { code } = req.body || {};
+  const { code, lang: bodyLang } = req.body || {};
   if (!code) return res.status(400).json({ error: 'missing code' });
   const normalized = String(code).trim().toUpperCase();
   if (!/^[A-Z0-9_-]{3,40}$/.test(normalized)) {
@@ -223,8 +225,14 @@ app.post('/redeem-code', async (req, res) => {
       const userRec = await admin.auth().getUser(uid).catch(() => null);
       const email = userRec?.email || null;
       if (email) {
-        const tpl = welcomeEmail({ plan: 'promo', isPromo: true });
-        await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+        // Jazyk posílá frontend; starší klient ho neposílá → vezmeme ho z profilu.
+        let lang = bodyLang;
+        if (!lang) {
+          const profile = await db.collection('users').doc(uid).get().catch(() => null);
+          lang = profile?.exists ? profile.data().lang : undefined;
+        }
+        const tpl = welcomeEmail({ plan: 'promo', isPromo: true, lang });
+        await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text, senderName: tpl.senderName });
         console.log('Promo welcome email sent →', email);
       }
     } catch (e) {
@@ -271,7 +279,8 @@ app.post('/create-portal-session', async (req, res) => {
   }
 });
 
-app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
+// welcomeLangs: jazyky uvítacího mailu — zvenku je z toho poznat, která verze běží.
+app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now(), welcomeLangs: ['cs', 'pl'] }));
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Slovesa backend listening on :${port}`));
