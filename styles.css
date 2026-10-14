@@ -5982,3 +5982,52 @@ body.theme-dark .streak-info-badge {
 
 /* Volba časového limitu (režim + trvání) */
 .tt-limit-row { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+
+/* ---------- Plovoucí pilulka se zkušebním týdnem (free verze, přehled skupin) ---------- */
+/* Místo pod pilulkou, ať na konci stránky nepřekrývá patičku */
+body.has-trial-pill:not(.practicing):has(#view-lesson.active) .app-footer { padding-bottom: 76px; }
+.trial-pill {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  max-width: calc(100vw - 32px);
+  border-radius: 999px;
+  background: rgba(255, 107, 53, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.3);
+  animation: trial-pill-in 0.35s ease;
+}
+.trial-pill:hover { background: rgba(255, 107, 53, 0.95); }
+.trial-pill-go {
+  border: 0;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 10px 6px 10px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trial-pill-close {
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 8px 14px 8px 8px;
+  cursor: pointer;
+}
+.trial-pill-close:hover { color: #fff; }
+@keyframes trial-pill-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .trial-pill { animation: none; } }

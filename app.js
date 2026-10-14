@@ -778,6 +778,18 @@ const TEXTS = {
   slaba_intro_go: { pro: 'Zkusit cílovku teď', student: 'Jdu na bosse 👾', hantec: 'Du na to' },
   slaba_intro_later: { pro: 'Rozumím, později', student: 'Jasně, později', hantec: 'Dobře, pozdějc' },
   slaba_intro_close: 'Zavřít',
+  // Nabídka zkušebního týdne (free verze, po 2. dokončené skupině zdarma)
+  trial_nudge_title: { pro: 'Odemkni si všech 106 sloves', student: 'Chceš odemknout všechno?', hantec: 'Chceš odemknót všecko?' },
+  trial_nudge_sub: {
+    pro: 'Skupiny zdarma ti jdou. Vyzkoušej na týden všech 24 skupin a 🚗 Car mode.',
+    student: 'Skupiny zdarma dáváš. Zkus na týden všech 24 skupin + 🚗 Car mode.',
+    hantec: 'Skupiny zadarmo gómeš. Prubni na týden všech 24 skupin aj 🚗 Car mode.',
+  },
+  trial_nudge_note: '7 dní zdarma, pak 49 Kč/měs. nebo 249 Kč/rok. Když do týdne zrušíš, nezaplatíš nic.',
+  trial_nudge_go: { pro: 'Vyzkoušet týden zdarma', student: 'Jdu to zkusit 🔓', hantec: 'Du to prubnót 🔓' },
+  trial_nudge_later: { pro: 'Teď ne', student: 'Teď ne', hantec: 'Enem ne' },
+  trial_pill: { pro: 'Všech 106 sloves · 7 dní zdarma', student: 'Odemkni všechno · 7 dní zdarma', hantec: 'Odemkni všecko · 7 dní zadarmo' },
+  trial_pill_close: 'Skrýt',
   // Krátká připomínka po delší pauze od cílovky (n = počet dní, vždy ≥ 10)
   slaba_remind_title: { pro: 'Cílovka na tebe čeká', student: 'Boss se nudí', hantec: 'Šichta čeká' },
   slaba_remind_line: {
@@ -1476,6 +1488,7 @@ function renderLessonPicker() {
   renderSlabaMistaTile();
   renderTryAppTile();
   finalizePickerBanners();
+  renderTrialPill();
   const c = $('#lesson-groups');
   c.innerHTML = '';
   let subIdx = 0;
@@ -3284,7 +3297,7 @@ function exitLesson() {
   $('#verb-chips').innerHTML = '';
   renderLessonPicker();
   renderStatsStrip();
-  if (justDone && !maybeShowSlabaIntro()) highlightJustDoneSub(justDone);
+  if (justDone && !maybeShowSlabaIntro() && !maybeShowTrialNudge()) highlightJustDoneSub(justDone);
 }
 
 function stageIntroStart() {
@@ -3640,9 +3653,9 @@ function slabaTileForDialog() {
   return tile;
 }
 
-// Společná kostra obou oken: „go" spustí cílovku, cokoli jiného okno zavře
-// a ukáže dlaždici na přehledu.
-function openSlabaDialog({ tile, kind, compact, title, body, go, later, extra }) {
+// Společná kostra oken na přehledu: „go" spustí cílovku (nebo onGo), cokoli
+// jiného okno zavře a ukáže dlaždici cílovky, pokud je předaná.
+function openSlabaDialog({ tile, kind, compact, title, body, go, later, extra, emoji, onGo, trackPrefix = 'slaba_' }) {
   const wrap = document.createElement('div');
   wrap.className = 'modal-backdrop slaba-intro' + (compact ? ' is-compact' : '');
   wrap.setAttribute('role', 'dialog');
@@ -3651,7 +3664,7 @@ function openSlabaDialog({ tile, kind, compact, title, body, go, later, extra })
   wrap.innerHTML = `
     <div class="modal">
       <button class="modal-close" type="button" aria-label="${t('slaba_intro_close')}">×</button>
-      <div class="modal-emoji">${t('slaba_icon')}</div>
+      <div class="modal-emoji">${emoji || t('slaba_icon')}</div>
       <h2 class="modal-title" id="slaba-dialog-title">${title}</h2>
       ${body}
       <div class="slaba-intro-actions">
@@ -3660,13 +3673,14 @@ function openSlabaDialog({ tile, kind, compact, title, body, go, later, extra })
       </div>
     </div>`;
   document.body.appendChild(wrap);
-  track(`slaba_${kind}_shown`, extra || {});
+  track(`${trackPrefix}${kind}_shown`, extra || {});
 
   const close = (how) => {
     wrap.remove();
     document.removeEventListener('keydown', onKey, true);
-    track(`slaba_${kind}_closed`, { how });
-    if (how === 'go') { startSlabaMista(); return; }
+    track(`${trackPrefix}${kind}_closed`, { how });
+    if (how === 'go') { (onGo || startSlabaMista)(); return; }
+    if (!tile) return;
     // Ukážeme, kde dlaždice bydlí, a necháme ji chvíli zazářit.
     tile.scrollIntoView({ behavior: 'smooth', block: 'center' });
     tile.classList.remove('slaba-intro-spot');
@@ -3685,6 +3699,91 @@ function openSlabaDialog({ tile, kind, compact, title, body, go, later, extra })
     if (e.target.closest('.modal-close')) close('x');
   });
   wrap.querySelector('[data-act="go"]').focus();
+}
+
+// ---------- Nabídka zkušebního týdne ve free verzi ----------
+// Studenti free verze sami na paywall skoro nenarazí (ukáže se jen po kliku
+// na zamčenou skupinu). Po dokončení druhé skupiny zdarma jim proto jednou
+// za čas nabídneme 7 dní Premium zdarma — tlačítko otevře běžný paywall.
+const TRIAL_NUDGE_MIN_GROUPS = 2;
+const TRIAL_NUDGE_COOLDOWN = 5; // dní mezi zobrazeními
+const TRIAL_NUDGE_MAX = 3;      // víckrát už ne, ať to neotravuje
+
+function freeGroupsDone() {
+  return state.data.sections.reduce((n, sec) => n + sec.subsections.filter((sub) =>
+    isFreeSub(sub.id) && sub.verbs.every((v) => state.progress[v.inf])
+  ).length, 0);
+}
+
+function maybeShowTrialNudge() {
+  if (state.premium || !state.data) return false;
+  let shown, lastAt;
+  try {
+    shown = Number(localStorage.getItem('trialNudgeShown') || 0) || 0;
+    lastAt = localStorage.getItem('trialNudgeAt');
+  } catch (_) { return false; }
+  if (shown >= TRIAL_NUDGE_MAX) return false;
+  const since = daysSinceKey(lastAt);
+  if (since !== null && since < TRIAL_NUDGE_COOLDOWN) return false;
+  const done = freeGroupsDone();
+  if (done < TRIAL_NUDGE_MIN_GROUPS) return false;
+  if (document.querySelector('[role="dialog"]:not(.hidden)')) return false;
+  try {
+    localStorage.setItem('trialNudgeShown', String(shown + 1));
+    localStorage.setItem('trialNudgeAt', todayKey());
+  } catch (_) {}
+  openSlabaDialog({
+    kind: 'nudge',
+    trackPrefix: 'trial_',
+    compact: true,
+    emoji: '🔓',
+    title: t('trial_nudge_title'),
+    body: `
+      <p class="modal-sub">${t('trial_nudge_sub')}</p>
+      <p class="slaba-intro-where">${t('trial_nudge_note')}</p>`,
+    go: t('trial_nudge_go'),
+    later: t('trial_nudge_later'),
+    extra: { groups: done, n: shown + 1 },
+    onGo: () => showPaywall(),
+  });
+  renderTrialPill();
+  return true;
+}
+
+// Plovoucí pilulka dole na přehledu skupin: tichá připomínka nabídky pro
+// toho, kdo už jednou viděl okno se zkušebním týdnem. Křížek ji schová na
+// TRIAL_PILL_SNOOZE dní. Sedí uvnitř .lesson-picker, takže během lekce a v
+// ostatních sekcích zmizí sama s ním.
+const TRIAL_PILL_SNOOZE = 7;
+
+function renderTrialPill() {
+  const picker = document.querySelector('.lesson-picker');
+  if (!picker) return;
+  picker.querySelector('.trial-pill')?.remove();
+  document.body.classList.remove('has-trial-pill');
+  if (state.premium) return;
+  try {
+    if (!Number(localStorage.getItem('trialNudgeShown') || 0)) return;
+    const hid = daysSinceKey(localStorage.getItem('trialPillHiddenAt'));
+    if (hid !== null && hid < TRIAL_PILL_SNOOZE) return;
+  } catch (_) { return; }
+  const pill = document.createElement('div');
+  pill.className = 'trial-pill';
+  pill.innerHTML = `
+    <button type="button" class="trial-pill-go">🔓 ${t('trial_pill')}</button>
+    <button type="button" class="trial-pill-close" aria-label="${t('trial_pill_close')}">×</button>`;
+  pill.querySelector('.trial-pill-go').addEventListener('click', () => {
+    track('trial_pill_clicked');
+    showPaywall();
+  });
+  pill.querySelector('.trial-pill-close').addEventListener('click', () => {
+    try { localStorage.setItem('trialPillHiddenAt', todayKey()); } catch (_) {}
+    track('trial_pill_hidden');
+    pill.remove();
+    document.body.classList.remove('has-trial-pill');
+  });
+  picker.appendChild(pill);
+  document.body.classList.add('has-trial-pill');
 }
 
 function startSlabaMista() {

@@ -396,6 +396,16 @@
       slaba_intro_go: { pro: 'Spróbuj targetu teraz', student: 'Idę na bossa 👾' },
       slaba_intro_later: { pro: 'Rozumiem, później', student: 'Jasne, później' },
       slaba_intro_close: 'Zamknij',
+      trial_nudge_title: { pro: 'Odblokuj wszystkie 106 czasowników', student: 'Chcesz odblokować wszystko?' },
+      trial_nudge_sub: {
+        pro: 'Darmowe grupy idą ci świetnie. Wypróbuj przez tydzień wszystkie 24 grupy i 🚗 Tryb samochodowy.',
+        student: 'Darmowe grupy ogarniasz. Sprawdź przez tydzień wszystkie 24 grupy + 🚗 Tryb samochodowy.',
+      },
+      trial_nudge_note: '7 dni za darmo, potem 9,99 zł/mies. lub 49,99 zł/rok. Jeśli anulujesz w ciągu tygodnia, nic nie płacisz.',
+      trial_nudge_go: { pro: 'Wypróbuj tydzień za darmo', student: 'Sprawdzam 🔓' },
+      trial_nudge_later: 'Nie teraz',
+      trial_pill: { pro: 'Wszystkie 106 czasowników · 7 dni za darmo', student: 'Odblokuj wszystko · 7 dni za darmo' },
+      trial_pill_close: 'Ukryj',
       slaba_remind_title: { pro: 'Target na ciebie czeka', student: 'Boss się nudzi' },
       slaba_remind_line: {
         pro: function (n) { return 'Ostatnio robiłeś/aś go ' + n + ' dni temu. Kilka minut i znów zmniejszysz słabe punkty.'; },
