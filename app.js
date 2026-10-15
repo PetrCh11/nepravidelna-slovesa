@@ -4786,6 +4786,9 @@ function quizRender() {
       card.querySelector('#quiz-check').classList.add('hidden');
     };
     card.querySelector('#quiz-check').addEventListener('click', submitFill);
+    // Zadaný test: žáci po „Další" omylem ťukli znovu na stejné místo, kde se
+    // hned objeví „Zkontrolovat", a odeslali prázdnou odpověď bez cesty zpět.
+    if (state.quiz.test) lockCheckButton(card.querySelector('#quiz-check'), fillInputs);
     // Limit na slovo: po vypršení se odešle to, co má žák rozepsané.
     state.quiz.onExpireQuestion = submitFill;
 
@@ -4814,6 +4817,34 @@ function quizRender() {
   );
   const cfg = state.quiz.test;
   if (cfg && cfg.limitMode === 'word') dtStartTimer(cfg.limitSec, dtWordTimeUp);
+}
+
+// Tlačítko „Zkontrolovat" je první 3 s zamčené (s odpočtem). Dřív se odemkne,
+// jen když jsou vyplněná všechna pole — pak už prázdné odeslání nehrozí.
+const CHECK_LOCK_SEC = 3;
+function lockCheckButton(btn, inputs) {
+  if (!btn) return;
+  const label = btn.textContent;
+  let left = CHECK_LOCK_SEC;
+  btn.disabled = true;
+  btn.classList.add('is-locked');
+  btn.textContent = `${label} (${left})`;
+  const unlock = () => {
+    clearInterval(timer);
+    if (!btn.isConnected || !btn.disabled) return;
+    btn.disabled = false;
+    btn.classList.remove('is-locked');
+    btn.textContent = label;
+  };
+  const timer = setInterval(() => {
+    if (!btn.isConnected) { clearInterval(timer); return; }
+    left -= 1;
+    if (left <= 0) unlock();
+    else btn.textContent = `${label} (${left})`;
+  }, 1000);
+  inputs.forEach((inp) => inp.addEventListener('input', () => {
+    if (inputs.every((x) => x.value.trim())) unlock();
+  }));
 }
 
 function handleQuizAnswer(ok, verb, qText, aText, detail) {
@@ -5360,6 +5391,20 @@ function renderTeacherSetup() {
     $('#tt-limit-word-row').classList.toggle('hidden', m !== 'word');
   };
   $$('input[name="tt-limit-mode"]').forEach((r) => r.addEventListener('change', syncLimitRows));
+  // Vlastní délka: psaní do políček zruší výběr pilulky, klik na pilulku políčka vyprázdní.
+  ['test', 'word'].forEach((kind) => {
+    const box = $(`#tt-limit-${kind}-row .tt-custom`);
+    const inputs = [$(`#tt-limit-${kind}-min`), $(`#tt-limit-${kind}-sec`)];
+    inputs.forEach((inp) => inp?.addEventListener('input', () => {
+      const on = ttCustomSec(kind) > 0;
+      if (on) $$(`input[name="tt-limit-${kind}"]`).forEach((r) => { r.checked = false; });
+      box?.classList.toggle('is-active', on);
+    }));
+    $$(`input[name="tt-limit-${kind}"]`).forEach((r) => r.addEventListener('change', () => {
+      inputs.forEach((inp) => { if (inp) inp.value = ''; });
+      box?.classList.remove('is-active');
+    }));
+  });
   syncLimitRows();
 
   // Digitální test
@@ -5380,6 +5425,22 @@ function ttChecked(name) {
   return (document.querySelector(`input[name="${name}"]:checked`) || {}).value;
 }
 
+// Vlastní délka limitu (min + s) — platí, když není vybraná žádná pilulka.
+const TT_CUSTOM_BOUNDS = { test: [10, 3600], word: [5, 600] };
+function ttCustomSec(kind) {
+  const m = parseInt($(`#tt-limit-${kind}-min`)?.value, 10) || 0;
+  const sec = parseInt($(`#tt-limit-${kind}-sec`)?.value, 10) || 0;
+  return m * 60 + sec;
+}
+function ttLimitSec(kind, fallback) {
+  const picked = parseInt(ttChecked(`tt-limit-${kind}`), 10);
+  if (picked) return picked;
+  const custom = ttCustomSec(kind);
+  if (!custom) return fallback;
+  const [lo, hi] = TT_CUSTOM_BOUNDS[kind];
+  return Math.max(lo, Math.min(hi, custom));
+}
+
 function ttLimitMode() {
   return (document.querySelector('input[name="tt-limit-mode"]:checked') || {}).value || 'none';
 }
@@ -5397,8 +5458,8 @@ function teacherSettings() {
     // Bodování digitálního testu: 'verb' = celé sloveso za bod, 'form' = po tvarech
     scoring: (document.querySelector('input[name="tt-scoring"]:checked') || {}).value || 'verb',
     limitMode,
-    limitSec: limitMode === 'test' ? (parseInt(ttChecked('tt-limit-test'), 10) || 300)
-      : limitMode === 'word' ? (parseInt(ttChecked('tt-limit-word'), 10) || 30) : 0,
+    limitSec: limitMode === 'test' ? ttLimitSec('test', 300)
+      : limitMode === 'word' ? ttLimitSec('word', 30) : 0,
   };
 }
 
@@ -5636,6 +5697,7 @@ const DT_TYPE_FROM_PAPER = { inf2: 'fill', cs3: 'cs3', missing: 'missing', choic
 const DT_LIMIT_MODES = ['none', 'test', 'word'];
 const DT_LIMIT_TEST = [30, 60, 120, 180, 300, 420, 600, 900, 1200, 1500, 1800];
 const DT_LIMIT_WORD = [10, 15, 20, 25, 30, 40, 45, 60];
+const DT_LIMIT_CUSTOM_MAX = 4095; // 12 bitů v kódu odkazu
 function dtLimitTable(mode) {
   return mode === 'word' ? DT_LIMIT_WORD : DT_LIMIT_TEST;
 }
@@ -5662,7 +5724,16 @@ function dtEncode(cfg) {
   v = (v << 1n) | BigInt(cfg.scoring === 'form' ? 1 : 0);
   const lMode = DT_LIMIT_MODES.indexOf(cfg.limitMode || 'none');
   v = (v << 2n) | BigInt(Math.max(0, lMode));
-  v = (v << 4n) | BigInt(Math.max(0, dtLimitTable(cfg.limitMode).indexOf(cfg.limitSec || 0)));
+  // Délka limitu je index do tabulky (4 bity). Vlastní délka, která v tabulce
+  // není, dostane index 15 a sekundy jdou do 12 bitů před ním. Starší odkazy
+  // index 15 nikdy nepoužily (tabulky jsou kratší), takže se čtou beze změny.
+  const lIdx = dtLimitTable(cfg.limitMode).indexOf(cfg.limitSec || 0);
+  if (lMode > 0 && lIdx < 0 && cfg.limitSec > 0) {
+    v = (v << 12n) | BigInt(Math.min(DT_LIMIT_CUSTOM_MAX, Math.round(cfg.limitSec)));
+    v = (v << 4n) | 15n;
+  } else {
+    v = (v << 4n) | BigInt(Math.max(0, lIdx));
+  }
   v = (v << 16n) | BigInt(cfg.seed & 0xffff);
   const payload = v.toString(36);
   // Dvouznakový kontrolní součet: bez něj by se náhodný/překlepnutý odkaz
@@ -5687,8 +5758,11 @@ function dtDecode(code) {
     }
     const seed = Number(v & 0xffffn); v >>= 16n;
     const limitIdx = Number(v & 15n); v >>= 4n;
+    let customSec = 0;
+    if (limitIdx === 15) { customSec = Number(v & 4095n); v >>= 12n; }
     const limitMode = DT_LIMIT_MODES[Number(v & 3n)] || 'none'; v >>= 2n;
-    const limitSec = limitMode === 'none' ? 0 : (dtLimitTable(limitMode)[limitIdx] || 0);
+    const limitSec = limitMode === 'none' ? 0
+      : limitIdx === 15 ? customSec : (dtLimitTable(limitMode)[limitIdx] || 0);
     const scoring = Number(v & 1n) === 1 ? 'form' : 'verb'; v >>= 1n;
     const askName = Number(v & 1n) === 1; v >>= 1n;
     const type = DT_TYPES[Number(v & 7n)] || 'mixed'; v >>= 3n;
@@ -5972,7 +6046,9 @@ function dtBeginTest() {
 
 // „45 sekund“ / „5 minut“ — celé minuty se ukazují v minutách.
 function dtDuration(sec) {
-  return (sec >= 60 && sec % 60 === 0) ? t('dt_mins', sec / 60) : t('dt_secs', sec);
+  if (sec < 60) return t('dt_secs', sec);
+  const m = Math.floor(sec / 60), r = sec % 60;
+  return r ? `${t('dt_mins', m)} ${t('dt_secs', r)}` : t('dt_mins', m);
 }
 
 function dtStopTimer() {

@@ -6176,3 +6176,73 @@ body.has-trial-pill:not(.practicing):has(#view-lesson.active) .app-footer { padd
 .tt-limit-sub.hidden { display: none; }
 .tt-limit-sub-label { font-size: 0.88rem; font-weight: 700; color: var(--text-muted); }
 .tt-pill-sm span { padding: 6px 12px; font-size: 0.88rem; }
+#tt-pane-digital .teacher-opt-group { gap: 8px; }
+.tt-pill span { flex-wrap: wrap; }
+
+/* Volby se 2–3 možnostmi: stejný posuvný přepínač jako „Tvorba testů / Pokrok žáků" */
+.tt-seg {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0;
+  width: 100%;
+  max-width: 560px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--card-bg, #fff);
+  border: 1.5px solid var(--border, #d9dde3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+}
+.tt-seg-thumb {
+  position: absolute;
+  top: 4px; bottom: 4px; left: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 3px 10px rgba(74, 144, 226, 0.35);
+  transition: transform 0.28s cubic-bezier(.4, .1, .2, 1);
+  pointer-events: none;
+}
+.tt-seg:has(> .tt-pill:nth-of-type(2)) .tt-seg-thumb { width: calc((100% - 8px) / 2); }
+.tt-seg:has(> .tt-pill:nth-of-type(3)) .tt-seg-thumb { width: calc((100% - 8px) / 3); }
+.tt-seg:has(> .tt-pill:nth-of-type(2) input:checked) .tt-seg-thumb { transform: translateX(100%); }
+.tt-seg:has(> .tt-pill:nth-of-type(3) input:checked) .tt-seg-thumb { transform: translateX(200%); }
+.tt-seg .tt-pill { position: relative; z-index: 1; display: flex; }
+.tt-seg .tt-pill span {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  padding: 9px 10px;
+  border: 0; background: none; box-shadow: none;
+  color: var(--text-muted); font-weight: 700; font-size: 0.93rem; text-align: center;
+  line-height: 1.25;
+}
+.tt-seg .tt-pill span small { font-weight: 500; font-size: 0.74rem; }
+.tt-seg .tt-pill:hover span { color: var(--text); }
+.tt-seg .tt-pill input:checked + span { background: none; box-shadow: none; color: #fff; }
+.tt-seg .tt-pill input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 999px; }
+/* S vysvětlivkou na druhém řádku už pilulka není kulatá — zaoblit méně */
+.tt-seg:has(small) { border-radius: 22px; }
+.tt-seg:has(small) .tt-seg-thumb { border-radius: 18px; }
+[data-theme="dark"] .tt-seg { background: rgba(255, 255, 255, 0.04); }
+@media (prefers-reduced-motion: reduce) { .tt-seg-thumb { transition: none; } }
+.tt-limit-row { align-items: stretch; }
+.tt-limit-mode-group, #tt-pane-paper .teacher-opt-group, #tt-pane-digital .teacher-opt-group { width: 100%; }
+@media (max-width: 480px) {
+  .tt-seg { border-radius: 20px; }
+  .tt-seg .tt-seg-thumb { border-radius: 16px; }
+  .tt-seg .tt-pill span { font-size: 0.84rem; padding: 8px 6px; }
+}
+/* Vlastní délka limitu (menší, za pilulkami) */
+.tt-custom { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 0.85rem; color: var(--text-muted); }
+.tt-custom-label { font-weight: 600; margin-right: 2px; }
+.tt-custom input {
+  width: 52px; padding: 5px 6px; text-align: center;
+  border: 1.5px solid rgba(74, 144, 226, 0.45); border-radius: 8px;
+  background: var(--card-bg, #fff); color: var(--text); font: inherit; font-size: 0.88rem;
+}
+.tt-custom input:focus { outline: none; border-color: var(--accent); }
+.tt-custom.is-active input { border-color: var(--accent); background: var(--accent-soft, #e8f1fc); font-weight: 700; }
+.tt-custom.is-active { color: var(--accent); }
+.tt-type-cards { margin-bottom: 18px; }
+.quiz-next-row .btn.is-locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.3); }
