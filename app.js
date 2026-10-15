@@ -680,6 +680,7 @@ const TEXTS = {
   audio_title_on: 'Audio po odpovědi je ZAPNUTO — klikni pro vypnutí',
   audio_title_off: 'Audio po odpovědi je VYPNUTO — klikni pro zapnutí',
   check_btn: 'Zkontrolovat',
+  check_confirm: 'Opravdu odeslat? Klikni znovu',
   next_btn: 'Další →',
   pick_btn: 'Vybrat',
   reset_confirm_cloud: 'Opravdu chceš vynulovat veškerý pokrok? Smaže se i v cloudu (Google účet).\n\nTuto akci nelze vrátit zpět.',
@@ -4785,10 +4786,10 @@ function quizRender() {
       handleQuizAnswer(ok, verb, mode === 'cs3' ? verb.cs : verb.inf, `${verb.inf} – ${past} – ${pp}`, { gained, possible, typed });
       card.querySelector('#quiz-check').classList.add('hidden');
     };
-    card.querySelector('#quiz-check').addEventListener('click', submitFill);
     // Zadaný test: žáci po „Další" omylem ťukli znovu na stejné místo, kde se
     // hned objeví „Zkontrolovat", a odeslali prázdnou odpověď bez cesty zpět.
-    if (state.quiz.test) lockCheckButton(card.querySelector('#quiz-check'), fillInputs);
+    if (state.quiz.test) guardCheckButton(card.querySelector('#quiz-check'), submitFill);
+    else card.querySelector('#quiz-check').addEventListener('click', submitFill);
     // Limit na slovo: po vypršení se odešle to, co má žák rozepsané.
     state.quiz.onExpireQuestion = submitFill;
 
@@ -4819,32 +4820,41 @@ function quizRender() {
   if (cfg && cfg.limitMode === 'word') dtStartTimer(cfg.limitSec, dtWordTimeUp);
 }
 
-// Tlačítko „Zkontrolovat" je první 3 s zamčené (s odpočtem). Dřív se odemkne,
-// jen když jsou vyplněná všechna pole — pak už prázdné odeslání nehrozí.
-const CHECK_LOCK_SEC = 3;
-function lockCheckButton(btn, inputs) {
+// Prvních 5 s po zobrazení nového slovesa je „Zkontrolovat" ztlumené (s
+// odpočtem) a klik v tu dobu odpověď neodešle — tlačítko se jen zeptá
+// „Opravdu odeslat?" a odešle až na druhý klik. Prázdné odeslání se tak
+// nestane omylem, ale žák, který tvar neví, může pořád vědomě potvrdit.
+const CHECK_GUARD_SEC = 5;
+function guardCheckButton(btn, submit) {
   if (!btn) return;
   const label = btn.textContent;
-  let left = CHECK_LOCK_SEC;
-  btn.disabled = true;
-  btn.classList.add('is-locked');
+  let left = CHECK_GUARD_SEC;
+  let armed = false;
+  btn.classList.add('is-guarded');
   btn.textContent = `${label} (${left})`;
-  const unlock = () => {
+  const release = () => {
     clearInterval(timer);
-    if (!btn.isConnected || !btn.disabled) return;
-    btn.disabled = false;
-    btn.classList.remove('is-locked');
+    if (!btn.isConnected) return;
+    btn.classList.remove('is-guarded', 'is-confirm');
     btn.textContent = label;
+    armed = false;
   };
   const timer = setInterval(() => {
     if (!btn.isConnected) { clearInterval(timer); return; }
     left -= 1;
-    if (left <= 0) unlock();
-    else btn.textContent = `${label} (${left})`;
+    if (left <= 0) release();
+    else if (!armed) btn.textContent = `${label} (${left})`;
   }, 1000);
-  inputs.forEach((inp) => inp.addEventListener('input', () => {
-    if (inputs.every((x) => x.value.trim())) unlock();
-  }));
+  btn.addEventListener('click', () => {
+    if (left > 0 && !armed) {
+      armed = true;
+      btn.classList.add('is-confirm');
+      btn.textContent = t('check_confirm');
+      return;
+    }
+    clearInterval(timer);
+    submit();
+  });
 }
 
 function handleQuizAnswer(ok, verb, qText, aText, detail) {

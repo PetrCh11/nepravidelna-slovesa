@@ -308,6 +308,7 @@
       audio_title_on: 'Audio po odpowiedzi jest WŁĄCZONE — kliknij, aby wyłączyć',
       audio_title_off: 'Audio po odpowiedzi jest WYŁĄCZONE — kliknij, aby włączyć',
       check_btn: 'Sprawdź',
+      check_confirm: 'Na pewno wysłać? Kliknij jeszcze raz',
       next_btn: 'Dalej →',
       pick_btn: 'Wybierz',
       reset_confirm_cloud: 'Na pewno chcesz wyzerować cały postęp? Zostanie usunięty także z chmury (konto Google).\n\nTej operacji nie da się cofnąć.',

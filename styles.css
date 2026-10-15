@@ -6245,4 +6245,5 @@ body.has-trial-pill:not(.practicing):has(#view-lesson.active) .app-footer { padd
 .tt-custom.is-active input { border-color: var(--accent); background: var(--accent-soft, #e8f1fc); font-weight: 700; }
 .tt-custom.is-active { color: var(--accent); }
 .tt-type-cards { margin-bottom: 18px; }
-.quiz-next-row .btn.is-locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.3); }
+.quiz-next-row .btn.is-guarded { opacity: 0.55; filter: grayscale(0.3); }
+.quiz-next-row .btn.is-guarded.is-confirm { opacity: 1; filter: none; background: #e8590c; box-shadow: 0 0 0 3px rgba(232, 89, 12, 0.25); }
