@@ -6031,3 +6031,104 @@ body.has-trial-pill:not(.practicing):has(#view-lesson.active) .app-footer { padd
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
 @media (prefers-reduced-motion: reduce) { .trial-pill { animation: none; } }
+
+/* ---------- Pokrok učiteli mailem ---------- */
+.prog-dialog .modal { max-width: 520px; text-align: left; }
+.prog-dialog .modal-emoji, .prog-dialog .modal-title { text-align: center; }
+.prog-field { display: block; margin: 0 0 12px; }
+.prog-field span { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+.prog-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border, #d9dde3);
+  border-radius: 10px;
+  font: inherit;
+  background: var(--card-bg, #fff);
+  color: var(--text);
+}
+.prog-field input:focus { outline: none; border-color: var(--accent); }
+.prog-preview-label { margin: 4px 0 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); }
+.prog-preview {
+  margin: 0 0 16px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(74, 144, 226, 0.08);
+  font-family: inherit;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.prog-hint { margin: 12px 0 0; font-size: 0.8rem; color: var(--text-muted); text-align: center; }
+.prog-send-row { display: flex; justify-content: center; margin: 4px 0 14px; }
+.prog-send-btn {
+  border: 1.5px solid var(--accent);
+  background: var(--accent-soft, #e8f1fc);
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.prog-send-btn:hover { background: var(--accent); color: #fff; }
+[data-theme="dark"] .prog-send-btn { background: rgba(74, 144, 226, 0.15); }
+.prog-link-block .dt-link-row input[type="email"] { flex: 1; }
+
+/* ---------- Teacher zone: posuvný přepínač testy / pokrok žáků ---------- */
+.tz-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 440px;
+  margin: 18px auto 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--card-bg, #fff);
+  border: 1.5px solid var(--border, #d9dde3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+.tz-switch-thumb {
+  position: absolute;
+  top: 4px; bottom: 4px; left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 3px 10px rgba(74, 144, 226, 0.35);
+  transition: transform 0.28s cubic-bezier(.4, .1, .2, 1);
+}
+.tz-switch[data-active="progress"] .tz-switch-thumb { transform: translateX(100%); }
+.tz-switch-btn {
+  position: relative;
+  z-index: 1;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 10px 12px;
+  border-radius: 999px;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.tz-switch-btn.is-active { color: #fff; }
+.tz-switch-btn:not(.is-active):hover { color: var(--text); }
+.tz-pane.hidden { display: none; }
+@media (max-width: 420px) { .tz-switch-btn { font-size: 0.86rem; padding: 9px 6px; } }
+@media (prefers-reduced-motion: reduce) { .tz-switch-thumb { transition: none; } }
+.prog-steps { margin: 0 0 14px; padding-left: 22px; line-height: 1.55; }
+.prog-steps li { margin-bottom: 6px; }
+.prog-lead { margin: 0 0 14px; line-height: 1.55; }
+.prog-sub { margin: 0 0 8px; font-size: 0.98rem; }
+.prog-link-block .dt-link-row + #prog-link-out { margin-top: 10px; }
+.prog-faq details { border-top: 1px solid var(--border, #e3e6ea); padding: 10px 0; }
+.prog-faq details:last-child { padding-bottom: 0; }
+.prog-faq summary { cursor: pointer; font-weight: 700; list-style-position: inside; }
+.prog-faq summary:hover { color: var(--accent); }
+.prog-faq details p { margin: 8px 0 0; color: var(--text-muted); line-height: 1.5; }

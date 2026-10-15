@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="styles.css" />
   <!-- Jazykový pack — musí se načíst PŘED app.js (docs/i18n.md).
        ?v=N bumpni při každé změně packu (cache busting; stejný ?v patří do sw.js ASSETS). -->
-  <script src="lang/pl.js?v=20"></script>
+  <script src="lang/pl.js?v=21"></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
   <script>
@@ -188,6 +188,7 @@
               </div>
             </div>
             <hr class="menu-divider" />
+            <button class="menu-item" id="progress-send-btn" role="menuitem" type="button">📤 Wyślij postępy nauczycielowi</button>
             <button class="menu-item" id="settings-btn" role="menuitem" type="button">
               ⚙️ Ustawienia
             </button>
@@ -479,173 +480,235 @@
     <section id="view-teacher" class="view">
       <div class="intro intro-hero">
         <h2>🧑‍🏫 Tryb nauczyciela</h2>
-        <p class="hero-lead">Wybierz grupy czasowników, ustaw typ testu i wydrukuj sprawdzian razem z kluczem do oceniania. Za darmo dla wszystkich nauczycieli.</p>
+        <p class="hero-lead">Przygotuj sprawdzian razem z kluczem do oceniania albo poproś uczniów o przesłanie ich postępów. Za darmo dla wszystkich nauczycieli.</p>
       </div>
 
-      <a class="pdf-download" href="/czasowniki-nieregularne-lista.pdf" download data-track="pdf_teacher">
-        <span class="pdf-download-ico" aria-hidden="true">
-          <svg viewBox="0 0 32 32" width="38" height="38">
-            <rect x="5" y="2" width="22" height="28" rx="3" fill="#ffffff" stroke="#e0dcd3" stroke-width="1.4"/>
-            <path d="M20 2v6h7" fill="none" stroke="#e0dcd3" stroke-width="1.4"/>
-            <rect x="7" y="17" width="18" height="9" rx="2" fill="#e2483d"/>
-            <text x="16" y="23.6" font-size="6.4" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif">PDF</text>
-          </svg>
-        </span>
-        <span class="pdf-download-text">
-          <strong>Zestawienie czasowników w PDF dla klasy</strong>
-          <span>Wszystkie 106 czasowników w grupach — wydrukuj i rozdaj uczniom</span>
-        </span>
-        <span class="pdf-download-arrow" aria-hidden="true">⬇</span>
-      </a>
+      <div class="tz-switch" role="tablist" aria-label="Teacher zone" data-active="tests">
+        <span class="tz-switch-thumb" aria-hidden="true"></span>
+        <button class="tz-switch-btn is-active" type="button" role="tab" aria-selected="true" data-tz="tests">📝 Tworzenie testów</button>
+        <button class="tz-switch-btn" type="button" role="tab" aria-selected="false" data-tz="progress">📤 Postępy uczniów</button>
+      </div>
 
-      <div class="teacher-setup">
-        <div class="teacher-block">
-          <h3 class="teacher-block-title">1️⃣ Co sprawdzić?</h3>
-          <div id="teacher-groups"></div>
-          <p id="teacher-count-info" class="teacher-count-info"></p>
-        </div>
+      <div class="tz-pane" id="tz-pane-tests" role="tabpanel">
+        <a class="pdf-download" href="/czasowniki-nieregularne-lista.pdf" download data-track="pdf_teacher">
+          <span class="pdf-download-ico" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="38" height="38">
+              <rect x="5" y="2" width="22" height="28" rx="3" fill="#ffffff" stroke="#e0dcd3" stroke-width="1.4"/>
+              <path d="M20 2v6h7" fill="none" stroke="#e0dcd3" stroke-width="1.4"/>
+              <rect x="7" y="17" width="18" height="9" rx="2" fill="#e2483d"/>
+              <text x="16" y="23.6" font-size="6.4" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif">PDF</text>
+            </svg>
+          </span>
+          <span class="pdf-download-text">
+            <strong>Zestawienie czasowników w PDF dla klasy</strong>
+            <span>Wszystkie 106 czasowników w grupach — wydrukuj i rozdaj uczniom</span>
+          </span>
+          <span class="pdf-download-arrow" aria-hidden="true">⬇</span>
+        </a>
 
-        <div class="teacher-block">
-          <h3 class="teacher-block-title">2️⃣ Jaki test?</h3>
-          <label class="teacher-opt-row">Liczba czasowników w teście:
-            <input type="number" id="tt-count" min="3" max="106" value="20" />
-          </label>
-          <div class="tt-limit-row">
-            <label class="teacher-opt-row">Limit czasu:
-              <select id="tt-limit-mode">
-                <option value="none" selected>bez limitu</option>
-                <option value="test">na cały test</option>
-                <option value="word">na każdy czasownik</option>
-              </select>
-            </label>
-            <label class="teacher-opt-row hidden" id="tt-limit-test-row">Czas trwania:
-              <select id="tt-limit-test">
-                <option value="30">30 sekund</option>
-                <option value="60">1 minuta</option>
-                <option value="120">2 minuty</option>
-                <option value="180">3 minuty</option>
-                <option value="300" selected>5 minut</option>
-                <option value="420">7 minut</option>
-                <option value="600">10 minut</option>
-                <option value="900">15 minut</option>
-                <option value="1200">20 minut</option>
-                <option value="1500">25 minut</option>
-                <option value="1800">30 minut</option>
-              </select>
-            </label>
-            <label class="teacher-opt-row hidden" id="tt-limit-word-row">Na czasownik:
-              <select id="tt-limit-word">
-                <option value="10">10 sekund</option>
-                <option value="15">15 sekund</option>
-                <option value="20">20 sekund</option>
-                <option value="25" selected>25 sekund</option>
-                <option value="30">30 sekund</option>
-                <option value="40">40 sekund</option>
-                <option value="45">45 sekund</option>
-                <option value="60">1 minuta</option>
-              </select>
-            </label>
-          </div>
-          <div class="tt-type-cards" role="radiogroup" aria-label="Typ testu">
-            <label class="tt-type-card">
-              <input type="radio" name="tt-type" value="inf2" checked />
-              <span class="tt-type-ico" aria-hidden="true">✏️</span>
-              <span class="tt-type-body">
-                <span class="tt-type-name">Bezokolicznik → 2 formy</span>
-                <span class="tt-type-note">klasyczny sprawdzian</span>
-              </span>
-            </label>
-            <label class="tt-type-card">
-              <input type="radio" name="tt-type" value="cs3" />
-              <span class="tt-type-ico" aria-hidden="true">💬</span>
-              <span class="tt-type-body">
-                <span class="tt-type-name">Po polsku → 3 formy</span>
-                <span class="tt-type-note">trudniejszy</span>
-              </span>
-            </label>
-            <label class="tt-type-card">
-              <input type="radio" name="tt-type" value="missing" />
-              <span class="tt-type-ico" aria-hidden="true">❓</span>
-              <span class="tt-type-body">
-                <span class="tt-type-name">Brakująca forma</span>
-                <span class="tt-type-note">w każdym wierszu inna</span>
-              </span>
-            </label>
-            <label class="tt-type-card">
-              <input type="radio" name="tt-type" value="choice" />
-              <span class="tt-type-ico" aria-hidden="true">🔘</span>
-              <span class="tt-type-body">
-                <span class="tt-type-name">Wybór z możliwości</span>
-                <span class="tt-type-note">szybkie ocenianie</span>
-              </span>
-            </label>
-          </div>
-        </div>
-
-        <div class="teacher-block">
-          <h3 class="teacher-block-title">3️⃣ Jak go zadasz?</h3>
-          <div class="tt-tabs" role="tablist" aria-label="Forma zadania">
-            <button class="tt-tab is-active" type="button" role="tab" aria-selected="true" data-tab="paper" id="tt-tab-paper">🖨️ Na papierze</button>
-            <button class="tt-tab" type="button" role="tab" aria-selected="false" data-tab="digital" id="tt-tab-digital">💻 Linkiem</button>
+        <div class="teacher-setup">
+          <div class="teacher-block">
+            <h3 class="teacher-block-title">1️⃣ Co sprawdzić?</h3>
+            <div id="teacher-groups"></div>
+            <p id="teacher-count-info" class="teacher-count-info"></p>
           </div>
 
-          <div class="tt-pane" id="tt-pane-paper" role="tabpanel" aria-labelledby="tt-tab-paper">
-            <label class="teacher-check teacher-check-strong">
-              <span class="teacher-check-strong-text">Dwie wersje (A + B) <span class="teacher-radio-note">— przeciw ściąganiu</span></span>
-              <input type="checkbox" id="tt-variants" />
+          <div class="teacher-block">
+            <h3 class="teacher-block-title">2️⃣ Jaki test?</h3>
+            <label class="teacher-opt-row">Liczba czasowników w teście:
+              <input type="number" id="tt-count" min="3" max="106" value="20" />
             </label>
-            <label class="teacher-check" id="tt-cs-row"><input type="checkbox" id="tt-cs" checked /> Pokaż polskie tłumaczenie jako podpowiedź</label>
-            <div class="teacher-opt-group" role="radiogroup" aria-label="Wygląd wydruku">
-              <span class="teacher-opt-label">Wygląd wydruku:</span>
-              <div class="tt-color-row">
-                <label class="teacher-radio"><input type="radio" name="tt-color" value="bw" checked /> 🖤 Czarno-biały <span class="teacher-radio-note">(oszczędza toner)</span></label>
-                <label class="teacher-radio"><input type="radio" name="tt-color" value="color" /> 🎨 Kolorowy</label>
+            <div class="tt-limit-row">
+              <label class="teacher-opt-row">Limit czasu:
+                <select id="tt-limit-mode">
+                  <option value="none" selected>bez limitu</option>
+                  <option value="test">na cały test</option>
+                  <option value="word">na każdy czasownik</option>
+                </select>
+              </label>
+              <label class="teacher-opt-row hidden" id="tt-limit-test-row">Czas trwania:
+                <select id="tt-limit-test">
+                  <option value="30">30 sekund</option>
+                  <option value="60">1 minuta</option>
+                  <option value="120">2 minuty</option>
+                  <option value="180">3 minuty</option>
+                  <option value="300" selected>5 minut</option>
+                  <option value="420">7 minut</option>
+                  <option value="600">10 minut</option>
+                  <option value="900">15 minut</option>
+                  <option value="1200">20 minut</option>
+                  <option value="1500">25 minut</option>
+                  <option value="1800">30 minut</option>
+                </select>
+              </label>
+              <label class="teacher-opt-row hidden" id="tt-limit-word-row">Na czasownik:
+                <select id="tt-limit-word">
+                  <option value="10">10 sekund</option>
+                  <option value="15">15 sekund</option>
+                  <option value="20">20 sekund</option>
+                  <option value="25" selected>25 sekund</option>
+                  <option value="30">30 sekund</option>
+                  <option value="40">40 sekund</option>
+                  <option value="45">45 sekund</option>
+                  <option value="60">1 minuta</option>
+                </select>
+              </label>
+            </div>
+            <div class="tt-type-cards" role="radiogroup" aria-label="Typ testu">
+              <label class="tt-type-card">
+                <input type="radio" name="tt-type" value="inf2" checked />
+                <span class="tt-type-ico" aria-hidden="true">✏️</span>
+                <span class="tt-type-body">
+                  <span class="tt-type-name">Bezokolicznik → 2 formy</span>
+                  <span class="tt-type-note">klasyczny sprawdzian</span>
+                </span>
+              </label>
+              <label class="tt-type-card">
+                <input type="radio" name="tt-type" value="cs3" />
+                <span class="tt-type-ico" aria-hidden="true">💬</span>
+                <span class="tt-type-body">
+                  <span class="tt-type-name">Po polsku → 3 formy</span>
+                  <span class="tt-type-note">trudniejszy</span>
+                </span>
+              </label>
+              <label class="tt-type-card">
+                <input type="radio" name="tt-type" value="missing" />
+                <span class="tt-type-ico" aria-hidden="true">❓</span>
+                <span class="tt-type-body">
+                  <span class="tt-type-name">Brakująca forma</span>
+                  <span class="tt-type-note">w każdym wierszu inna</span>
+                </span>
+              </label>
+              <label class="tt-type-card">
+                <input type="radio" name="tt-type" value="choice" />
+                <span class="tt-type-ico" aria-hidden="true">🔘</span>
+                <span class="tt-type-body">
+                  <span class="tt-type-name">Wybór z możliwości</span>
+                  <span class="tt-type-note">szybkie ocenianie</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="teacher-block">
+            <h3 class="teacher-block-title">3️⃣ Jak go zadasz?</h3>
+            <div class="tt-tabs" role="tablist" aria-label="Forma zadania">
+              <button class="tt-tab is-active" type="button" role="tab" aria-selected="true" data-tab="paper" id="tt-tab-paper">🖨️ Na papierze</button>
+              <button class="tt-tab" type="button" role="tab" aria-selected="false" data-tab="digital" id="tt-tab-digital">💻 Linkiem</button>
+            </div>
+
+            <div class="tt-pane" id="tt-pane-paper" role="tabpanel" aria-labelledby="tt-tab-paper">
+              <label class="teacher-check teacher-check-strong">
+                <span class="teacher-check-strong-text">Dwie wersje (A + B) <span class="teacher-radio-note">— przeciw ściąganiu</span></span>
+                <input type="checkbox" id="tt-variants" />
+              </label>
+              <label class="teacher-check" id="tt-cs-row"><input type="checkbox" id="tt-cs" checked /> Pokaż polskie tłumaczenie jako podpowiedź</label>
+              <div class="teacher-opt-group" role="radiogroup" aria-label="Wygląd wydruku">
+                <span class="teacher-opt-label">Wygląd wydruku:</span>
+                <div class="tt-color-row">
+                  <label class="teacher-radio"><input type="radio" name="tt-color" value="bw" checked /> 🖤 Czarno-biały <span class="teacher-radio-note">(oszczędza toner)</span></label>
+                  <label class="teacher-radio"><input type="radio" name="tt-color" value="color" /> 🎨 Kolorowy</label>
+                </div>
+              </div>
+              <button id="teacher-generate" class="btn btn-primary tt-cta">📝 Wygeneruj test</button>
+            </div>
+
+            <div class="tt-pane hidden" id="tt-pane-digital" role="tabpanel" aria-labelledby="tt-tab-digital">
+              <label class="teacher-check"><input type="checkbox" id="dt-ask-name" checked /> Uczeń wpisuje imię i nazwisko (pojawi się w kodzie o oddaniu pracy)</label>
+              <div class="teacher-opt-group" role="radiogroup" aria-label="Punktacja">
+                <span class="teacher-opt-label">Punktacja:</span>
+                <div class="tt-color-row">
+                  <label class="teacher-radio"><input type="radio" name="tt-scoring" value="verb" checked /> Za cały czasownik <span class="teacher-radio-note">(wszystkie formy poprawnie = 1 punkt)</span></label>
+                  <label class="teacher-radio"><input type="radio" name="tt-scoring" value="form" /> Za każdą formę <span class="teacher-radio-note">(1 punkt za poprawną formę)</span></label>
+                </div>
+              </div>
+              <p class="dt-note">Uczniowie otwierają link na telefonie, wypełniają test i od razu widzą wynik. Nic nigdzie się nie zapisuje — na koniec dostają kod, w którym zobaczysz także ich błędne odpowiedzi.</p>
+              <button id="dt-make-link" class="btn btn-primary tt-cta">🔗 Utwórz link</button>
+
+              <div class="dt-link-box hidden" id="dt-link-box">
+                <label for="dt-link">Link do testu cyfrowego</label>
+                <div class="dt-link-row">
+                  <input id="dt-link" type="text" readonly />
+                  <button id="dt-copy-link" class="btn btn-primary btn-sm" type="button">Kopiuj link</button>
+                </div>
+                <p class="dt-note">Wyślij uczniom (Classroom, Teams, mail). Każdy dostanie ten sam test i od razu zobaczy wynik.</p>
               </div>
             </div>
-            <button id="teacher-generate" class="btn btn-primary tt-cta">📝 Wygeneruj test</button>
           </div>
 
-          <div class="tt-pane hidden" id="tt-pane-digital" role="tabpanel" aria-labelledby="tt-tab-digital">
-            <label class="teacher-check"><input type="checkbox" id="dt-ask-name" checked /> Uczeń wpisuje imię i nazwisko (pojawi się w kodzie o oddaniu pracy)</label>
-            <div class="teacher-opt-group" role="radiogroup" aria-label="Punktacja">
-              <span class="teacher-opt-label">Punktacja:</span>
-              <div class="tt-color-row">
-                <label class="teacher-radio"><input type="radio" name="tt-scoring" value="verb" checked /> Za cały czasownik <span class="teacher-radio-note">(wszystkie formy poprawnie = 1 punkt)</span></label>
-                <label class="teacher-radio"><input type="radio" name="tt-scoring" value="form" /> Za każdą formę <span class="teacher-radio-note">(1 punkt za poprawną formę)</span></label>
-              </div>
+          <div id="teacher-result" class="teacher-result" hidden>
+            <div class="teacher-print-btns">
+              <button id="teacher-print-test" class="btn btn-primary">🖨️ Wydrukuj test</button>
+              <button id="teacher-print-key" class="btn btn-ghost">🖨️ Wydrukuj klucz</button>
+              <button id="teacher-reshuffle" class="btn btn-ghost">🔀 Wymieszaj ponownie</button>
             </div>
-            <p class="dt-note">Uczniowie otwierają link na telefonie, wypełniają test i od razu widzą wynik. Nic nigdzie się nie zapisuje — na koniec dostają kod, w którym zobaczysz także ich błędne odpowiedzi.</p>
-            <button id="dt-make-link" class="btn btn-primary tt-cta">🔗 Utwórz link</button>
+            <p class="teacher-print-hint">Podgląd testu — drukowanie odbywa się przez okno przeglądarki (zapis do PDF też działa).</p>
+            <div id="teacher-preview" class="teacher-preview"></div>
+          </div>
 
-            <div class="dt-link-box hidden" id="dt-link-box">
-              <label for="dt-link">Link do testu cyfrowego</label>
+          <!-- Sprawdzanie po teście: osobna czynność, dlatego własny blok -->
+          <div class="teacher-block dt-verify-block">
+            <h3 class="teacher-block-title">✅ Sprawdź kody od uczniów</h3>
+            <p class="dt-note">Wklej kody (choćby całą kolumnę, jeden na wiersz) i sprawdź je za jednym razem.</p>
+            <input id="dt-verify-test" type="text" class="dt-verify-test" placeholder="kod testu lub link, który wysłałeś(-aś) uczniom (uzupełni się sam)" />
+            <textarea id="dt-verify-input" rows="4" placeholder="Jan Kowalski ✓ · 8/10 · 1. próba · K3F9"></textarea>
+            <button id="dt-verify-btn" class="btn btn-primary btn-sm" type="button">Sprawdź</button>
+            <div id="dt-verify-out" class="dt-verify-out hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tz-pane hidden" id="tz-pane-progress" role="tabpanel">
+        <div class="teacher-setup">
+          <!-- Postępy uczniów mailem: link zapisuje e-mail nauczyciela (tylko w urządzeniu ucznia) -->
+          <div class="teacher-block prog-link-block">
+            <h3 class="teacher-block-title">📤 Postępy uczniów mailem</h3>
+            <p class="prog-lead">Uczniowie jednym przyciskiem wyślą ci podsumowanie: ile czasowników umieją, które grupy mają opanowane i z czym mają problem. Bez rejestracji, nic nie jest zapisywane.</p>
+            <h4 class="prog-sub">💡 Jak to działa</h4>
+            <ol class="prog-steps">
+              <li>Poniżej tworzysz link ze swoim e-mailem i wysyłasz go klasie.</li>
+              <li>Uczeń klika link jeden raz. W aplikacji pojawi mu się przycisk <strong>📤 Wyślij postępy nauczycielowi</strong>.</li>
+              <li>Gdy go kliknie, w jego poczcie otworzy się gotowy mail do ciebie. Wystarczy wysłać.</li>
+            </ol>
+            <div class="dt-link-row">
+              <input id="prog-teacher-email" type="email" placeholder="twoj.email@szkola.pl" autocomplete="email" />
+              <button id="prog-make-link" class="btn btn-primary btn-sm" type="button">Utwórz link</button>
+            </div>
+            <div id="prog-link-out" class="hidden">
               <div class="dt-link-row">
-                <input id="dt-link" type="text" readonly />
-                <button id="dt-copy-link" class="btn btn-primary btn-sm" type="button">Kopiuj link</button>
+                <input id="prog-link" type="text" readonly />
+                <button id="prog-copy-link" class="btn btn-primary btn-sm" type="button">Kopiuj link</button>
               </div>
-              <p class="dt-note">Wyślij uczniom (Classroom, Teams, mail). Każdy dostanie ten sam test i od razu zobaczy wynik.</p>
+              <p class="dt-note">Wyślij link uczniom (Classroom, Teams, mail). Wystarczy, że klikną go raz.</p>
             </div>
           </div>
-        </div>
 
-        <div id="teacher-result" class="teacher-result" hidden>
-          <div class="teacher-print-btns">
-            <button id="teacher-print-test" class="btn btn-primary">🖨️ Wydrukuj test</button>
-            <button id="teacher-print-key" class="btn btn-ghost">🖨️ Wydrukuj klucz</button>
-            <button id="teacher-reshuffle" class="btn btn-ghost">🔀 Wymieszaj ponownie</button>
+          <div class="teacher-block">
+            <h3 class="teacher-block-title">👀 Przykład, co dostaniesz</h3>
+            <pre class="prog-preview">📊 Jan Kowalski · czasowniki nieregularne · 15. 10. 2026
+✅ Umie: 42 z 106 czasowników · 6 z 24 grup
+🏅 Opanowane grupy: 1.1.0 I → A → U, 1.2.1 OW → EW → OWN, …
+🟡 Grupy w trakcie: 2.1.3 → OUGHT / AUGHT (5/7)
+❗ Problematyczne czasowniki: lie, lay, bring, catch
+🔥 Seria: 5 dni z rzędu
+🕒 Ostatnio ćwiczył(a): dziś</pre>
           </div>
-          <p class="teacher-print-hint">Podgląd testu — drukowanie odbywa się przez okno przeglądarki (zapis do PDF też działa).</p>
-          <div id="teacher-preview" class="teacher-preview"></div>
-        </div>
 
-        <!-- Sprawdzanie po teście: osobna czynność, dlatego własny blok -->
-        <div class="teacher-block dt-verify-block">
-          <h3 class="teacher-block-title">✅ Sprawdź kody od uczniów</h3>
-          <p class="dt-note">Wklej kody (choćby całą kolumnę, jeden na wiersz) i sprawdź je za jednym razem.</p>
-          <input id="dt-verify-test" type="text" class="dt-verify-test" placeholder="kod testu lub link, który wysłałeś(-aś) uczniom (uzupełni się sam)" />
-          <textarea id="dt-verify-input" rows="4" placeholder="Jan Kowalski ✓ · 8/10 · 1. próba · K3F9"></textarea>
-          <button id="dt-verify-btn" class="btn btn-primary btn-sm" type="button">Sprawdź</button>
-          <div id="dt-verify-out" class="dt-verify-out hidden"></div>
+          <div class="teacher-block prog-faq">
+            <h3 class="teacher-block-title">❓ Częste pytania</h3>
+            <details><summary>Czy dostanę osobny mail od każdego ucznia?</summary>
+              <p>Tak, każdy uczeń wysyła swoje podsumowanie. Wskazówka: poproś klasę o podsumowanie np. tydzień przed sprawdzianem.</p></details>
+            <details><summary>Czy widzę postępy na bieżąco?</summary>
+              <p>Nie, to zrzut stanu z chwili wysłania. Aktualny stan dostaniesz, gdy poprosisz uczniów o nowe podsumowanie.</p></details>
+            <details><summary>Co, jeśli uczeń ćwiczy na kilku urządzeniach?</summary>
+              <p>Zalogowanym uczniom postępy się synchronizują. Niezalogowany wyśle tylko postępy z urządzenia, z którego wysyła.</p></details>
+            <details><summary>Co, jeśli uczeń zgubi link?</summary>
+              <p>Przycisk znajdzie też w menu, a twój e-mail może wpisać ręcznie.</p></details>
+            <details><summary>Gdzie jest zapisywany mój e-mail?</summary>
+              <p>Tylko w urządzeniu ucznia, nigdzie na naszym serwerze. Mail wychodzi z poczty ucznia.</p></details>
+            <details><summary>Co, jeśli uczniowi nie otworzy się poczta?</summary>
+              <p>Może skopiować tekst i wysłać ci go inaczej, np. przez Teams.</p></details>
+          </div>
         </div>
       </div>
     </section>

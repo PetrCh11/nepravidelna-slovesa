@@ -790,6 +790,36 @@ const TEXTS = {
   trial_nudge_later: { pro: 'Teď ne', student: 'Teď ne', hantec: 'Enem ne' },
   trial_pill: { pro: 'Všech 106 sloves · 7 dní zdarma', student: 'Odemkni všechno · 7 dní zdarma', hantec: 'Odemkni všecko · 7 dní zadarmo' },
   trial_pill_close: 'Skrýt',
+  // Pokrok učiteli mailem (odkaz z Teacher zone → e-mail učitele v localStorage)
+  prog_menu: '📤 Poslat pokrok učiteli',
+  prog_title: 'Poslat pokrok učiteli',
+  prog_name_label: 'Tvoje jméno',
+  prog_name_ph: 'Jan Novák',
+  prog_email_label: 'E-mail učitele',
+  prog_email_ph: 'ucitel@skola.cz',
+  prog_preview_label: 'Tohle učitel dostane:',
+  prog_mail_btn: '✉️ Otevřít v mailu',
+  prog_copy_btn: '📋 Zkopírovat text',
+  prog_mail_hint: 'Otevře se tvoje mailová aplikace s hotovou zprávou, stačí kliknout na Odeslat. Když se nic neotevře, zkopíruj text a pošli ho učiteli jinak.',
+  prog_copied: 'Zkopírováno. Vlož text do zprávy učiteli.',
+  prog_need_name: 'Napiš své jméno, ať učitel ví, od koho zpráva je.',
+  prog_need_email: 'Zadej platný e-mail učitele.',
+  prog_teacher_saved: (email) => `Hotovo! Svůj pokrok teď můžeš poslat učiteli (${email}) tlačítkem 📤 Poslat pokrok učiteli.`,
+  prog_subject: (name) => `Pokrok v nepravidelných slovesech – ${name}`,
+  prog_r_head: (name, date) => `📊 ${name} · nepravidelná slovesa · ${date}`,
+  prog_r_known: (g, total, m, subs) => `✅ Umí: ${g} ze ${total} sloves · ${m} ze ${subs} skupin`,
+  prog_r_mastered: 'Zvládnuté skupiny',
+  prog_r_progress: 'Rozpracované skupiny',
+  prog_r_problems: 'Problémová slovesa',
+  prog_r_streak: (n) => `🔥 Série: ${n} ${t('plur_days_row', n)}`,
+  prog_r_last: (when) => `🕒 Naposledy cvičil/a: ${when}`,
+  prog_today: 'dnes',
+  prog_yesterday: 'včera',
+  prog_days_ago: (n) => `před ${n} dny`,
+  prog_r_none: 'Zatím nic neprocvičeno.',
+  prog_r_foot: 'Odesláno z ucseslovesa.cz',
+  prog_link_bad_email: 'Zadejte platný e-mail.',
+  prog_link_copied: 'Odkaz zkopírován, pošlete ho žákům.',
   // Krátká připomínka po delší pauze od cílovky (n = počet dní, vždy ≥ 10)
   slaba_remind_title: { pro: 'Cílovka na tebe čeká', student: 'Boss se nudí', hantec: 'Šichta čeká' },
   slaba_remind_line: {
@@ -1489,6 +1519,7 @@ function renderLessonPicker() {
   renderTryAppTile();
   finalizePickerBanners();
   renderTrialPill();
+  renderProgressSendRow();
   const c = $('#lesson-groups');
   c.innerHTML = '';
   let subIdx = 0;
@@ -1756,6 +1787,7 @@ function applyStyleFromUrl() {
 
 function handleDeepLink() {
   applyStyleFromUrl();
+  applyTeacherFromUrl();
   // Zadaný test od učitele: #/test/<kód> — má přednost před ostatními odkazy.
   const testMatch = (window.location.hash || '').match(/^#\/test\/([0-9a-z]+)/i);
   if (testMatch) {
@@ -1765,10 +1797,13 @@ function handleDeepLink() {
   }
   // Teacher zone: #/teacher — odkaz z /pro-skoly/ a z mailů školám, aby učitel
   // nemusel generátor testů hledat v menu.
-  if (/^#\/teacher\/?$/i.test(window.location.hash || '')) {
+  // #/teacher/pokrok otevře rovnou záložku s pokrokem žáků.
+  const teacherMatch = (window.location.hash || '').match(/^#\/teacher(\/pokrok)?\/?$/i);
+  if (teacherMatch) {
     history.replaceState(null, '', window.location.pathname);
-    track('deeplink_teacher');
+    track('deeplink_teacher', teacherMatch[1] ? { pane: 'progress' } : undefined);
     setView('teacher');
+    if (teacherMatch[1]) setTeacherPane('progress');
     return;
   }
   let target = null;
@@ -3784,6 +3819,223 @@ function renderTrialPill() {
   });
   picker.appendChild(pill);
   document.body.classList.add('has-trial-pill');
+}
+
+// ============================================================
+// Pokrok učiteli mailem
+// ============================================================
+// Učitel v Teacher zone vytvoří odkaz s e-mailem (?ucitel=…, base64url, ať
+// adresa v odkazu nesvítí). Appka si e-mail uloží do localStorage a student
+// pak jedním tlačítkem otevře ve své poště hotový mail s přehledem pokroku.
+// Nic neodchází přes náš server a nic se nikam neukládá.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function b64urlEncode(str) {
+  return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlDecode(str) {
+  const b = String(str).replace(/-/g, '+').replace(/_/g, '/');
+  return decodeURIComponent(escape(atob(b + '==='.slice((b.length + 3) % 4))));
+}
+
+function teacherEmail() {
+  try { return localStorage.getItem('teacherEmail') || ''; } catch (_) { return ''; }
+}
+
+function applyTeacherFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get('ucitel');
+  if (!raw) return;
+  params.delete('ucitel');
+  const q = params.toString();
+  history.replaceState(null, '', window.location.pathname + (q ? `?${q}` : '') + window.location.hash);
+  let email = '';
+  try { email = b64urlDecode(raw).trim(); } catch (_) {}
+  if (!EMAIL_RE.test(email)) return;
+  try { localStorage.setItem('teacherEmail', email); } catch (_) {}
+  track('progress_teacher_linked');
+  renderProgressSendRow();
+  setTimeout(() => toast(t('prog_teacher_saved', email), 'success', 7000), 600);
+}
+
+function progressReport(name) {
+  const subs = state.data.sections.flatMap((sec) => sec.subsections);
+  // Stejná čísla jako proužek statistik na přehledu (106 sloves, get 2×)
+  const stats = computeMacroStats();
+  const uniq = new Set(flattenVerbs(state.data).map((v) => v.inf));
+  const prog = state.progress || {};
+  const mastered = subs.filter((sub) => sub.verbs.every((v) => prog[v.inf]?.status === 'green'));
+  const started = subs.filter((sub) => !mastered.includes(sub) && sub.verbs.some((v) => prog[v.inf]));
+  const label = (sub) => `${sub.id} ${sub.pattern}`;
+  const problems = [...uniq]
+    .filter((inf) => prog[inf] && prog[inf].status !== 'green')
+    .map((inf) => {
+      const p = prog[inf];
+      return { inf, score: (p.status === 'red' ? 2 : 1) + (p.attempts ? p.errors / p.attempts : 0) };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8)
+    .map((x) => x.inf);
+  const d = new Date();
+  const lines = [t('prog_r_head', name, `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`)];
+  const lastSeen = Math.max(0, ...Object.values(prog).map((p) => p.lastSeen || 0));
+  if (!lastSeen) {
+    lines.push(t('prog_r_none'));
+  } else {
+    lines.push(t('prog_r_known', stats.mastered, stats.total, stats.masteredGroups, stats.totalGroups));
+    if (mastered.length) lines.push(`🏅 ${t('prog_r_mastered')}: ${mastered.map(label).join(', ')}`);
+    if (started.length) {
+      lines.push(`🟡 ${t('prog_r_progress')}: ${started.map((sub) => {
+        const g = sub.verbs.filter((v) => prog[v.inf]?.status === 'green').length;
+        return `${label(sub)} (${g}/${sub.verbs.length})`;
+      }).join(', ')}`);
+    }
+    if (problems.length) lines.push(`❗ ${t('prog_r_problems')}: ${problems.join(', ')}`);
+    const streak = computeStreak();
+    if (streak > 0) lines.push(t('prog_r_streak', streak));
+    const ago = daysSinceKey((() => {
+      const x = new Date(lastSeen);
+      return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+    })());
+    lines.push(t('prog_r_last', ago === 0 ? t('prog_today') : ago === 1 ? t('prog_yesterday') : t('prog_days_ago', ago)));
+  }
+  lines.push('', t('prog_r_foot'));
+  return lines.join('\n');
+}
+
+function openProgressSend() {
+  if (!state.data) return;
+  document.querySelector('.prog-dialog')?.remove();
+  const userName = (state.user && state.user.displayName) || '';
+  let savedName = '';
+  try { savedName = localStorage.getItem('progressName') || ''; } catch (_) {}
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-backdrop prog-dialog';
+  wrap.setAttribute('role', 'dialog');
+  wrap.setAttribute('aria-modal', 'true');
+  wrap.setAttribute('aria-labelledby', 'prog-title');
+  wrap.innerHTML = `
+    <div class="modal">
+      <button class="modal-close" type="button" aria-label="${t('slaba_intro_close')}">×</button>
+      <div class="modal-emoji">📤</div>
+      <h2 class="modal-title" id="prog-title">${t('prog_title')}</h2>
+      <label class="prog-field"><span>${t('prog_name_label')}</span>
+        <input type="text" id="prog-name" autocomplete="name" placeholder="${t('prog_name_ph')}"></label>
+      <label class="prog-field"><span>${t('prog_email_label')}</span>
+        <input type="email" id="prog-email" autocomplete="off" placeholder="${t('prog_email_ph')}"></label>
+      <p class="prog-preview-label">${t('prog_preview_label')}</p>
+      <pre class="prog-preview" id="prog-preview"></pre>
+      <div class="slaba-intro-actions">
+        <button type="button" class="btn btn-primary" id="prog-mail">${t('prog_mail_btn')}</button>
+        <button type="button" class="btn-link" id="prog-copy">${t('prog_copy_btn')}</button>
+      </div>
+      <p class="prog-hint">${t('prog_mail_hint')}</p>
+    </div>`;
+  document.body.appendChild(wrap);
+  const nameIn = wrap.querySelector('#prog-name');
+  const emailIn = wrap.querySelector('#prog-email');
+  const preview = wrap.querySelector('#prog-preview');
+  nameIn.value = savedName || userName;
+  emailIn.value = teacherEmail();
+  const refresh = () => { preview.textContent = progressReport(nameIn.value.trim() || '…'); };
+  refresh();
+  nameIn.addEventListener('input', refresh);
+  track('progress_send_opened', { linked: !!teacherEmail() });
+
+  const remember = () => {
+    try {
+      localStorage.setItem('progressName', nameIn.value.trim());
+      if (EMAIL_RE.test(emailIn.value.trim())) localStorage.setItem('teacherEmail', emailIn.value.trim());
+    } catch (_) {}
+  };
+  const close = () => {
+    wrap.remove();
+    document.removeEventListener('keydown', onKey, true);
+    renderProgressSendRow();
+  };
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+  document.addEventListener('keydown', onKey, true);
+  wrap.addEventListener('click', (e) => {
+    if (e.target === wrap || e.target.closest('.modal-close')) close();
+  });
+  wrap.querySelector('#prog-mail').addEventListener('click', () => {
+    const name = nameIn.value.trim();
+    const email = emailIn.value.trim();
+    if (name.length < 2) { toast(t('prog_need_name'), 'error'); nameIn.focus(); return; }
+    if (!EMAIL_RE.test(email)) { toast(t('prog_need_email'), 'error'); emailIn.focus(); return; }
+    remember();
+    track('progress_mail_opened');
+    const body = progressReport(name).replace(/\n/g, '\r\n');
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent(t('prog_subject', name))}&body=${encodeURIComponent(body)}`;
+  });
+  wrap.querySelector('#prog-copy').addEventListener('click', async () => {
+    const name = nameIn.value.trim();
+    if (name.length < 2) { toast(t('prog_need_name'), 'error'); nameIn.focus(); return; }
+    remember();
+    try {
+      await navigator.clipboard.writeText(progressReport(name));
+      toast(t('prog_copied'), 'success');
+      track('progress_copied');
+    } catch (_) {
+      const r = document.createRange(); r.selectNodeContents(preview);
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    }
+  });
+  (nameIn.value ? emailIn.value ? wrap.querySelector('#prog-mail') : emailIn : nameIn).focus();
+}
+
+// Řádek s tlačítkem na přehledu skupin — jen pro studenty, kteří přišli přes
+// odkaz od učitele (jinak je funkce v menu).
+function renderProgressSendRow() {
+  const picker = document.querySelector('.lesson-picker');
+  const groups = document.querySelector('#lesson-groups');
+  if (!picker || !groups) return;
+  picker.querySelector('.prog-send-row')?.remove();
+  if (!teacherEmail()) return;
+  const row = document.createElement('div');
+  row.className = 'prog-send-row';
+  row.innerHTML = `<button type="button" class="prog-send-btn">${t('prog_menu')}</button>`;
+  row.querySelector('button').addEventListener('click', openProgressSend);
+  groups.before(row);
+}
+
+// Teacher zone: přepínač „Tvorba testů" / „Pokrok žáků"
+function setTeacherPane(which) {
+  const sw = $('.tz-switch');
+  if (!sw) return;
+  sw.dataset.active = which;
+  $$('.tz-switch-btn').forEach((b) => {
+    const on = b.dataset.tz === which;
+    b.classList.toggle('is-active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  $('#tz-pane-tests')?.classList.toggle('hidden', which !== 'tests');
+  $('#tz-pane-progress')?.classList.toggle('hidden', which !== 'progress');
+}
+
+// Teacher zone: vytvoření odkazu pro třídu
+function initProgressLinkMaker() {
+  $$('.tz-switch-btn').forEach((b) => b.addEventListener('click', () => {
+    setTeacherPane(b.dataset.tz);
+    track('teacher_pane', { pane: b.dataset.tz });
+  }));
+  const input = $('#prog-teacher-email');
+  const make = $('#prog-make-link');
+  if (!input || !make) return;
+  make.addEventListener('click', () => {
+    const email = input.value.trim();
+    if (!EMAIL_RE.test(email)) { toast(t('prog_link_bad_email'), 'error'); input.focus(); return; }
+    const url = `${location.origin}${location.pathname}?ucitel=${b64urlEncode(email)}`;
+    $('#prog-link').value = url;
+    $('#prog-link-out').classList.remove('hidden');
+    track('progress_link_created');
+  });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') make.click(); });
+  $('#prog-copy-link')?.addEventListener('click', async () => {
+    const v = $('#prog-link').value;
+    try { await navigator.clipboard.writeText(v); toast(t('prog_link_copied'), 'success'); }
+    catch (_) { $('#prog-link').select(); }
+  });
 }
 
 function startSlabaMista() {
@@ -6145,6 +6397,8 @@ async function init() {
     if (next) openStreakRewardModal(next);
   });
   $('#settings-btn')?.addEventListener('click', openSettingsModal);
+  $('#progress-send-btn')?.addEventListener('click', openProgressSend);
+  initProgressLinkMaker();
   $('#settings-close')?.addEventListener('click', closeSettingsModal);
   $('#settings-modal')?.addEventListener('click', (e) => {
     if (e.target.id === 'settings-modal') closeSettingsModal();

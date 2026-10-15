@@ -179,6 +179,7 @@
               </div>
             </div>
             <hr class="menu-divider" />
+            <button class="menu-item" id="progress-send-btn" role="menuitem" type="button">📤 Poslat pokrok učiteli</button>
             <button class="menu-item" id="settings-btn" role="menuitem" type="button">
               ⚙️ Nastavení
             </button>
@@ -472,173 +473,235 @@
     <section id="view-teacher" class="view">
       <div class="intro intro-hero">
         <h2>🧑‍🏫 Teacher zone</h2>
-        <p class="hero-lead">Vyberte skupiny sloves, nastavte typ testu a vytiskněte písemku i s klíčem pro opravu. Zdarma pro všechny učitele.</p>
+        <p class="hero-lead">Vytvořte písemku i s klíčem pro opravu, nebo si nechte od žáků poslat jejich pokrok. Zdarma pro všechny učitele.</p>
       </div>
 
-      <a class="pdf-download" href="/Nepravidelna-slovesa-prehled.pdf" download data-track="pdf_teacher">
-        <span class="pdf-download-ico" aria-hidden="true">
-          <svg viewBox="0 0 32 32" width="38" height="38">
-            <rect x="5" y="2" width="22" height="28" rx="3" fill="#ffffff" stroke="#e0dcd3" stroke-width="1.4"/>
-            <path d="M20 2v6h7" fill="none" stroke="#e0dcd3" stroke-width="1.4"/>
-            <rect x="7" y="17" width="18" height="9" rx="2" fill="#e2483d"/>
-            <text x="16" y="23.6" font-size="6.4" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif">PDF</text>
-          </svg>
-        </span>
-        <span class="pdf-download-text">
-          <strong>Přehled sloves v PDF pro třídu</strong>
-          <span>Všech 106 sloves ve skupinách — vytiskněte a rozdejte studentům</span>
-        </span>
-        <span class="pdf-download-arrow" aria-hidden="true">⬇</span>
-      </a>
+      <div class="tz-switch" role="tablist" aria-label="Teacher zone" data-active="tests">
+        <span class="tz-switch-thumb" aria-hidden="true"></span>
+        <button class="tz-switch-btn is-active" type="button" role="tab" aria-selected="true" data-tz="tests">📝 Tvorba testů</button>
+        <button class="tz-switch-btn" type="button" role="tab" aria-selected="false" data-tz="progress">📤 Pokrok žáků</button>
+      </div>
 
-      <div class="teacher-setup">
-        <div class="teacher-block">
-          <h3 class="teacher-block-title">1️⃣ Co prozkoušet?</h3>
-          <div id="teacher-groups"></div>
-          <p id="teacher-count-info" class="teacher-count-info"></p>
-        </div>
+      <div class="tz-pane" id="tz-pane-tests" role="tabpanel">
+        <a class="pdf-download" href="/Nepravidelna-slovesa-prehled.pdf" download data-track="pdf_teacher">
+          <span class="pdf-download-ico" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="38" height="38">
+              <rect x="5" y="2" width="22" height="28" rx="3" fill="#ffffff" stroke="#e0dcd3" stroke-width="1.4"/>
+              <path d="M20 2v6h7" fill="none" stroke="#e0dcd3" stroke-width="1.4"/>
+              <rect x="7" y="17" width="18" height="9" rx="2" fill="#e2483d"/>
+              <text x="16" y="23.6" font-size="6.4" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif">PDF</text>
+            </svg>
+          </span>
+          <span class="pdf-download-text">
+            <strong>Přehled sloves v PDF pro třídu</strong>
+            <span>Všech 106 sloves ve skupinách — vytiskněte a rozdejte studentům</span>
+          </span>
+          <span class="pdf-download-arrow" aria-hidden="true">⬇</span>
+        </a>
 
-        <div class="teacher-block">
-          <h3 class="teacher-block-title">2️⃣ Jaký test?</h3>
-          <label class="teacher-opt-row">Počet sloves v testu:
-            <input type="number" id="tt-count" min="3" max="106" value="20" />
-          </label>
-          <div class="tt-limit-row">
-            <label class="teacher-opt-row">Časový limit:
-              <select id="tt-limit-mode">
-                <option value="none" selected>bez limitu</option>
-                <option value="test">na celý test</option>
-                <option value="word">na každé sloveso</option>
-              </select>
-            </label>
-            <label class="teacher-opt-row hidden" id="tt-limit-test-row">Trvání:
-              <select id="tt-limit-test">
-                <option value="30">30 sekund</option>
-                <option value="60">1 minuta</option>
-                <option value="120">2 minuty</option>
-                <option value="180">3 minuty</option>
-                <option value="300" selected>5 minut</option>
-                <option value="420">7 minut</option>
-                <option value="600">10 minut</option>
-                <option value="900">15 minut</option>
-                <option value="1200">20 minut</option>
-                <option value="1500">25 minut</option>
-                <option value="1800">30 minut</option>
-              </select>
-            </label>
-            <label class="teacher-opt-row hidden" id="tt-limit-word-row">Na sloveso:
-              <select id="tt-limit-word">
-                <option value="10">10 sekund</option>
-                <option value="15">15 sekund</option>
-                <option value="20">20 sekund</option>
-                <option value="25" selected>25 sekund</option>
-                <option value="30">30 sekund</option>
-                <option value="40">40 sekund</option>
-                <option value="45">45 sekund</option>
-                <option value="60">1 minuta</option>
-              </select>
-            </label>
-          </div>
-          <div class="tt-type-cards" role="radiogroup" aria-label="Typ testu">
-            <label class="tt-type-card">
-              <input type="radio" name="tt-type" value="inf2" checked />
-              <span class="tt-type-ico" aria-hidden="true">✏️</span>
-              <span class="tt-type-body">
-                <span class="tt-type-name">Infinitiv → 2 tvary</span>
-                <span class="tt-type-note">klasická písemka</span>
-              </span>
-            </label>
-            <label class="tt-type-card">
-              <input type="radio" name="tt-type" value="cs3" />
-              <span class="tt-type-ico" aria-hidden="true">💬</span>
-              <span class="tt-type-body">
-                <span class="tt-type-name">Česky → 3 tvary</span>
-                <span class="tt-type-note">těžší</span>
-              </span>
-            </label>
-            <label class="tt-type-card">
-              <input type="radio" name="tt-type" value="missing" />
-              <span class="tt-type-ico" aria-hidden="true">❓</span>
-              <span class="tt-type-body">
-                <span class="tt-type-name">Chybějící tvar</span>
-                <span class="tt-type-note">v každém řádku jiný</span>
-              </span>
-            </label>
-            <label class="tt-type-card">
-              <input type="radio" name="tt-type" value="choice" />
-              <span class="tt-type-ico" aria-hidden="true">🔘</span>
-              <span class="tt-type-body">
-                <span class="tt-type-name">Výběr z možností</span>
-                <span class="tt-type-note">rychlá oprava</span>
-              </span>
-            </label>
-          </div>
-        </div>
-
-        <div class="teacher-block">
-          <h3 class="teacher-block-title">3️⃣ Jak ho zadáš?</h3>
-          <div class="tt-tabs" role="tablist" aria-label="Forma zadání">
-            <button class="tt-tab is-active" type="button" role="tab" aria-selected="true" data-tab="paper" id="tt-tab-paper">🖨️ Na papír</button>
-            <button class="tt-tab" type="button" role="tab" aria-selected="false" data-tab="digital" id="tt-tab-digital">💻 Odkazem</button>
+        <div class="teacher-setup">
+          <div class="teacher-block">
+            <h3 class="teacher-block-title">1️⃣ Co prozkoušet?</h3>
+            <div id="teacher-groups"></div>
+            <p id="teacher-count-info" class="teacher-count-info"></p>
           </div>
 
-          <div class="tt-pane" id="tt-pane-paper" role="tabpanel" aria-labelledby="tt-tab-paper">
-            <label class="teacher-check teacher-check-strong">
-              <span class="teacher-check-strong-text">Dvě varianty (A + B) <span class="teacher-radio-note">— proti opisování</span></span>
-              <input type="checkbox" id="tt-variants" />
+          <div class="teacher-block">
+            <h3 class="teacher-block-title">2️⃣ Jaký test?</h3>
+            <label class="teacher-opt-row">Počet sloves v testu:
+              <input type="number" id="tt-count" min="3" max="106" value="20" />
             </label>
-            <label class="teacher-check" id="tt-cs-row"><input type="checkbox" id="tt-cs" checked /> Zobrazit český překlad jako nápovědu</label>
-            <div class="teacher-opt-group" role="radiogroup" aria-label="Vzhled tisku">
-              <span class="teacher-opt-label">Vzhled tisku:</span>
-              <div class="tt-color-row">
-                <label class="teacher-radio"><input type="radio" name="tt-color" value="bw" checked /> 🖤 Černobílý <span class="teacher-radio-note">(šetří toner)</span></label>
-                <label class="teacher-radio"><input type="radio" name="tt-color" value="color" /> 🎨 Barevný</label>
+            <div class="tt-limit-row">
+              <label class="teacher-opt-row">Časový limit:
+                <select id="tt-limit-mode">
+                  <option value="none" selected>bez limitu</option>
+                  <option value="test">na celý test</option>
+                  <option value="word">na každé sloveso</option>
+                </select>
+              </label>
+              <label class="teacher-opt-row hidden" id="tt-limit-test-row">Trvání:
+                <select id="tt-limit-test">
+                  <option value="30">30 sekund</option>
+                  <option value="60">1 minuta</option>
+                  <option value="120">2 minuty</option>
+                  <option value="180">3 minuty</option>
+                  <option value="300" selected>5 minut</option>
+                  <option value="420">7 minut</option>
+                  <option value="600">10 minut</option>
+                  <option value="900">15 minut</option>
+                  <option value="1200">20 minut</option>
+                  <option value="1500">25 minut</option>
+                  <option value="1800">30 minut</option>
+                </select>
+              </label>
+              <label class="teacher-opt-row hidden" id="tt-limit-word-row">Na sloveso:
+                <select id="tt-limit-word">
+                  <option value="10">10 sekund</option>
+                  <option value="15">15 sekund</option>
+                  <option value="20">20 sekund</option>
+                  <option value="25" selected>25 sekund</option>
+                  <option value="30">30 sekund</option>
+                  <option value="40">40 sekund</option>
+                  <option value="45">45 sekund</option>
+                  <option value="60">1 minuta</option>
+                </select>
+              </label>
+            </div>
+            <div class="tt-type-cards" role="radiogroup" aria-label="Typ testu">
+              <label class="tt-type-card">
+                <input type="radio" name="tt-type" value="inf2" checked />
+                <span class="tt-type-ico" aria-hidden="true">✏️</span>
+                <span class="tt-type-body">
+                  <span class="tt-type-name">Infinitiv → 2 tvary</span>
+                  <span class="tt-type-note">klasická písemka</span>
+                </span>
+              </label>
+              <label class="tt-type-card">
+                <input type="radio" name="tt-type" value="cs3" />
+                <span class="tt-type-ico" aria-hidden="true">💬</span>
+                <span class="tt-type-body">
+                  <span class="tt-type-name">Česky → 3 tvary</span>
+                  <span class="tt-type-note">těžší</span>
+                </span>
+              </label>
+              <label class="tt-type-card">
+                <input type="radio" name="tt-type" value="missing" />
+                <span class="tt-type-ico" aria-hidden="true">❓</span>
+                <span class="tt-type-body">
+                  <span class="tt-type-name">Chybějící tvar</span>
+                  <span class="tt-type-note">v každém řádku jiný</span>
+                </span>
+              </label>
+              <label class="tt-type-card">
+                <input type="radio" name="tt-type" value="choice" />
+                <span class="tt-type-ico" aria-hidden="true">🔘</span>
+                <span class="tt-type-body">
+                  <span class="tt-type-name">Výběr z možností</span>
+                  <span class="tt-type-note">rychlá oprava</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="teacher-block">
+            <h3 class="teacher-block-title">3️⃣ Jak ho zadáš?</h3>
+            <div class="tt-tabs" role="tablist" aria-label="Forma zadání">
+              <button class="tt-tab is-active" type="button" role="tab" aria-selected="true" data-tab="paper" id="tt-tab-paper">🖨️ Na papír</button>
+              <button class="tt-tab" type="button" role="tab" aria-selected="false" data-tab="digital" id="tt-tab-digital">💻 Odkazem</button>
+            </div>
+
+            <div class="tt-pane" id="tt-pane-paper" role="tabpanel" aria-labelledby="tt-tab-paper">
+              <label class="teacher-check teacher-check-strong">
+                <span class="teacher-check-strong-text">Dvě varianty (A + B) <span class="teacher-radio-note">— proti opisování</span></span>
+                <input type="checkbox" id="tt-variants" />
+              </label>
+              <label class="teacher-check" id="tt-cs-row"><input type="checkbox" id="tt-cs" checked /> Zobrazit český překlad jako nápovědu</label>
+              <div class="teacher-opt-group" role="radiogroup" aria-label="Vzhled tisku">
+                <span class="teacher-opt-label">Vzhled tisku:</span>
+                <div class="tt-color-row">
+                  <label class="teacher-radio"><input type="radio" name="tt-color" value="bw" checked /> 🖤 Černobílý <span class="teacher-radio-note">(šetří toner)</span></label>
+                  <label class="teacher-radio"><input type="radio" name="tt-color" value="color" /> 🎨 Barevný</label>
+                </div>
+              </div>
+              <button id="teacher-generate" class="btn btn-primary tt-cta">📝 Vygenerovat test</button>
+            </div>
+
+            <div class="tt-pane hidden" id="tt-pane-digital" role="tabpanel" aria-labelledby="tt-tab-digital">
+              <label class="teacher-check"><input type="checkbox" id="dt-ask-name" checked /> Žák vyplní jméno (objeví se v kódu o odevzdání)</label>
+              <div class="teacher-opt-group" role="radiogroup" aria-label="Bodování">
+                <span class="teacher-opt-label">Bodování:</span>
+                <div class="tt-color-row">
+                  <label class="teacher-radio"><input type="radio" name="tt-scoring" value="verb" checked /> Za celé sloveso <span class="teacher-radio-note">(všechny tvary správně = 1 bod)</span></label>
+                  <label class="teacher-radio"><input type="radio" name="tt-scoring" value="form" /> Za každý tvar <span class="teacher-radio-note">(1 bod za správný tvar)</span></label>
+                </div>
+              </div>
+              <p class="dt-note">Žáci odkaz otevřou na mobilu, test vyplní a hned uvidí výsledek. Nic se nikam neukládá — na konci dostanou kód, ve kterém uvidíš i jejich chybné odpovědi.</p>
+              <button id="dt-make-link" class="btn btn-primary tt-cta">🔗 Vytvořit odkaz</button>
+
+              <div class="dt-link-box hidden" id="dt-link-box">
+                <label for="dt-link">Odkaz na digitální test</label>
+                <div class="dt-link-row">
+                  <input id="dt-link" type="text" readonly />
+                  <button id="dt-copy-link" class="btn btn-primary btn-sm" type="button">Kopírovat odkaz</button>
+                </div>
+                <p class="dt-note">Pošli žákům (Classroom, Teams, mail). Každý dostane stejný test a hned uvidí výsledek.</p>
               </div>
             </div>
-            <button id="teacher-generate" class="btn btn-primary tt-cta">📝 Vygenerovat test</button>
           </div>
 
-          <div class="tt-pane hidden" id="tt-pane-digital" role="tabpanel" aria-labelledby="tt-tab-digital">
-            <label class="teacher-check"><input type="checkbox" id="dt-ask-name" checked /> Žák vyplní jméno (objeví se v kódu o odevzdání)</label>
-            <div class="teacher-opt-group" role="radiogroup" aria-label="Bodování">
-              <span class="teacher-opt-label">Bodování:</span>
-              <div class="tt-color-row">
-                <label class="teacher-radio"><input type="radio" name="tt-scoring" value="verb" checked /> Za celé sloveso <span class="teacher-radio-note">(všechny tvary správně = 1 bod)</span></label>
-                <label class="teacher-radio"><input type="radio" name="tt-scoring" value="form" /> Za každý tvar <span class="teacher-radio-note">(1 bod za správný tvar)</span></label>
-              </div>
+          <div id="teacher-result" class="teacher-result" hidden>
+            <div class="teacher-print-btns">
+              <button id="teacher-print-test" class="btn btn-primary">🖨️ Vytisknout test</button>
+              <button id="teacher-print-key" class="btn btn-ghost">🖨️ Vytisknout klíč</button>
+              <button id="teacher-reshuffle" class="btn btn-ghost">🔀 Zamíchat znovu</button>
             </div>
-            <p class="dt-note">Žáci odkaz otevřou na mobilu, test vyplní a hned uvidí výsledek. Nic se nikam neukládá — na konci dostanou kód, ve kterém uvidíš i jejich chybné odpovědi.</p>
-            <button id="dt-make-link" class="btn btn-primary tt-cta">🔗 Vytvořit odkaz</button>
+            <p class="teacher-print-hint">Náhled testu — tisk proběhne přes dialog prohlížeče (uložit jako PDF funguje také).</p>
+            <div id="teacher-preview" class="teacher-preview"></div>
+          </div>
 
-            <div class="dt-link-box hidden" id="dt-link-box">
-              <label for="dt-link">Odkaz na digitální test</label>
+          <!-- Kontrola po testu: samostatná činnost, proto vlastní blok -->
+          <div class="teacher-block dt-verify-block">
+            <h3 class="teacher-block-title">✅ Ověřit kódy od žáků</h3>
+            <p class="dt-note">Vlož kódy (klidně celý sloupec, jeden na řádek) a zkontroluj je naráz.</p>
+            <input id="dt-verify-test" type="text" class="dt-verify-test" placeholder="kód testu nebo odkaz, který jsi poslal žákům (vyplní se sám)" />
+            <textarea id="dt-verify-input" rows="4" placeholder="Jan Novák ✓ · 8/10 · 1. pokus · K3F9"></textarea>
+            <button id="dt-verify-btn" class="btn btn-primary btn-sm" type="button">Zkontrolovat</button>
+            <div id="dt-verify-out" class="dt-verify-out hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tz-pane hidden" id="tz-pane-progress" role="tabpanel">
+        <div class="teacher-setup">
+          <!-- Pokrok žáků mailem: odkaz uloží žákům e-mail učitele (jen v jejich zařízení) -->
+          <div class="teacher-block prog-link-block">
+            <h3 class="teacher-block-title">📤 Pokrok žáků mailem</h3>
+            <p class="prog-lead">Žáci vám jedním tlačítkem pošlou přehled: kolik sloves umí, které skupiny mají hotové a co jim dělá problém. Bez registrace, nic se neukládá.</p>
+            <h4 class="prog-sub">💡 Jak to funguje</h4>
+            <ol class="prog-steps">
+              <li>Níže vytvoříte odkaz se svým e-mailem a pošlete ho třídě.</li>
+              <li>Žák na odkaz jednou klikne. V appce se mu objeví tlačítko <strong>📤 Poslat pokrok učiteli</strong>.</li>
+              <li>Když na něj klikne, otevře se mu v poště hotový mail pro vás. Stačí odeslat.</li>
+            </ol>
+            <div class="dt-link-row">
+              <input id="prog-teacher-email" type="email" placeholder="vas.email@skola.cz" autocomplete="email" />
+              <button id="prog-make-link" class="btn btn-primary btn-sm" type="button">Vytvořit odkaz</button>
+            </div>
+            <div id="prog-link-out" class="hidden">
               <div class="dt-link-row">
-                <input id="dt-link" type="text" readonly />
-                <button id="dt-copy-link" class="btn btn-primary btn-sm" type="button">Kopírovat odkaz</button>
+                <input id="prog-link" type="text" readonly />
+                <button id="prog-copy-link" class="btn btn-primary btn-sm" type="button">Kopírovat odkaz</button>
               </div>
-              <p class="dt-note">Pošli žákům (Classroom, Teams, mail). Každý dostane stejný test a hned uvidí výsledek.</p>
+              <p class="dt-note">Pošlete odkaz žákům (Classroom, Teams, mail). Stačí, když na něj jednou kliknou.</p>
             </div>
           </div>
-        </div>
 
-        <div id="teacher-result" class="teacher-result" hidden>
-          <div class="teacher-print-btns">
-            <button id="teacher-print-test" class="btn btn-primary">🖨️ Vytisknout test</button>
-            <button id="teacher-print-key" class="btn btn-ghost">🖨️ Vytisknout klíč</button>
-            <button id="teacher-reshuffle" class="btn btn-ghost">🔀 Zamíchat znovu</button>
+          <div class="teacher-block">
+            <h3 class="teacher-block-title">👀 Ukázka, co vám přijde</h3>
+            <pre class="prog-preview">📊 Jan Novák · nepravidelná slovesa · 15. 10. 2026
+✅ Umí: 42 ze 106 sloves · 6 ze 24 skupin
+🏅 Zvládnuté skupiny: 1.1.0 I → A → U, 1.2.1 OW → EW → OWN, …
+🟡 Rozpracované skupiny: 2.1.3 → OUGHT / AUGHT (5/7)
+❗ Problémová slovesa: lie, lay, bring, catch
+🔥 Série: 5 dní v řadě
+🕒 Naposledy cvičil/a: dnes</pre>
           </div>
-          <p class="teacher-print-hint">Náhled testu — tisk proběhne přes dialog prohlížeče (uložit jako PDF funguje také).</p>
-          <div id="teacher-preview" class="teacher-preview"></div>
-        </div>
 
-        <!-- Kontrola po testu: samostatná činnost, proto vlastní blok -->
-        <div class="teacher-block dt-verify-block">
-          <h3 class="teacher-block-title">✅ Ověřit kódy od žáků</h3>
-          <p class="dt-note">Vlož kódy (klidně celý sloupec, jeden na řádek) a zkontroluj je naráz.</p>
-          <input id="dt-verify-test" type="text" class="dt-verify-test" placeholder="kód testu nebo odkaz, který jsi poslal žákům (vyplní se sám)" />
-          <textarea id="dt-verify-input" rows="4" placeholder="Jan Novák ✓ · 8/10 · 1. pokus · K3F9"></textarea>
-          <button id="dt-verify-btn" class="btn btn-primary btn-sm" type="button">Zkontrolovat</button>
-          <div id="dt-verify-out" class="dt-verify-out hidden"></div>
+          <div class="teacher-block prog-faq">
+            <h3 class="teacher-block-title">❓ Časté otázky</h3>
+            <details><summary>Přijde mi mail od každého žáka zvlášť?</summary>
+              <p>Ano, každý žák posílá svůj přehled. Tip: požádejte třídu o přehled třeba týden před písemkou.</p></details>
+            <details><summary>Vidím pokrok průběžně?</summary>
+              <p>Ne, je to snímek k okamžiku odeslání. Aktuální stav získáte, když žáky požádáte o nový přehled.</p></details>
+            <details><summary>Co když žák cvičí na více zařízeních?</summary>
+              <p>Přihlášeným žákům se pokrok synchronizuje. Nepřihlášený pošle jen pokrok ze zařízení, ze kterého odesílá.</p></details>
+            <details><summary>Co když žák odkaz ztratí?</summary>
+              <p>Tlačítko najde i v menu a váš e-mail může napsat ručně.</p></details>
+            <details><summary>Kde se ukládá můj e-mail?</summary>
+              <p>Jen v zařízení žáka, na našem serveru nikde. Mail odchází z pošty žáka.</p></details>
+            <details><summary>Co když se žákovi neotevře pošta?</summary>
+              <p>Může text zkopírovat a poslat vám ho jinak, třeba přes Teams.</p></details>
+          </div>
         </div>
       </div>
     </section>
