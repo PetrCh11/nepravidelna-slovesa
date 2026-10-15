@@ -508,60 +508,59 @@
 
           <div class="teacher-block">
             <h3 class="teacher-block-title">2️⃣ Jaký test?</h3>
-            <label class="teacher-opt-row">Počet sloves v testu:
-              <input type="number" id="tt-count" min="3" max="106" value="20" />
+            <label class="teacher-opt-row tt-count-row"><span class="teacher-opt-label">🔢 Počet sloves v testu</span>
+              <input type="number" id="tt-count" min="3" max="106" value="15" />
             </label>
             <div class="tt-limit-row">
-              <label class="teacher-opt-row">Časový limit:
-                <select id="tt-limit-mode">
-                  <option value="none" selected>bez limitu</option>
-                  <option value="test">na celý test</option>
-                  <option value="word">na každé sloveso</option>
-                </select>
-              </label>
-              <label class="teacher-opt-row hidden" id="tt-limit-test-row">Trvání:
-                <select id="tt-limit-test">
-                  <option value="30">30 sekund</option>
-                  <option value="60">1 minuta</option>
-                  <option value="120">2 minuty</option>
-                  <option value="180">3 minuty</option>
-                  <option value="300" selected>5 minut</option>
-                  <option value="420">7 minut</option>
-                  <option value="600">10 minut</option>
-                  <option value="900">15 minut</option>
-                  <option value="1200">20 minut</option>
-                  <option value="1500">25 minut</option>
-                  <option value="1800">30 minut</option>
-                </select>
-              </label>
-              <label class="teacher-opt-row hidden" id="tt-limit-word-row">Na sloveso:
-                <select id="tt-limit-word">
-                  <option value="10">10 sekund</option>
-                  <option value="15">15 sekund</option>
-                  <option value="20">20 sekund</option>
-                  <option value="25" selected>25 sekund</option>
-                  <option value="30">30 sekund</option>
-                  <option value="40">40 sekund</option>
-                  <option value="45">45 sekund</option>
-                  <option value="60">1 minuta</option>
-                </select>
-              </label>
+              <div class="teacher-opt-group tt-limit-mode-group" role="radiogroup" aria-label="Časový limit">
+                <span class="teacher-opt-label">⏱️ Časový limit</span>
+                <div class="tt-pills">
+                  <label class="tt-pill"><input type="radio" name="tt-limit-mode" value="none" checked /><span>bez limitu</span></label>
+                  <label class="tt-pill"><input type="radio" name="tt-limit-mode" value="test" /><span>na celý test</span></label>
+                  <label class="tt-pill"><input type="radio" name="tt-limit-mode" value="word" /><span>na každé sloveso</span></label>
+                </div>
+              </div>
+              <div class="tt-limit-sub hidden" id="tt-limit-test-row" role="radiogroup" aria-label="Trvání">
+                <span class="tt-limit-sub-label">Trvání:</span>
+                <div class="tt-pills">
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-test" value="60" /><span>1 min</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-test" value="120" /><span>2 min</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-test" value="180" /><span>3 min</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-test" value="300" checked /><span>5 min</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-test" value="600" /><span>10 min</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-test" value="900" /><span>15 min</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-test" value="1200" /><span>20 min</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-test" value="1800" /><span>30 min</span></label>
+                </div>
+              </div>
+              <div class="tt-limit-sub hidden" id="tt-limit-word-row" role="radiogroup" aria-label="Na sloveso">
+                <span class="tt-limit-sub-label">Na sloveso:</span>
+                <div class="tt-pills">
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-word" value="10" /><span>10 s</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-word" value="15" /><span>15 s</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-word" value="20" /><span>20 s</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-word" value="25" /><span>25 s</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-word" value="30" checked /><span>30 s</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-word" value="45" /><span>45 s</span></label>
+                  <label class="tt-pill tt-pill-sm"><input type="radio" name="tt-limit-word" value="60" /><span>60 s</span></label>
+                </div>
+              </div>
             </div>
             <div class="tt-type-cards" role="radiogroup" aria-label="Typ testu">
               <label class="tt-type-card">
-                <input type="radio" name="tt-type" value="inf2" checked />
-                <span class="tt-type-ico" aria-hidden="true">✏️</span>
-                <span class="tt-type-body">
-                  <span class="tt-type-name">Infinitiv → 2 tvary</span>
-                  <span class="tt-type-note">klasická písemka</span>
-                </span>
-              </label>
-              <label class="tt-type-card">
-                <input type="radio" name="tt-type" value="cs3" />
+                <input type="radio" name="tt-type" value="cs3" checked />
                 <span class="tt-type-ico" aria-hidden="true">💬</span>
                 <span class="tt-type-body">
                   <span class="tt-type-name">Česky → 3 tvary</span>
                   <span class="tt-type-note">těžší</span>
+                </span>
+              </label>
+              <label class="tt-type-card">
+                <input type="radio" name="tt-type" value="inf2" />
+                <span class="tt-type-ico" aria-hidden="true">✏️</span>
+                <span class="tt-type-body">
+                  <span class="tt-type-name">Infinitiv → 2 tvary</span>
+                  <span class="tt-type-note">klasická písemka</span>
                 </span>
               </label>
               <label class="tt-type-card">
@@ -597,10 +596,10 @@
               </label>
               <label class="teacher-check" id="tt-cs-row"><input type="checkbox" id="tt-cs" checked /> Zobrazit český překlad jako nápovědu</label>
               <div class="teacher-opt-group" role="radiogroup" aria-label="Vzhled tisku">
-                <span class="teacher-opt-label">Vzhled tisku:</span>
-                <div class="tt-color-row">
-                  <label class="teacher-radio"><input type="radio" name="tt-color" value="bw" checked /> 🖤 Černobílý <span class="teacher-radio-note">(šetří toner)</span></label>
-                  <label class="teacher-radio"><input type="radio" name="tt-color" value="color" /> 🎨 Barevný</label>
+                <span class="teacher-opt-label">🖨️ Vzhled tisku</span>
+                <div class="tt-pills">
+                  <label class="tt-pill"><input type="radio" name="tt-color" value="bw" checked /><span>🖤 Černobílý <small>(šetří toner)</small></span></label>
+                  <label class="tt-pill"><input type="radio" name="tt-color" value="color" /><span>🎨 Barevný</span></label>
                 </div>
               </div>
               <button id="teacher-generate" class="btn btn-primary tt-cta">📝 Vygenerovat test</button>

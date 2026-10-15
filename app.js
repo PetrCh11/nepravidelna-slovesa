@@ -5323,9 +5323,12 @@ function renderTeacherSetup() {
   updateTeacherCount();
 
   // Překlad je u typu "česky → 3 tvary" vždy v zadání — checkbox nedává smysl
-  $$('input[name="tt-type"]').forEach((r) => r.addEventListener('change', () => {
-    $('#tt-cs-row').style.display = r.value === 'cs3' && r.checked ? 'none' : '';
-  }));
+  const syncCsRow = () => {
+    const type = (document.querySelector('input[name="tt-type"]:checked') || {}).value;
+    $('#tt-cs-row').style.display = type === 'cs3' ? 'none' : '';
+  };
+  $$('input[name="tt-type"]').forEach((r) => r.addEventListener('change', syncCsRow));
+  syncCsRow();
 
   $('#teacher-generate').addEventListener('click', () => teacherGenerate());
   $('#teacher-reshuffle').addEventListener('click', () => teacherGenerate());
@@ -5352,11 +5355,11 @@ function renderTeacherSetup() {
 
   // Volba trvání se ukazuje jen pro zvolený režim limitu
   const syncLimitRows = () => {
-    const m = $('#tt-limit-mode').value;
+    const m = ttLimitMode();
     $('#tt-limit-test-row').classList.toggle('hidden', m !== 'test');
     $('#tt-limit-word-row').classList.toggle('hidden', m !== 'word');
   };
-  $('#tt-limit-mode')?.addEventListener('change', syncLimitRows);
+  $$('input[name="tt-limit-mode"]').forEach((r) => r.addEventListener('change', syncLimitRows));
   syncLimitRows();
 
   // Digitální test
@@ -5373,10 +5376,19 @@ function renderTeacherSetup() {
   } catch (_) {}
 }
 
+function ttChecked(name) {
+  return (document.querySelector(`input[name="${name}"]:checked`) || {}).value;
+}
+
+function ttLimitMode() {
+  return (document.querySelector('input[name="tt-limit-mode"]:checked') || {}).value || 'none';
+}
+
 function teacherSettings() {
-  const type = (document.querySelector('input[name="tt-type"]:checked') || {}).value || 'inf2';
+  const type = (document.querySelector('input[name="tt-type"]:checked') || {}).value || 'cs3';
+  const limitMode = ttLimitMode();
   return {
-    count: Math.max(3, Math.min(106, parseInt($('#tt-count').value, 10) || 20)),
+    count: Math.max(3, Math.min(106, parseInt($('#tt-count').value, 10) || 15)),
     type,
     variants: $('#tt-variants').checked,
     // U "česky → 3 tvary" je překlad součástí zadání vždy
@@ -5384,9 +5396,9 @@ function teacherSettings() {
     color: (document.querySelector('input[name="tt-color"]:checked') || {}).value === 'color',
     // Bodování digitálního testu: 'verb' = celé sloveso za bod, 'form' = po tvarech
     scoring: (document.querySelector('input[name="tt-scoring"]:checked') || {}).value || 'verb',
-    limitMode: $('#tt-limit-mode').value || 'none',
-    limitSec: $('#tt-limit-mode').value === 'test' ? (parseInt($('#tt-limit-test').value, 10) || 0)
-      : $('#tt-limit-mode').value === 'word' ? (parseInt($('#tt-limit-word').value, 10) || 0) : 0,
+    limitMode,
+    limitSec: limitMode === 'test' ? (parseInt(ttChecked('tt-limit-test'), 10) || 300)
+      : limitMode === 'word' ? (parseInt(ttChecked('tt-limit-word'), 10) || 30) : 0,
   };
 }
 

@@ -6132,3 +6132,47 @@ body.has-trial-pill:not(.practicing):has(#view-lesson.active) .app-footer { padd
 .prog-faq summary { cursor: pointer; font-weight: 700; list-style-position: inside; }
 .prog-faq summary:hover { color: var(--accent); }
 .prog-faq details p { margin: 8px 0 0; color: var(--text-muted); line-height: 1.5; }
+
+/* ---------- Teacher zone: výraznější volby testu (pilulky) ---------- */
+#view-teacher .teacher-opt-label { font-weight: 700; font-size: 1rem; color: var(--text); }
+.tt-count-row input[type="number"] {
+  width: 84px; padding: 9px 10px; font-size: 1.05rem; font-weight: 700;
+  border: 1.5px solid var(--accent); border-radius: 10px; text-align: center;
+}
+.tt-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.tt-pill { position: relative; cursor: pointer; }
+.tt-pill input { position: absolute; opacity: 0; pointer-events: none; }
+.tt-pill span {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 9px 16px; border-radius: 999px;
+  border: 1.5px solid rgba(74, 144, 226, 0.45); background: var(--accent-soft, #e8f1fc);
+  color: var(--text); font-weight: 600; font-size: 0.95rem;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.tt-pill span small { font-weight: 400; font-size: 0.8rem; opacity: 0.8; }
+.tt-pill:hover span { border-color: var(--accent); }
+.tt-pill input:checked + span {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+  box-shadow: 0 3px 10px rgba(74, 144, 226, 0.3);
+}
+.tt-pill input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tt-limit-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+.tt-limit-row select {
+  padding: 9px 12px; font-size: 1rem; font-weight: 600;
+  border: 1.5px solid var(--accent); border-radius: 10px;
+  background: var(--bg-elev, #fff); color: var(--text);
+}
+.tt-limit-mode-group, .tt-count-row { margin-bottom: 6px; }
+#tt-pane-paper .teacher-opt-group { gap: 8px; }
+[data-theme="dark"] .tt-pill span { background: rgba(74, 144, 226, 0.12); }
+.tt-count-row { margin-bottom: 16px; }
+.tt-limit-row { margin-bottom: 16px; }
+/* Délka limitu: menší pilulky, vizuálně navázané pod volbou limitu */
+.tt-limit-sub {
+  display: flex; flex-direction: column; gap: 8px;
+  margin: 2px 0 0 14px; padding: 2px 0 2px 14px;
+  border-left: 3px solid rgba(74, 144, 226, 0.35);
+}
+.tt-limit-sub.hidden { display: none; }
+.tt-limit-sub-label { font-size: 0.88rem; font-weight: 700; color: var(--text-muted); }
+.tt-pill-sm span { padding: 6px 12px; font-size: 0.88rem; }
