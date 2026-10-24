@@ -503,6 +503,7 @@
       loading: 'Wczytuję…',
       backend_wait: 'Backend jest chwilowo niedostępny. Spróbuj za moment.',
       checkout_error: 'Błąd podczas rozpoczynania płatności: ',
+      pw_already_premium: 'Masz już aktywne Premium 🎉 Nie trzeba płacić ponownie.',
       sync_titles: function () {
         return {
           idle: 'synchronizacja z chmurą wyłączona',

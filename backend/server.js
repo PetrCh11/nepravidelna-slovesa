@@ -23,6 +23,27 @@ const svcAcc = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '{}');
 admin.initializeApp({ credential: admin.credential.cert(svcAcc) });
 const db = admin.firestore();
 
+// Aktivní (i zkušební) předplatná appky pro daný uid — napříč všemi Stripe
+// zákazníky, protože každá platba zakládala nového. Search API může mít pár
+// desítek sekund zpoždění indexu, což tu nevadí.
+const LIVE_SUB_STATUSES = new Set(['active', 'trialing', 'past_due']);
+async function liveSubscriptionsFor(uid) {
+  const found = [];
+  let page = null;
+  do {
+    const res = await stripe.subscriptions.search({
+      query: `metadata['uid']:'${String(uid).replace(/'/g, '')}'`,
+      limit: 100,
+      ...(page ? { page } : {}),
+    });
+    res.data.forEach((sub) => {
+      if (sub.metadata?.app === 'slovesa' && LIVE_SUB_STATUSES.has(sub.status)) found.push(sub);
+    });
+    page = res.has_more ? res.next_page : null;
+  } while (page);
+  return found;
+}
+
 // Verify the caller's Firebase ID token (Authorization: Bearer <token>) and
 // return their uid, or null if missing/invalid. The uid MUST come from a
 // verified token — never from the request body — so a caller can only ever
@@ -104,7 +125,25 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         }
       }
     } else if (event.type === 'customer.subscription.deleted' || event.type === 'invoice.payment_failed') {
-      // Subscription cancelled or payment failed → revoke
+      // Subscription cancelled or payment failed → revoke — ale jen když účet
+      // nemá jiné živé předplatné ani doživotní nákup. Jinak by konec jednoho
+      // (např. omylem koupeného druhého) předplatného vypnul Premium celému účtu.
+      const endedSubId = event.type === 'customer.subscription.deleted' ? o.id : null;
+      try {
+        const userSnap = await db.collection('users').doc(uid).get();
+        if (userSnap.exists && userSnap.data().premiumPlan === 'lifetime') {
+          console.log('Premium kept (lifetime) →', uid);
+          return res.json({ received: true, kept: 'lifetime' });
+        }
+        const others = (await liveSubscriptionsFor(uid)).filter((sub) => sub.id !== endedSubId);
+        if (others.length) {
+          console.log('Premium kept (other live subscription) →', uid, others.map((x) => x.id).join(','));
+          return res.json({ received: true, kept: 'other_subscription' });
+        }
+      } catch (e) {
+        // Kontrola selhala → chovej se jako dřív (odebrat), ale zaloguj to.
+        console.error('Live-subscription check failed, revoking anyway:', e?.message || e);
+      }
       await db.collection('users').doc(uid).set({
         premium: false,
         premiumUpdatedAt: Date.now(),
@@ -133,6 +172,21 @@ app.post('/create-checkout-session', async (req, res) => {
   }
   // Jazyková mutace (cs/pl) — řídí jazyk Stripe Checkoutu i uvítacího mailu.
   const lang = normalizeLang(locale);
+  // Pojistka proti dvojí platbě: účet s doživotním nákupem nebo se živým
+  // (i zkušebním) předplatným si znovu nekoupí. Když kontrola selže, platbu
+  // nebrzdíme — prodej je důležitější než pojistka.
+  try {
+    const userSnap = await db.collection('users').doc(uid).get();
+    const u = userSnap.exists ? userSnap.data() : {};
+    const lifetime = u.premium === true && u.premiumPlan === 'lifetime';
+    const live = lifetime ? [] : await liveSubscriptionsFor(uid);
+    if (lifetime || live.length) {
+      console.log('Checkout blocked (already premium) →', uid, lifetime ? 'lifetime' : live.map((x) => x.id).join(','));
+      return res.status(409).json({ error: 'already_premium' });
+    }
+  } catch (e) {
+    console.error('Already-premium check failed, allowing checkout:', e?.message || e);
+  }
   try {
     const session = await stripe.checkout.sessions.create({
       mode,
@@ -280,7 +334,8 @@ app.post('/create-portal-session', async (req, res) => {
 });
 
 // welcomeLangs: jazyky uvítacího mailu — zvenku je z toho poznat, která verze běží.
-app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now(), welcomeLangs: ['cs', 'pl'] }));
+// dupGuard: pojistka proti dvojí platbě + bezpečné rušení předplatného (2026-10).
+app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now(), welcomeLangs: ['cs', 'pl'], dupGuard: true }));
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Slovesa backend listening on :${port}`));

@@ -228,6 +228,7 @@ const state = {
   quiz: { pool: [], idx: 0, score: 0, total: 0, type: 'mixed', selectedSections: new Set(), review: [], test: null, rng: null },
   progress: JSON.parse(localStorage.getItem('progress') || '{}'), // { inf: {status, lastSeen, attempts} }
   premium: isPremiumActive(),
+  cloudMergedUid: null, // uid účtu, jehož data z cloudu už jsou sloučená (viz startCheckout)
   // Streak-based group unlocks. Picked at milestones 3/7/14/30; permanent.
   streakRewards: loadStreakRewards(),
   // When true, the three correct forms are read aloud after the student submits
@@ -890,6 +891,7 @@ const TEXTS = {
   loading: 'Načítám…',
   backend_wait: 'Backend zatím není dostupný. Zkus to prosím za chvíli.',
   checkout_error: 'Chyba při zahájení platby: ',
+  pw_already_premium: 'Premium už máš aktivní 🎉 Není potřeba platit znovu.',
   sync_titles: () => ({
     idle: 'cloud sync vypnutý',
     'signing-in': 'přihlašování…',
@@ -5247,6 +5249,15 @@ async function startCheckout(plan, btn) {
   }
   const orig = btn?.innerHTML;
   if (btn) { btn.disabled = true; btn.innerHTML = t('loading'); }
+  // Hned po přihlášení ještě nemusí být načtené údaje z účtu — dřív se tak
+  // stalo, že si zákaznice s aktivním předplatným koupila druhé. Počkáme na
+  // první synchronizaci tohoto účtu a Premium zkontrolujeme znovu.
+  if (state.cloudMergedUid !== user.uid) await waitForCloudMerge(user.uid, 6000);
+  if (state.premium) {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+    alreadyPremiumNotice();
+    return;
+  }
   try {
     const resp = await fetch(`${BACKEND_URL}/create-checkout-session`, {
       method: 'POST',
@@ -5260,12 +5271,34 @@ async function startCheckout(plan, btn) {
       }),
     });
     const data = await resp.json();
+    if (data.error === 'already_premium') {
+      if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+      alreadyPremiumNotice();
+      return;
+    }
     if (data.url) window.location.href = data.url;
     else throw new Error(data.error || 'unknown error');
   } catch (e) {
     toast(t('checkout_error') + e.message, 'error');
     if (btn) { btn.disabled = false; btn.innerHTML = orig; }
   }
+}
+
+function alreadyPremiumNotice() {
+  $('#paywall')?.classList.add('hidden');
+  toast(t('pw_already_premium'), 'success', 6000);
+  track('checkout_blocked_premium');
+}
+
+// Čeká na první sloučení dat z cloudu pro daný účet (nebo vyprší).
+function waitForCloudMerge(uid, timeoutMs) {
+  return new Promise((resolve) => {
+    if (state.cloudMergedUid === uid) { resolve(); return; }
+    const done = () => { clearTimeout(timer); document.removeEventListener('cloud-merged', onMerge); resolve(); };
+    const onMerge = () => { if (state.cloudMergedUid === uid) done(); };
+    const timer = setTimeout(done, timeoutMs);
+    document.addEventListener('cloud-merged', onMerge);
+  });
 }
 
 function handlePaymentReturn() {
@@ -6298,6 +6331,8 @@ async function init() {
     onUser: (user) => {
       const wasSignedIn = !!state.user;
       state.user = user || null;
+      // Nový účet → jeho data z cloudu ještě nemáme (viz waitForCloudMerge).
+      if (!user || user.uid !== state.cloudMergedUid) state.cloudMergedUid = null;
       updateCloudUI(user);
       // Sign-out: revoke server-authoritative entitlements locally.
       // Progress / studyDays / streakRewards stay so the user doesn't lose
@@ -6321,8 +6356,13 @@ async function init() {
     onSync: (status) => updateSyncStatus(status),
   });
   document.addEventListener('cloud-merged', () => {
+    state.cloudMergedUid = cloud.getCurrentUser()?.uid || null;
     state.progress = JSON.parse(localStorage.getItem('progress') || '{}');
+    const hadPremium = state.premium;
     state.premium = isPremiumActive();
+    // Účet má Premium a nabídka plateb je otevřená (typicky hned po přihlášení
+    // v paywallu) → zavřít, ať si nikdo nekoupí předplatné podruhé.
+    if (state.premium && !hadPremium && !$('#paywall')?.classList.contains('hidden')) alreadyPremiumNotice();
     state.streakRewards = loadStreakRewards();
     updateStreakRewardBadge();
     applyPremiumUI();
