@@ -4364,12 +4364,7 @@ function autoStart() {
   $('.auto-setup').classList.add('hidden');
   $('#auto-stage').classList.remove('hidden');
   document.body.classList.add('auto-driving');
-  // Try to keep screen on (Wake Lock API; might be blocked if dock isn't fullscreen)
-  try {
-    if ('wakeLock' in navigator) {
-      navigator.wakeLock.request('screen').then((lock) => { autoSession.wakeLock = lock; }).catch(() => {});
-    }
-  } catch {}
+  autoAcquireWakeLock();
   track('auto_started', {
     scope: state.autoSetup.scope,
     subs: state.autoSetup.scope === 'groups' ? state.autoSetup.selectedSubs.size : 0,
@@ -4379,6 +4374,25 @@ function autoStart() {
   });
   autoTickNext();
 }
+
+// Try to keep screen on (Wake Lock API; might be blocked if dock isn't fullscreen).
+// The browser drops the lock whenever the page is hidden, so it is re-requested
+// on return (see the visibilitychange listener below).
+function autoAcquireWakeLock() {
+  const session = autoSession;
+  if (!session || session.aborted || !('wakeLock' in navigator)) return;
+  if (session.wakeLock && !session.wakeLock.released) return;
+  try {
+    navigator.wakeLock.request('screen').then((lock) => {
+      if (autoSession === session && !session.aborted) session.wakeLock = lock;
+      else lock.release().catch(() => {});
+    }).catch(() => {});
+  } catch {}
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') autoAcquireWakeLock();
+});
 
 // Pause the session — stops speech + timers but keeps the stage and state.
 // First press of Stop calls this; the button morphs into "Exit" + a Play
