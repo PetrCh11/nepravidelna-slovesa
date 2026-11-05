@@ -85,6 +85,19 @@ def deeplink(sub_id):
     """App deep link — the app expects the group ID with dashes (see handleDeepLink in app.js)."""
     return '/#/skupina/' + sub_id.replace('.', '-')
 
+def all_groups_nav(current_slug=None):
+    """Compact footer list linking every group page — gives Google a crawl path to all 24."""
+    items = []
+    for s in ORDERED_SUBS:
+        slug = slug_for(s['id'])
+        label = esc(clean_pattern(s['pattern']))
+        if slug == current_slug:
+            items.append(f'<span aria-current="page">{label}</span>')
+        else:
+            items.append(f'<a href="/skupina/{slug}/">{label}</a>')
+    return ('<nav class="seo-all-groups" aria-label="Všechny skupiny sloves">'
+            '<strong>Všechny skupiny:</strong> ' + ' · '.join(items) + '</nav>')
+
 # ---------- Reusable bits ----------
 PLAUSIBLE_SNIPPET = '''
   <!-- Privacy-friendly analytics by Plausible -->
@@ -634,6 +647,7 @@ def build_group_page(sub_idx, sub, parent_sec):
 
   <footer class="seo-footer">
     <div class="container">
+      {all_groups_nav(sub_slug)}
       <p>© ucseslovesa.cz · <a href="/">Aplikace</a> · <a href="/seznam/">Seznam</a> · <a href="mailto:hello@ucseslovesa.cz">✉️ hello@ucseslovesa.cz</a></p>
       <p class="seo-foot-meta">Aktualizováno: {TODAY}</p>
     </div>

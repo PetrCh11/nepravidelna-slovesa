@@ -861,6 +861,13 @@ main { flex: 1; padding: 28px 0 48px; }
   border-bottom: 1px dotted currentColor;
 }
 .app-footer .footer-link:hover { color: var(--text); }
+.footer-groups { margin: 8px auto 0; max-width: 720px; font-size: 0.78rem; }
+.footer-groups summary { cursor: pointer; list-style: none; display: inline; border-bottom: 1px dotted currentColor; }
+.footer-groups summary::-webkit-details-marker { display: none; }
+.footer-groups summary:hover { color: var(--text); }
+.footer-groups p { margin: 8px 0 0; line-height: 1.7; }
+.footer-groups a { color: var(--text-muted); text-decoration: none; }
+.footer-groups a:hover { color: var(--text); text-decoration: underline; }
 
 /* ---------- Speak button ---------- */
 .speak-btn {

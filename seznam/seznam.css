@@ -262,6 +262,9 @@ h3 {
 .seo-footer a { color: #5b59d9; text-decoration: none; }
 .seo-footer a:hover { text-decoration: underline; }
 .seo-foot-meta { font-size: 0.78rem; }
+.seo-all-groups { margin: 0 0 12px; color: #6b7280; font-size: 0.8rem; line-height: 1.7; }
+.seo-all-groups strong { color: #3b454f; font-weight: 600; }
+.seo-all-groups [aria-current] { color: #1d2329; font-weight: 600; }
 
 /* --- Per-group landing pages (/skupina/<slug>/) --- */
 .breadcrumb {
