@@ -291,22 +291,52 @@ LISTA_CSS = '''  <style>
     .sub-practice:hover { background: #f1f0ff; }
     .sub-practice-free { color: #fff; border-color: transparent; background: linear-gradient(135deg, #5dc9bd, #7c6ff5); }
     .sub-practice-free:hover { background: linear-gradient(135deg, #4fb8ac, #6b5ee6); }
-    .lq { background: linear-gradient(135deg, #fff7e6, #ffeed1); border: 1.5px solid #f0c074; border-radius: 16px; padding: 18px 22px; margin: 22px 0; }
-    .lq h2 { margin: 0 0 4px; font-size: 1.2rem; color: #6e4a14; }
-    .lq-hint { margin: 0 0 12px; color: #7a5a2b; font-size: 0.92rem; }
-    .lq-row { display: grid; grid-template-columns: 70px 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
-    .lq-inf { font-weight: 800; color: #3b2a0c; }
-    .lq-row input { min-width: 0; font: inherit; font-size: 16px; padding: 8px 10px; border: 1.5px solid #e6cf9f; border-radius: 10px; background: #fff; color: #1d2330; }
-    .lq-row input:focus { outline: none; border-color: #7c6ff5; }
-    .lq-row input.ok { border-color: #2fa36b; background: #ecfaf2; }
-    .lq-row input.bad { border-color: #e2483d; background: #fff1f0; }
-    .lq-fix { grid-column: 2 / -1; font-size: 0.85rem; color: #b8362c; margin-top: -4px; }
-    .lq-check { font: inherit; font-weight: 700; margin-top: 4px; padding: 9px 22px; border: 0; border-radius: 999px; cursor: pointer; color: #fff; background: #6e4a14; }
-    .lq-result { margin-top: 14px; }
-    .lq-result p { margin: 0 0 10px; color: #5c4416; }
-    .lq-score { font-weight: 800; font-size: 1.05rem; }
-    .lq-alt { margin: 12px 0 0; font-size: 0.9rem; color: #7a5a2b; }
-    .lq-alt a { color: #5b59d9; font-weight: 700; }
+    /* Kvíz ve stylu karty z aplikace (styles.css: .q-card, .q-prompt, .fill-row input, .btn-primary) */
+    .lq { position: relative; overflow: hidden; margin: 22px 0; padding: 22px 20px; border-radius: 20px;
+      background:
+        radial-gradient(70% 55% at 8% -5%, rgba(251,148,96,0.45), transparent 55%),
+        radial-gradient(55% 65% at 95% 15%, rgba(96,173,251,0.42), transparent 55%),
+        radial-gradient(60% 50% at 50% 110%, rgba(212,126,241,0.35), transparent 55%),
+        radial-gradient(45% 55% at 85% 80%, rgba(81,236,171,0.30), transparent 55%),
+        linear-gradient(180deg, #fef9f2 0%, #f3edfb 60%, #eef6fb 100%);
+      box-shadow: 0 12px 32px rgba(40,24,80,0.10), 0 4px 12px rgba(40,24,80,0.06); }
+    .lq h2 { margin: 0 0 2px; font-size: 1.25rem; color: #1d1b20; text-align: center; }
+    .lq-hint { margin: 0 0 16px; color: #5f5b66; font-size: 0.92rem; text-align: center; }
+    .lq-form { display: flex; flex-direction: column; gap: 10px; }
+    .lq-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.45) 100%);
+      border: 1px solid rgba(255,255,255,0.7);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 4px 12px rgba(40,24,80,0.06); }
+    .lq-verb { grid-column: 1 / -1; justify-self: center; display: inline-flex; align-items: baseline; gap: 8px;
+      padding: 4px 18px; border-radius: 12px; background: #fcede9; border: 1.5px solid #d75f42; color: #792915; }
+    .lq-emoji { font-size: 1.1rem; }
+    .lq-inf { font-weight: 800; font-size: 1.15rem; }
+    .lq-mean { font-size: 0.85rem; opacity: 0.75; }
+    .lq-row input { min-width: 0; height: 42px; box-sizing: border-box; font: inherit; font-size: 16px; text-align: center; color: #1d1b20;
+      padding: 10px 8px; border-radius: 14px; border: 1.5px solid rgba(40,24,80,0.10); background: rgba(255,255,255,0.8);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 6px rgba(40,24,80,0.05); transition: border-color .15s, box-shadow .15s; }
+    .lq-row input::placeholder { color: #8a8592; }
+    .lq-row input.ok { padding-right: 28px; }
+    @media (max-width: 400px) { .lq-row input::placeholder { font-size: 14px; } }
+    .lq-row input:focus { outline: none; border-color: rgba(255,107,53,0.7); box-shadow: 0 0 0 3px rgba(255,107,53,0.18); }
+    .lq-row input.ok { border-color: rgba(46,160,67,0.7); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 0 0 3px rgba(46,160,67,0.18);
+      background: no-repeat right 10px center / 16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2316a34a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' opacity='0.7'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E"),
+        linear-gradient(rgba(255,255,255,0.3), rgba(46,160,67,0.10)), #fff; }
+    .lq-row input.bad { border-color: rgba(215,38,61,0.7); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 0 0 3px rgba(215,38,61,0.18);
+      background: linear-gradient(rgba(255,255,255,0.3), rgba(215,38,61,0.10)), #fff; color: rgba(215,38,61,0.78);
+      text-decoration: line-through 1.5px rgba(215,38,61,0.55); }
+    .lq-fix { grid-column: 1 / -1; text-align: center; font-size: 0.88rem; font-weight: 700; color: #2ea043; }
+    .lq-check { align-self: center; margin-top: 6px; font: inherit; font-size: 16px; font-weight: 700; color: #fff; cursor: pointer;
+      padding: 10px 34px; border: 0; border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 50%), linear-gradient(135deg, #ff7a45 0%, #ff5c8a 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.1), 0 8px 22px rgba(255,90,60,0.35), 0 2px 6px rgba(255,90,60,0.2); }
+    .lq-check:hover { filter: brightness(1.05); }
+    .lq-result { margin-top: 16px; padding: 16px; border-radius: 18px; text-align: center;
+      background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.7); }
+    .lq-result p { margin: 0 0 12px; color: #5f5b66; }
+    .lq-score { font-weight: 800; font-size: 1.15rem; color: #1d1b20 !important; }
+    .lq-alt { margin: 14px 0 0; font-size: 0.9rem; color: #5f5b66; text-align: center; }
+    .lq-alt a { color: #e85a2a; font-weight: 700; }
     .lq-sticky { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 12px;
       width: max-content; max-width: calc(100% - 24px); box-sizing: border-box; padding: 10px 10px 10px 18px; border-radius: 999px;
       background: #1d2330; color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,0.25); font-size: 0.92rem; }
@@ -314,7 +344,6 @@ LISTA_CSS = '''  <style>
     .lq-sticky .seo-cta { padding: 8px 16px; }
     .lq-sticky-x { font: inherit; font-size: 1.3rem; line-height: 1; background: none; border: 0; color: #9aa3b2; cursor: pointer; padding: 4px 8px; }
     @media (max-width: 560px) {
-      .lq-row { grid-template-columns: 56px 1fr 1fr; }
       .lq-sticky { border-radius: 14px; font-size: 0.85rem; }
     }
     @media print { .lq, .lq-sticky, .sub-practice { display: none !important; } }
@@ -339,7 +368,7 @@ LISTA_JS = '''  <script>
           });
           if (wrong) {
             var fix = document.createElement('div'); fix.className = 'lq-fix';
-            fix.textContent = row.querySelector('.lq-inf').textContent + ' – ' + want[0] + ' – ' + want[1];
+            fix.textContent = '✓ ' + row.querySelector('.lq-inf').textContent + ' – ' + want[0] + ' – ' + want[1];
             row.appendChild(fix);
           }
         });
@@ -436,11 +465,23 @@ jumbo = f'''<!DOCTYPE html>
 
       <section class="lq" id="sprawdz-sie" aria-labelledby="lq-title">
         <h2 id="lq-title">Sprawdź się w 30 sekund</h2>
-        <p class="lq-hint">Wpisz past simple i past participle:</p>
+        <p class="lq-hint">Wpisz brakujące formy — tak samo ćwiczysz w aplikacji.</p>
         <form class="lq-form" autocomplete="off">
-          <div class="lq-row" data-past="began" data-pp="begun"><span class="lq-inf">begin</span><input aria-label="begin – past simple" autocapitalize="off" spellcheck="false" /><input aria-label="begin – past participle" autocapitalize="off" spellcheck="false" /></div>
-          <div class="lq-row" data-past="drank" data-pp="drunk"><span class="lq-inf">drink</span><input aria-label="drink – past simple" autocapitalize="off" spellcheck="false" /><input aria-label="drink – past participle" autocapitalize="off" spellcheck="false" /></div>
-          <div class="lq-row" data-past="swam" data-pp="swum"><span class="lq-inf">swim</span><input aria-label="swim – past simple" autocapitalize="off" spellcheck="false" /><input aria-label="swim – past participle" autocapitalize="off" spellcheck="false" /></div>
+          <div class="lq-row" data-past="began" data-pp="begun">
+            <div class="lq-verb"><span class="lq-emoji" aria-hidden="true">🏁</span><span class="lq-inf">begin</span><span class="lq-mean">zaczynać</span></div>
+            <input placeholder="Past simple" aria-label="begin – past simple" autocapitalize="off" autocorrect="off" spellcheck="false" />
+            <input placeholder="Past participle" aria-label="begin – past participle" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          </div>
+          <div class="lq-row" data-past="drank" data-pp="drunk">
+            <div class="lq-verb"><span class="lq-emoji" aria-hidden="true">🥤</span><span class="lq-inf">drink</span><span class="lq-mean">pić</span></div>
+            <input placeholder="Past simple" aria-label="drink – past simple" autocapitalize="off" autocorrect="off" spellcheck="false" />
+            <input placeholder="Past participle" aria-label="drink – past participle" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          </div>
+          <div class="lq-row" data-past="swam" data-pp="swum">
+            <div class="lq-verb"><span class="lq-emoji" aria-hidden="true">🏊</span><span class="lq-inf">swim</span><span class="lq-mean">pływać</span></div>
+            <input placeholder="Past simple" aria-label="swim – past simple" autocapitalize="off" autocorrect="off" spellcheck="false" />
+            <input placeholder="Past participle" aria-label="swim – past participle" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          </div>
           <button type="submit" class="lq-check">Sprawdź</button>
         </form>
         <div class="lq-result" hidden>
