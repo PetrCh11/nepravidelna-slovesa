@@ -133,6 +133,17 @@ PLAUSIBLE_SNIPPET = '''
     plausible.init()
   </script>'''
 
+# Skupiny zdarma v appce — MUSÍ sedět s FREE_SUB_BASE v app.js.
+FREE_SUBS = {'1.1.0', '1.2.1', '1.2.5'}
+
+def practice_link(sub_id):
+    """Tlačítko u skupiny na /lista/: deep link rovnou do lekce (zamčená → paywall)."""
+    if sub_id in FREE_SUBS:
+        return (f'<a class="sub-practice sub-practice-free" href="{deeplink(sub_id)}" '
+                f'data-track="cta_group_free">▶ Ćwicz za darmo</a>')
+    return (f'<a class="sub-practice" href="{deeplink(sub_id)}" '
+            f'data-track="cta_group_premium">▶ Ćwicz w aplikacji</a>')
+
 # ---------- Build the verb table rows by section (used by jumbo page) ----------
 section_blocks = []
 flat_items_for_schema = []
@@ -160,6 +171,7 @@ for sec in DATA['sections']:
               <span class="sub-pattern">{esc(sub['pattern'])}</span>
               <span class="sub-count">{pl_czasownikow(len(sub['verbs']))}</span>
               <a class="sub-deep" href="/grupa/{sub_slug}/">Szczegóły grupy →</a>
+              {practice_link(sub['id'])}
             </h3>
             <div class="verb-table-wrap">
               <table class="verb-table">
@@ -270,6 +282,87 @@ for sec in DATA['sections']:
         )
 toc_html = '\n'.join(toc_items)
 
+
+# ---------- /lista/: mini-kvíz, tlačítka „Ćwicz“ u skupin, spodní lišta ----------
+# Jen pro polskou /lista/ (inline), aby se nesahalo do sdíleného seznam.css.
+LISTA_CSS = '''  <style>
+    .sub-practice { font-size: 0.8rem; font-weight: 700; text-decoration: none; white-space: nowrap;
+      margin-left: 6px; padding: 3px 10px; border-radius: 999px; color: #5b59d9; border: 1.5px solid #c9c5f7; background: #fff; }
+    .sub-practice:hover { background: #f1f0ff; }
+    .sub-practice-free { color: #fff; border-color: transparent; background: linear-gradient(135deg, #5dc9bd, #7c6ff5); }
+    .sub-practice-free:hover { background: linear-gradient(135deg, #4fb8ac, #6b5ee6); }
+    .lq { background: linear-gradient(135deg, #fff7e6, #ffeed1); border: 1.5px solid #f0c074; border-radius: 16px; padding: 18px 22px; margin: 22px 0; }
+    .lq h2 { margin: 0 0 4px; font-size: 1.2rem; color: #6e4a14; }
+    .lq-hint { margin: 0 0 12px; color: #7a5a2b; font-size: 0.92rem; }
+    .lq-row { display: grid; grid-template-columns: 70px 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .lq-inf { font-weight: 800; color: #3b2a0c; }
+    .lq-row input { min-width: 0; font: inherit; font-size: 16px; padding: 8px 10px; border: 1.5px solid #e6cf9f; border-radius: 10px; background: #fff; color: #1d2330; }
+    .lq-row input:focus { outline: none; border-color: #7c6ff5; }
+    .lq-row input.ok { border-color: #2fa36b; background: #ecfaf2; }
+    .lq-row input.bad { border-color: #e2483d; background: #fff1f0; }
+    .lq-fix { grid-column: 2 / -1; font-size: 0.85rem; color: #b8362c; margin-top: -4px; }
+    .lq-check { font: inherit; font-weight: 700; margin-top: 4px; padding: 9px 22px; border: 0; border-radius: 999px; cursor: pointer; color: #fff; background: #6e4a14; }
+    .lq-result { margin-top: 14px; }
+    .lq-result p { margin: 0 0 10px; color: #5c4416; }
+    .lq-score { font-weight: 800; font-size: 1.05rem; }
+    .lq-alt { margin: 12px 0 0; font-size: 0.9rem; color: #7a5a2b; }
+    .lq-alt a { color: #5b59d9; font-weight: 700; }
+    .lq-sticky { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 12px;
+      width: max-content; max-width: calc(100% - 24px); box-sizing: border-box; padding: 10px 10px 10px 18px; border-radius: 999px;
+      background: #1d2330; color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,0.25); font-size: 0.92rem; }
+    .lq-sticky[hidden] { display: none; }
+    .lq-sticky .seo-cta { padding: 8px 16px; }
+    .lq-sticky-x { font: inherit; font-size: 1.3rem; line-height: 1; background: none; border: 0; color: #9aa3b2; cursor: pointer; padding: 4px 8px; }
+    @media (max-width: 560px) {
+      .lq-row { grid-template-columns: 56px 1fr 1fr; }
+      .lq-sticky { border-radius: 14px; font-size: 0.85rem; }
+    }
+    @media print { .lq, .lq-sticky, .sub-practice { display: none !important; } }
+  </style>'''
+
+LISTA_JS = '''  <script>
+    (function () {
+      var form = document.querySelector('.lq-form');
+      if (form) form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var ok = 0, total = 0;
+        form.querySelectorAll('.lq-row').forEach(function (row) {
+          var ins = row.querySelectorAll('input');
+          var want = [row.dataset.past, row.dataset.pp];
+          var old = row.querySelector('.lq-fix'); if (old) old.remove();
+          var wrong = false;
+          ins.forEach(function (inp, i) {
+            total++;
+            var good = inp.value.trim().toLowerCase() === want[i];
+            if (good) ok++; else wrong = true;
+            inp.classList.toggle('ok', good); inp.classList.toggle('bad', !good);
+          });
+          if (wrong) {
+            var fix = document.createElement('div'); fix.className = 'lq-fix';
+            fix.textContent = row.querySelector('.lq-inf').textContent + ' – ' + want[0] + ' – ' + want[1];
+            row.appendChild(fix);
+          }
+        });
+        var res = document.querySelector('.lq-result');
+        res.querySelector('.lq-score').textContent = (ok === total ? 'Świetnie! ' : '') + 'Wynik: ' + ok + ' / ' + total;
+        res.hidden = false;
+        if (window.plausible) window.plausible('quiz_checked', { props: { score: ok + '/' + total } });
+      });
+
+      // Spodní lišta: až po odscrollování pod kvíz, dá se zavřít (pamatuje si to)
+      var bar = document.querySelector('.lq-sticky'), quiz = document.querySelector('.lq');
+      var closed = false;
+      try { closed = sessionStorage.getItem('lq-sticky-closed') === '1'; } catch (e) {}
+      if (!bar || !quiz || closed) return;
+      function onScroll() { bar.hidden = quiz.getBoundingClientRect().bottom > 0; }
+      window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+      bar.querySelector('.lq-sticky-x').addEventListener('click', function () {
+        bar.hidden = true; window.removeEventListener('scroll', onScroll);
+        try { sessionStorage.setItem('lq-sticky-closed', '1'); } catch (e) {}
+      });
+    })();
+  </script>'''
+
 # ---------- Jumbo /lista/ page ----------
 jumbo = f'''<!DOCTYPE html>
 <html lang="pl">
@@ -309,6 +402,7 @@ jumbo = f'''<!DOCTYPE html>
   <script type="application/ld+json">{json.dumps(list_schema, ensure_ascii=False)}</script>
 
   <link rel="stylesheet" href="lista.css" />
+{LISTA_CSS}
 </head>
 <body>
   <header class="seo-header">
@@ -340,13 +434,22 @@ jumbo = f'''<!DOCTYPE html>
         opanujesz od razu całą grupę. <a href="../">Wypróbuj za darmo →</a>
       </p>
 
-      <div class="seo-cta-banner">
-        <div>
-          <strong>Uczysz się systematycznie czy wkuwasz?</strong>
-          <p>Nasza aplikacja przeprowadzi cię przez wszystkie {TOTAL} czasowników grupa po grupie. 3 grupy za darmo, potem Premium od 9,99 zł.</p>
+      <section class="lq" id="sprawdz-sie" aria-labelledby="lq-title">
+        <h2 id="lq-title">Sprawdź się w 30 sekund</h2>
+        <p class="lq-hint">Wpisz past simple i past participle:</p>
+        <form class="lq-form" autocomplete="off">
+          <div class="lq-row" data-past="began" data-pp="begun"><span class="lq-inf">begin</span><input aria-label="begin – past simple" autocapitalize="off" spellcheck="false" /><input aria-label="begin – past participle" autocapitalize="off" spellcheck="false" /></div>
+          <div class="lq-row" data-past="drank" data-pp="drunk"><span class="lq-inf">drink</span><input aria-label="drink – past simple" autocapitalize="off" spellcheck="false" /><input aria-label="drink – past participle" autocapitalize="off" spellcheck="false" /></div>
+          <div class="lq-row" data-past="swam" data-pp="swum"><span class="lq-inf">swim</span><input aria-label="swim – past simple" autocapitalize="off" spellcheck="false" /><input aria-label="swim – past participle" autocapitalize="off" spellcheck="false" /></div>
+          <button type="submit" class="lq-check">Sprawdź</button>
+        </form>
+        <div class="lq-result" hidden>
+          <p class="lq-score"></p>
+          <p>Zauważ, że wszystkie trzy zmieniają się tak samo: <strong>I → A → U</strong>. Właśnie tak uczy aplikacja — całymi grupami, a nie słowo po słowie. 3 grupy za darmo, bez rejestracji.</p>
+          <a class="seo-cta" href="/#/skupina/1-1-0" data-track="cta_quiz">Ćwicz całą grupę I → A → U →</a>
         </div>
-        <a class="seo-cta" href="../" data-track="cta_top">Otwórz aplikację</a>
-      </div>
+        <p class="lq-alt">Wolisz od razu ćwiczyć? <a href="../" data-track="cta_top">Otwórz aplikację →</a></p>
+      </section>
 
       <section class="seo-pdf-section">
         <h2 id="pdf">Czasowniki nieregularne do pobrania w PDF</h2>
@@ -402,6 +505,13 @@ jumbo = f'''<!DOCTYPE html>
       <p class="seo-foot-meta">Aktualizacja: {TODAY}</p>
     </div>
   </footer>
+
+  <div class="lq-sticky" hidden>
+    <span>Ćwicz te czasowniki w aplikacji — <strong>3 grupy za darmo</strong></span>
+    <a class="seo-cta" href="../" data-track="cta_sticky">Otwórz →</a>
+    <button type="button" class="lq-sticky-x" aria-label="Zamknij">×</button>
+  </div>
+{LISTA_JS}
 {TRACK_SNIPPET}</body>
 </html>'''
 
