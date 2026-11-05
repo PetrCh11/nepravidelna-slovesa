@@ -891,6 +891,7 @@ const TEXTS = {
   loading: 'Načítám…',
   backend_wait: 'Backend zatím není dostupný. Zkus to prosím za chvíli.',
   checkout_error: 'Chyba při zahájení platby: ',
+  session_expired: 'Tvoje přihlášení vypršelo. Přihlas se prosím znovu přes Google a zkus to ještě jednou.',
   pw_already_premium: 'Premium už máš aktivní 🎉 Není potřeba platit znovu.',
   sync_titles: () => ({
     idle: 'cloud sync vypnutý',
@@ -5043,6 +5044,16 @@ async function backendAuthHeaders() {
   return h;
 }
 
+// Backend vrátil 401 'unauthenticated': lokálně se appka tváří přihlášeně, ale
+// token server nepřijal (účet smazaný/zablokovaný, odvolaná relace, token se
+// nepodařilo obnovit). Místo technické hlášky odhlásit a ukázat přihlášení.
+async function handleSessionExpired() {
+  try { await cloud.signOutNow(); } catch (e) { console.warn('signOut failed', e); }
+  toast(t('session_expired'), 'error', 6000);
+  const m = $('#paywall');
+  if (m && m._refreshSignIn) m._refreshSignIn();
+}
+
 async function openCustomerPortal() {
   if (!BACKEND_URL) { toast(t('backend_unavailable'), 'error'); return; }
   const user = cloud.getCurrentUser();
@@ -5059,6 +5070,7 @@ async function openCustomerPortal() {
       }),
     });
     const data = await resp.json().catch(() => ({}));
+    if (resp.status === 401) { await handleSessionExpired(); return; }
     if (resp.status === 404 && data.error === 'no_customer') {
       toast(t('portal_no_customer'), 'info', 6000);
       return;
@@ -5194,6 +5206,7 @@ async function redeemPromo(rawCode, ctx) {
       body: JSON.stringify({ code, lang: LANG }), // jazyk uvítacího mailu
     });
     const data = await resp.json().catch(() => ({}));
+    if (resp.status === 401) { await handleSessionExpired(); return; }
     if (!resp.ok) {
       ctx.setMsg(promoError(data.error) || (t('promo_error_prefix') + (data.error || resp.status)), 'error');
       return;
@@ -5285,6 +5298,12 @@ async function startCheckout(plan, btn) {
       }),
     });
     const data = await resp.json();
+    if (resp.status === 401) {
+      if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+      track('checkout_unauthenticated', { plan });
+      await handleSessionExpired();
+      return;
+    }
     if (data.error === 'already_premium') {
       if (btn) { btn.disabled = false; btn.innerHTML = orig; }
       alreadyPremiumNotice();
