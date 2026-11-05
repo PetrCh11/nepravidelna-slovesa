@@ -110,11 +110,26 @@
     position: fixed; bottom: 5mm; left: 0; right: 0;
     text-align: center; color: var(--primary); font-weight: 600; font-size: 11px;
   }
+  .doc-footer a { color: inherit; text-decoration: none; }
+  .doc-footer b { text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ---- Výzva do aplikace s QR (jen 1. strana) ---- */
+  .doc-promo {
+    display: flex; align-items: center; gap: 16px;
+    margin: 0 0 4mm; padding: 10px 14px;
+    border: 1.5px solid hsl(20 85% 80%); border-radius: 14px;
+    background: linear-gradient(135deg, hsl(25 100% 97%), hsl(340 100% 97%));
+    break-inside: avoid; text-decoration: none; color: var(--ink);
+  }
+  .doc-promo img { width: 78px; height: 78px; flex: 0 0 auto; background: #fff; border-radius: 8px; padding: 4px; }
+  .doc-promo-title { font-weight: 800; font-size: 15px; margin-bottom: 3px; }
+  .doc-promo-text { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .doc-promo-url { color: var(--primary); font-weight: 800; }
 </style>
 </head>
 <body>
 <div id="doc"></div>
-<div class="doc-footer" id="doc-footer">ucseslovesa.cz</div>
+<div class="doc-footer" id="doc-footer"><a href="https://ucseslovesa.cz/?utm_source=pdf&amp;utm_medium=footer">ucseslovesa.cz</a></div>
 
 <script>
 const SECTION_EMOJI = { '1.0.0': '🎯', '2.0.0': '🌀', '3.0.0': '⚡' };
@@ -174,6 +189,10 @@ const L10N = {
     docTitle: 'Nepravidelná slovesa — přehled',
     domain: 'ucseslovesa.cz',
     logo: '/icon-192.png',
+    qr: '/tools/qr-cs.svg',
+    footerCta: '▶ Procvič si tato slovesa online zdarma:',
+    promoTitle: '📱 Procvič si tato slovesa v aplikaci',
+    promoText: 'Interaktivní lekce po skupinách — píšeš tvary, hned vidíš chyby a sleduješ pokrok. 3 skupiny zdarma, bez registrace. Naskenuj kód nebo jdi na',
     h1: 'Nepravidelná slovesa',
     sub: '… jednou a provždy.',
     count: (n) => `${n} sloves`,
@@ -184,6 +203,10 @@ const L10N = {
     docTitle: 'Czasowniki nieregularne — zestawienie',
     domain: 'czasowniki.pl',
     logo: '/pl/icon-192.png',
+    qr: '/tools/qr-pl.svg',
+    footerCta: '▶ Ćwicz te czasowniki online za darmo:',
+    promoTitle: '📱 Ćwicz te czasowniki w aplikacji',
+    promoText: 'Interaktywne lekcje grupa po grupie — wpisujesz formy, od razu widzisz błędy i śledzisz postępy. 3 grupy za darmo, bez rejestracji. Zeskanuj kod lub wejdź na',
     h1: 'Czasowniki nieregularne',
     sub: '… raz na zawsze.',
     // 1 czasownik / 2–4 czasowniki / reszta czasowników
@@ -237,7 +260,9 @@ async function build() {
   }
 
   const doc = document.getElementById('doc');
-  document.getElementById('doc-footer').textContent = L.domain;
+  const siteUrl = (medium) => `https://${L.domain}/?utm_source=pdf&utm_medium=${medium}`;
+  document.getElementById('doc-footer').innerHTML =
+    `<a href="${siteUrl('footer')}">${esc(L.footerCta)} <b>${esc(L.domain)}</b></a>`;
   const totalSubs = data.sections.reduce((n, s) => n + s.subsections.length, 0);
 
   // Hlavička
@@ -253,6 +278,18 @@ async function build() {
       </div>
     </div>`;
   doc.appendChild(header);
+
+  // Výzva do aplikace — klikací (PDF na počítači) + QR (vytištěné PDF)
+  const promo = document.createElement('a');
+  promo.className = 'doc-promo';
+  promo.href = siteUrl('promo');
+  promo.innerHTML = `
+    <img src="${L.qr}" alt="">
+    <div>
+      <div class="doc-promo-title">${esc(L.promoTitle)}</div>
+      <div class="doc-promo-text">${esc(L.promoText)} <span class="doc-promo-url">${esc(L.domain)}</span></div>
+    </div>`;
+  doc.appendChild(promo);
 
   let subIdx = 0;
   data.sections.forEach((sec) => {
