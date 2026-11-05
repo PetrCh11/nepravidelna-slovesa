@@ -36,7 +36,14 @@
   }
   .mono { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
 
-  @page { size: A4; margin: 11mm 11mm 14mm; }
+  /* Patička (position: fixed) se v tisku kreslí na každé straně u spodního
+     kraje tiskové plochy. Aby nikdy nepřekryla skupinu sloves, obaluje obsah
+     tabulka, jejíž <tfoot> se v tisku opakuje na každé straně a drží tam
+     prázdný pruh (.page-foot-space) přesně pro patičku. */
+  @page { size: A4; margin: 11mm 11mm 6mm; }
+  .page-wrap { width: 100%; border-collapse: collapse; }
+  .page-wrap > tbody > tr > td, .page-wrap > tfoot > tr > td { padding: 0; }
+  .page-foot-space { height: 12mm; }
 
   /* ---- Header (jen 1. strana) ---- */
   .doc-header { text-align: center; margin: 2mm 0 7mm; }
@@ -107,7 +114,7 @@
   .vcs { text-align: right; color: var(--accent); font-style: italic; font-size: 12px; padding-left: 8px; }
 
   .doc-footer {
-    position: fixed; bottom: 5mm; left: 0; right: 0;
+    position: fixed; bottom: 2mm; left: 0; right: 0;
     text-align: center; color: var(--primary); font-weight: 600; font-size: 11px;
   }
   .doc-footer a { color: inherit; text-decoration: none; }
@@ -128,7 +135,8 @@
 </style>
 </head>
 <body>
-<div id="doc"></div>
+<table class="page-wrap"><tbody><tr><td><div id="doc"></div></td></tr></tbody>
+<tfoot><tr><td><div class="page-foot-space"></div></td></tr></tfoot></table>
 <div class="doc-footer" id="doc-footer"><a href="https://ucseslovesa.cz/?utm_source=pdf&amp;utm_medium=footer">ucseslovesa.cz</a></div>
 
 <script>
