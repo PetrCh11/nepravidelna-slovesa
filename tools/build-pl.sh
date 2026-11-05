@@ -23,6 +23,8 @@ cp -R data lang dist-pl/
 cp pl/czasowniki-nieregularne-lista.pdf dist-pl/
 # Vstupní stránka pro učitele — ručně psaná, generátor ji nesahá (obdoba /pro-skoly/)
 cp -R pl/dla-nauczycieli dist-pl/
+# IndexNow klíč (Bing/Seznam/Yandex) — stejný soubor jako v rootu CZ webu, viz tools/indexnow.sh
+cp [0-9a-f]*.txt dist-pl/ 2>/dev/null || true
 
 # 2) index.html — pryč <base href="/"> (včetně vysvětlujícího komentáře),
 #    manifest z pl/manifest.json na manifest.json

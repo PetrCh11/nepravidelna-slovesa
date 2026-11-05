@@ -99,6 +99,18 @@ def all_groups_nav(current_slug=None):
             '<strong>Všechny skupiny:</strong> ' + ' · '.join(items) + '</nav>')
 
 # ---------- Reusable bits ----------
+TRACK_SNIPPET = '''
+  <script>
+    // Kliky na CTA/PDF (data-track) → vlastní události v Plausible (Goals)
+    document.querySelectorAll('[data-track]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var name = el.getAttribute('data-track');
+        if (window.plausible && name) window.plausible(name);
+      });
+    });
+  </script>
+'''
+
 PLAUSIBLE_SNIPPET = '''
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
@@ -379,7 +391,7 @@ jumbo = f'''<!DOCTYPE html>
       <p class="seo-foot-meta">Aktualizováno: {TODAY}</p>
     </div>
   </footer>
-</body>
+{TRACK_SNIPPET}</body>
 </html>'''
 
 os.makedirs(os.path.join(ROOT, 'seznam'), exist_ok=True)
@@ -652,7 +664,7 @@ def build_group_page(sub_idx, sub, parent_sec):
       <p class="seo-foot-meta">Aktualizováno: {TODAY}</p>
     </div>
   </footer>
-</body>
+{TRACK_SNIPPET}</body>
 </html>'''
     out_dir = os.path.join(ROOT, 'skupina', sub_slug)
     os.makedirs(out_dir, exist_ok=True)

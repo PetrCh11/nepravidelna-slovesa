@@ -113,6 +113,18 @@ def pl_czasownikow(n):
 
 # Same Plausible script as pl/index.html — swap the pa-… id once czasowniki.pl
 # gets its own Plausible site.
+TRACK_SNIPPET = '''
+  <script>
+    // Kliky na CTA/PDF (data-track) → vlastní události v Plausible (Goals)
+    document.querySelectorAll('[data-track]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var name = el.getAttribute('data-track');
+        if (window.plausible && name) window.plausible(name);
+      });
+    });
+  </script>
+'''
+
 PLAUSIBLE_SNIPPET = '''
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-NrtAvvEOU7AQy_bMCdI_S.js"></script>
@@ -390,7 +402,7 @@ jumbo = f'''<!DOCTYPE html>
       <p class="seo-foot-meta">Aktualizacja: {TODAY}</p>
     </div>
   </footer>
-</body>
+{TRACK_SNIPPET}</body>
 </html>'''
 
 os.makedirs(os.path.join(OUT, 'lista'), exist_ok=True)
@@ -658,7 +670,7 @@ def build_group_page(sub_idx, sub, parent_sec):
       <p class="seo-foot-meta">Aktualizacja: {TODAY}</p>
     </div>
   </footer>
-</body>
+{TRACK_SNIPPET}</body>
 </html>'''
     out_dir = os.path.join(OUT, 'grupa', sub_slug)
     os.makedirs(out_dir, exist_ok=True)

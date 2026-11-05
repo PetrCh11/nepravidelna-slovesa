@@ -226,5 +226,14 @@
       <p class="seo-foot-meta">Aktualizováno: 2026-05-19</p>
     </div>
   </footer>
+  <script>
+    // Kliky na CTA/PDF (data-track) → vlastní události v Plausible (Goals)
+    document.querySelectorAll('[data-track]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var name = el.getAttribute('data-track');
+        if (window.plausible && name) window.plausible(name);
+      });
+    });
+  </script>
 </body>
 </html>
