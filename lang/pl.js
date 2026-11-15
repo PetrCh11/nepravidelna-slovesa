@@ -106,11 +106,36 @@
     var d = new Date(), m = d.getMonth() + 1;
     return (m === 8 && d.getDate() >= 25) || m === 9;
   }
-  function withSeason(base, seasonal) {
-    return isSchoolStartSeason() ? base.concat(seasonal) : base;
+  // ---- Sezonowe: Boże Narodzenie (od 1. niedzieli adwentu do 6.01) ----------
+  // Datę liczy app.js (window.isXmasSeason) — tam też jest podgląd ?xmas=1.
+  var SWIETA_PRO = [
+    'Bring – brought – brought. Mikołaj byłby dumny. 🎁',
+    'Wynik ponad plan. Tegoroczna premia: pierniki. 🍪',
+    'Q4 zamknięty z przytupem. Wesołych Świąt! 🎄',
+    'To zasługuje na miejsce pod choinką. 🎁',
+    'Give – gave – given. Dajesz radę z klasą. ✨',
+  ];
+  var SWIETA_STUDENT = [
+    'Mikołaj to widzi. I jest zadowolony. 🎅',
+    'Lepsze niż rozpakowywanie prezentów. 🎁',
+    'Sing – sang – sung. I śpiewasz to bez błędu. 🎶',
+    'Właśnie zasłużyłeś/aś na pierniczka. 🍪',
+    'Tryb świąteczny: włączony. Błędy: wyłączone. 🎄',
+    'Renifery wzięłyby cię do zespołu. 🦌',
+  ];
+  var SWIETA_STREAK_PRO = SWIETA_PRO.slice(0, 2);
+  var SWIETA_STREAK_STUDENT = SWIETA_STUDENT.slice(0, 2);
+
+  function isXmas() {
+    return typeof window.isXmasSeason === 'function' && window.isXmasSeason();
+  }
+  function withSeason(base, seasonal, xmas) {
+    var out = isSchoolStartSeason() ? base.concat(seasonal) : base;
+    if (xmas && isXmas()) out = out.concat(xmas);
+    return out;
   }
   function posPools() {
-    return { pro: withSeason(POS_PRO, SZKOLA_PRO), student: withSeason(POS_STUDENT, SZKOLA_STUDENT) };
+    return { pro: withSeason(POS_PRO, SZKOLA_PRO, SWIETA_PRO), student: withSeason(POS_STUDENT, SZKOLA_STUDENT, SWIETA_STUDENT) };
   }
 
   var NEG_STUDENT = [
@@ -194,7 +219,7 @@
       get fb_finale_ok()    { return posPools(); },
       fb_finale_wrong: { pro: NEG_PRO, student: NEG_STUDENT },
       get fb_streak() {
-        return { pro: withSeason(STREAK_PRO, SZKOLA_STREAK_PRO), student: withSeason(STREAK_STUDENT, SZKOLA_STREAK_STUDENT) };
+        return { pro: withSeason(STREAK_PRO, SZKOLA_STREAK_PRO, SWIETA_STREAK_PRO), student: withSeason(STREAK_STUDENT, SZKOLA_STREAK_STUDENT, SWIETA_STREAK_STUDENT) };
       },
       // Wyniki
       results_h2: 'Gotowe! 🎉',
@@ -407,6 +432,12 @@
       trial_nudge_later: 'Nie teraz',
       trial_pill: { pro: 'Wszystkie 106 czasowników · 7 dni za darmo', student: 'Odblokuj wszystko · 7 dni za darmo' },
       trial_pill_close: 'Ukryj',
+      trial_pill_sale: { pro: '🎄 Świąteczna zniżka −30 % na Premium', student: '🎄 −30 % na wszystko do Świąt' },
+      sale_banner: '🎄 <strong>Świąteczna zniżka −30 %</strong> na Premium roczne i dożywotnie — tylko do Wigilii.',
+      sale_price_yearly_html: '<s class="paywall-old-price">49,99 zł</s>34,99 zł<span class="paywall-period">/1. rok</span>',
+      sale_price_lifetime_html: '<s class="paywall-old-price">89,99 zł</s>62,99 zł',
+      sale_yearly_note: '7 dni za darmo · potem 34,99 zł za pierwszy rok, dalej 49,99 zł/rok',
+      sale_lifetime_note: 'jednorazowo · cena świąteczna do 24.12',
       prog_menu: '📤 Wyślij postępy nauczycielowi',
       prog_title: 'Wyślij postępy nauczycielowi',
       prog_name_label: 'Twoje imię i nazwisko',
@@ -526,6 +557,15 @@
       },
       teacher_none_selected: 'Wybierz co najmniej jedną grupę czasowników.',
       teacher_test_title: 'Czasowniki nieregularne — test',
+      teacher_xmas_title: 'Świąteczna kartkówka — czasowniki nieregularne',
+      teacher_xmas_card_title: 'Świąteczna kartkówka',
+      teacher_xmas_card_desc: '20 czasowników pasujących do Świąt: bring, give, buy, sing, eat… Na papierze i jako test online.',
+      teacher_xmas_selected: function (n) { return 'Świąteczny wybór: ' + n + ' czasowników 🎄 (kliknięcie w grupę przełącza na własny wybór)'; },
+      teacher_xmas_line: 'Świąteczny wybór czasowników 🎄',
+      dt_xmas_title: 'Świąteczny test',
+      settings_snow_name: 'Śnieg',
+      settings_snow_on: 'Włączony — kliknij, aby wyłączyć',
+      settings_snow_off: 'Wyłączony — kliknij, aby włączyć',
       teacher_key_title: 'Czasowniki nieregularne — klucz dla nauczyciela',
       teacher_variant: function (v) { return 'Wariant ' + v; },
       // dvojtečky na konci: kód je pro tiskové boxy odřezává (.replace(/:$/,''))

@@ -20,7 +20,7 @@ const ASSETS = [
   './pl/icon-180.png',
   './pl/icon-192.png',
   './pl/icon-512.png',
-  './lang/pl.js?v=24',
+  './lang/pl.js?v=25',
 ];
 
 self.addEventListener('install', (e) => {

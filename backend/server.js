@@ -160,6 +160,28 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 // JSON parser for the rest
 app.use(express.json());
 
+// Vánoční sleva −30 % na roční a doživotní Premium (CZK i PLN), od 1. adventní
+// neděle do konce Štědrého dne (časy v UTC = půlnoc v Praze). Kupony jsou ve
+// Stripe (Product catalog → Coupons) a samy expirují 24. 12. 23:59:
+//   VANOCE30-NAVZDY — jednorázově, na doživotní nákup
+//   VANOCE30-ROK    — 1 měsíc od začátku předplatného, takže zlevní jen první
+//                     roční platbu po 7denním trialu, obnova už je za plnou cenu
+// Frontend ukazuje stejné období (app.js, isXmasSale) — při změně dat upravit obojí.
+const XMAS_SALE = {
+  start: Date.parse('2026-11-28T23:00:00Z'),
+  end: Date.parse('2026-12-24T23:00:00Z'),
+  coupons: {
+    price_1TYOTrK1GA1fPMpODCB8e5uA: 'VANOCE30-NAVZDY', // CZ doživotní 449 Kč
+    price_1TsQVcK1GA1fPMpO4R1U3f9r: 'VANOCE30-NAVZDY', // PL doživotní 89,99 zł
+    price_1TYOVlK1GA1fPMpOONV6P92W: 'VANOCE30-ROK',    // CZ roční 249 Kč
+    price_1TsQULK1GA1fPMpO9h6Jglu4: 'VANOCE30-ROK',    // PL roční 49,99 zł
+  },
+};
+function xmasCouponFor(priceId, now = Date.now()) {
+  if (now < XMAS_SALE.start || now >= XMAS_SALE.end) return null;
+  return XMAS_SALE.coupons[priceId] || null;
+}
+
 app.post('/create-checkout-session', async (req, res) => {
   const uid = await verifyUid(req);
   if (!uid) return res.status(401).json({ error: 'unauthenticated' });
@@ -187,6 +209,9 @@ app.post('/create-checkout-session', async (req, res) => {
   } catch (e) {
     console.error('Already-premium check failed, allowing checkout:', e?.message || e);
   }
+  // Stripe nedovolí kupon a pole pro slevový kód zároveň — v době vánoční slevy
+  // se kupon přidá sám a pole pro kód zmizí.
+  const xmasCoupon = xmasCouponFor(priceId);
   try {
     const session = await stripe.checkout.sessions.create({
       mode,
@@ -211,10 +236,11 @@ app.post('/create-checkout-session', async (req, res) => {
         invoice_creation: { enabled: true },
       }),
       ...(email ? { customer_email: email } : {}),
-      allow_promotion_codes: true,
+      ...(xmasCoupon ? { discounts: [{ coupon: xmasCoupon }] } : { allow_promotion_codes: true }),
       // Checkout UI language: language mutations send their own (e.g. 'pl').
       locale: lang,
     });
+    if (xmasCoupon) console.log('Checkout with Xmas coupon →', uid, xmasCoupon);
     res.json({ url: session.url });
   } catch (e) {
     console.error('Checkout create failed:', e);
@@ -335,7 +361,7 @@ app.post('/create-portal-session', async (req, res) => {
 
 // welcomeLangs: jazyky uvítacího mailu — zvenku je z toho poznat, která verze běží.
 // dupGuard: pojistka proti dvojí platbě + bezpečné rušení předplatného (2026-10).
-app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now(), welcomeLangs: ['cs', 'pl'], dupGuard: true }));
+app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now(), welcomeLangs: ['cs', 'pl'], dupGuard: true, xmasSale: { start: XMAS_SALE.start, end: XMAS_SALE.end, active: !!xmasCouponFor(Object.keys(XMAS_SALE.coupons)[0]) } }));
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Slovesa backend listening on :${port}`));

@@ -29,8 +29,15 @@
     return Math.random() * (max - min) + min;
   }
 
+  // Vánoční sezóna (html.xmas, nastavuje app.js): červená, zlatá, zelená,
+  // ledově bílá + část kousků jsou vločky, hvězdičky a cukroví.
+  const XMAS_COLORS = ['#d62828', '#f4c430', '#2a9d55', '#e8eef7', '#c1121f', '#ffd166', '#1f7a44'];
+  const XMAS_GLYPHS = ['❄', '❄', '⭐', '✨', '🍪', '🎁'];
+  const isXmas = () => document.documentElement.classList.contains('xmas');
+
   function pickColor() {
-    return COLORS[Math.floor(Math.random() * COLORS.length)];
+    const pal = isXmas() ? XMAS_COLORS : COLORS;
+    return pal[Math.floor(Math.random() * pal.length)];
   }
 
   function spawnPiece(host) {
@@ -58,9 +65,16 @@
     piece.style.setProperty('--rot-end', `${rotEnd}deg`);
     piece.style.setProperty('--fall-dur', `${fallDur}s`);
     piece.style.setProperty('--fall-delay', `${fallDelay}s`);
-    piece.style.width = `${size}px`;
-    piece.style.height = `${size * (piece.classList.contains('circle') ? 1 : rand(0.4, 1.4))}px`;
-    piece.style.background = pickColor();
+    if (isXmas() && Math.random() < 0.3) {
+      piece.classList.add('glyph');
+      piece.textContent = XMAS_GLYPHS[Math.floor(Math.random() * XMAS_GLYPHS.length)];
+      piece.style.fontSize = `${rand(14, 22)}px`;
+      piece.style.color = pickColor();
+    } else {
+      piece.style.width = `${size}px`;
+      piece.style.height = `${size * (piece.classList.contains('circle') ? 1 : rand(0.4, 1.4))}px`;
+      piece.style.background = pickColor();
+    }
 
     host.appendChild(piece);
 

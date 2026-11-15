@@ -448,6 +448,33 @@ const SKOLNI_ROK_STREAK_PRO = SKOLNI_ROK_PRO.slice(0, 2);
 const SKOLNI_ROK_STREAK_STUDENT = SKOLNI_ROK_STUDENT.slice(0, 2);
 const SKOLNI_ROK_STREAK_HANTEC = SKOLNI_ROK_HANTEC.slice(0, 1);
 
+// ---- Sezónní hlášky: Vánoce (viz isXmasSeason) ---------------------------
+const VANOCE_PRO = [
+  'Bring – brought – brought. Ježíšek by na tebe byl hrdý. 🎁',
+  'Výkon nad plán. Letošní prémie: cukroví. 🍪',
+  'Q4 uzavřeno s přehledem. Hezké svátky! 🎄',
+  'Tohle si zaslouží místo pod stromečkem. 🎁',
+  'Give – gave – given. Dáváš to s grácií. ✨',
+];
+const VANOCE_STUDENT = [
+  'Ježíšek to vidí. A je spokojenej. 🎅',
+  'Tohle je lepší než rozbalovat dárky. 🎁',
+  'Sing – sang – sung. A ty to zpíváš bez chyby. 🎶',
+  'Cukroví sis právě zasloužil/a. 🍪',
+  'Vánoční mód: zapnutý. Chyby: vypnutý. 🎄',
+  'Sobi by tě vzali do týmu. 🦌',
+];
+const VANOCE_HANTEC = [
+  'Ježíšek z tebe má radost jak blázen. Betelné. 🎅',
+  'Tohle je lepší jak svařák na Zelňáku. 🍷',
+  'Cukrovíčko sis vysloužil, kámo. 🍪',
+  'Pod stromeček s tebó! 🎄',
+  'Sobi by tě brali do šaliny. 🦌',
+];
+const VANOCE_STREAK_PRO = VANOCE_PRO.slice(0, 2);
+const VANOCE_STREAK_STUDENT = VANOCE_STUDENT.slice(0, 2);
+const VANOCE_STREAK_HANTEC = VANOCE_HANTEC.slice(0, 1);
+
 function isSchoolStartSeason() {
   const d = new Date();
   const m = d.getMonth() + 1; // 1–12
@@ -455,16 +482,63 @@ function isSchoolStartSeason() {
   return (m === 8 && day >= 25) || m === 9;
 }
 
-function withSeason(base, seasonal) {
-  return isSchoolStartSeason() ? base.concat(seasonal) : base;
+// ---- Vánoce: od 1. adventní neděle do Tří králů (6. 1.) ---------------------
+// Zapne vánoční vzhled (třída html.xmas), hlášky, sníh i vánoční písemku a
+// 7. ledna všechno samo zmizí. Náhled mimo sezónu: ?xmas=1 (vypnout ?xmas=0,
+// zpět na automatiku ?xmas=auto) — volba se pamatuje v localStorage.
+function firstAdventSunday(year) {
+  const xmas = new Date(year, 11, 25);
+  const fourth = new Date(year, 11, 25 - (xmas.getDay() || 7)); // neděle před 25. 12.
+  return new Date(year, 11, fourth.getDate() - 21);
+}
+function isXmasSeason() {
+  try {
+    const forced = localStorage.getItem('xmasPreview');
+    if (forced === '1') return true;
+    if (forced === '0') return false;
+  } catch (_) {}
+  const d = new Date();
+  if (d.getMonth() === 0) return d.getDate() <= 6;
+  return d >= firstAdventSunday(d.getFullYear());
+}
+(function applyXmasPreviewParam() {
+  const m = /[?&]xmas=(1|0|auto)\b/.exec(location.search);
+  if (!m) return;
+  try {
+    if (m[1] === 'auto') localStorage.removeItem('xmasPreview');
+    else localStorage.setItem('xmasPreview', m[1]);
+  } catch (_) {}
+})();
+window.isXmasSeason = isXmasSeason; // lang/pl.js si z ní bere vánoční hlášky
+
+// Vánoční sleva −30 % na roční a doživotní Premium. Období MUSÍ sedět s backendem
+// (backend/server.js, XMAS_SALE) — ten slevu doopravdy přidá do Stripe Checkoutu,
+// tady se jen ukazují ceny. Náhled ?xmas=1 ukáže i slevu, zaplatí se ale plná cena.
+const XMAS_SALE_START = Date.UTC(2026, 10, 28, 23); // 29. 11. 2026 00:00 Praha
+const XMAS_SALE_END = Date.UTC(2026, 11, 24, 23);   // 25. 12. 2026 00:00 Praha
+function isXmasSale() {
+  try {
+    const forced = localStorage.getItem('xmasPreview');
+    if (forced === '1') return true;
+    if (forced === '0') return false;
+  } catch (_) {}
+  const now = Date.now();
+  return now >= XMAS_SALE_START && now < XMAS_SALE_END;
+}
+document.documentElement.classList.toggle('xmas', isXmasSeason());
+
+function withSeason(base, seasonal, xmas = []) {
+  let out = isSchoolStartSeason() ? base.concat(seasonal) : base;
+  if (xmas.length && isXmasSeason()) out = out.concat(xmas);
+  return out;
 }
 
 // Pool pro správnou odpověď, sezónně rozšířený. Volá se z getterů v TEXTS.
 function posPools() {
   return {
-    pro: withSeason(POS_PRO, SKOLNI_ROK_PRO),
-    student: withSeason(POS_STUDENT, SKOLNI_ROK_STUDENT),
-    hantec: withSeason(POS_HANTEC, SKOLNI_ROK_HANTEC),
+    pro: withSeason(POS_PRO, SKOLNI_ROK_PRO, VANOCE_PRO),
+    student: withSeason(POS_STUDENT, SKOLNI_ROK_STUDENT, VANOCE_STUDENT),
+    hantec: withSeason(POS_HANTEC, SKOLNI_ROK_HANTEC, VANOCE_HANTEC),
   };
 }
 
@@ -534,9 +608,9 @@ const TEXTS = {
   // tenhle pool, takže bez něj by se školní hlášky skoro neukázaly.
   get fb_streak() {
     return {
-      pro: withSeason(STREAK_PRO, SKOLNI_ROK_STREAK_PRO),
-      student: withSeason(STREAK_STUDENT, SKOLNI_ROK_STREAK_STUDENT),
-      hantec: withSeason(STREAK_HANTEC, SKOLNI_ROK_STREAK_HANTEC),
+      pro: withSeason(STREAK_PRO, SKOLNI_ROK_STREAK_PRO, VANOCE_STREAK_PRO),
+      student: withSeason(STREAK_STUDENT, SKOLNI_ROK_STREAK_STUDENT, VANOCE_STREAK_STUDENT),
+      hantec: withSeason(STREAK_HANTEC, SKOLNI_ROK_STREAK_HANTEC, VANOCE_STREAK_HANTEC),
     };
   },
   // Results
@@ -792,6 +866,12 @@ const TEXTS = {
   trial_nudge_later: { pro: 'Teď ne', student: 'Teď ne', hantec: 'Enem ne' },
   trial_pill: { pro: 'Všech 106 sloves · 7 dní zdarma', student: 'Odemkni všechno · 7 dní zdarma', hantec: 'Odemkni všecko · 7 dní zadarmo' },
   trial_pill_close: 'Skrýt',
+  trial_pill_sale: { pro: '🎄 Vánoční sleva −30 % na Premium', student: '🎄 −30 % na všechno do Vánoc', hantec: '🎄 −30 % na Premium do Ježíška' },
+  sale_banner: '🎄 <strong>Vánoční sleva −30 %</strong> na roční i doživotní Premium — jen do Štědrého dne.',
+  sale_price_yearly_html: '<s class="paywall-old-price">249 Kč</s>174,30 Kč<span class="paywall-period">/1. rok</span>',
+  sale_price_lifetime_html: '<s class="paywall-old-price">449 Kč</s>314,30 Kč',
+  sale_yearly_note: '7 dní zdarma · pak 174,30 Kč za první rok, dál 249 Kč/rok',
+  sale_lifetime_note: 'jednorázově · vánoční cena platí do 24. 12.',
   // Pokrok učiteli mailem (odkaz z Teacher zone → e-mail učitele v localStorage)
   prog_menu: '📤 Poslat pokrok učiteli',
   prog_title: 'Poslat pokrok učiteli',
@@ -911,6 +991,15 @@ const TEXTS = {
     `Vybráno: ${n} ${n === 1 ? 'sloveso' : n >= 2 && n <= 4 ? 'slovesa' : 'sloves'} · ${g} ${g === 1 ? 'skupina' : g >= 2 && g <= 4 ? 'skupiny' : 'skupin'}`,
   teacher_none_selected: 'Vyber aspoň jednu skupinu sloves.',
   teacher_test_title: 'Nepravidelná slovesa — test',
+  teacher_xmas_title: 'Vánoční písemka — nepravidelná slovesa',
+  teacher_xmas_card_title: 'Vánoční písemka',
+  teacher_xmas_card_desc: '20 sloves, která se hodí k Vánocům: bring, give, buy, sing, eat… Funguje na papír i jako digitální test.',
+  teacher_xmas_selected: (n) => `Vánoční výběr: ${n} sloves 🎄 (kliknutím na skupinu přepneš na vlastní výběr)`,
+  teacher_xmas_line: 'Vánoční výběr sloves 🎄',
+  dt_xmas_title: 'Vánoční test',
+  settings_snow_name: 'Sníh',
+  settings_snow_on: 'Zapnutý — klikni pro vypnutí',
+  settings_snow_off: 'Vypnutý — klikni pro zapnutí',
   teacher_key_title: 'Nepravidelná slovesa — klíč pro učitele',
   teacher_variant: (v) => `Varianta ${v}`,
   teacher_name: 'Jméno:',
@@ -2974,6 +3063,58 @@ function persistProgress() {
   cloud.pushSoon();
 }
 
+// ----- Vánoční vzhled: sníh + vypínač v Nastavení -----
+// Čepice na logu a světýlka v hlavičce jsou čisté CSS (html.xmas). Sníh je
+// pár vloček za obsahem; při procvičování ho CSS schová.
+function xmasSnowOn() {
+  try { return localStorage.getItem('xmasSnow') !== '0'; } catch (_) { return true; }
+}
+function renderXmasSnow() {
+  document.querySelector('.xmas-snow')?.remove();
+  if (!isXmasSeason() || !xmasSnowOn()) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const layer = document.createElement('div');
+  layer.className = 'xmas-snow';
+  layer.setAttribute('aria-hidden', 'true');
+  const count = window.innerWidth < 600 ? 16 : 26;
+  const r = (a, b) => a + Math.random() * (b - a);
+  for (let i = 0; i < count; i++) {
+    const f = document.createElement('span');
+    const glyph = Math.random() < 0.3;
+    f.className = glyph ? 'xmas-flake is-glyph' : 'xmas-flake';
+    if (glyph) f.textContent = '❄';
+    const size = glyph ? r(10, 16) : r(4, 8);
+    const dur = r(10, 20);
+    f.style.cssText = `left:${r(0, 100)}vw;--size:${size}px;--sway:${r(-6, 6)}vw;`
+      + `animation-duration:${dur}s;animation-delay:${-r(0, dur)}s;opacity:${r(0.45, 0.9).toFixed(2)}`;
+    layer.appendChild(f);
+  }
+  document.body.prepend(layer);
+}
+function renderXmasSettings() {
+  const list = document.querySelector('#settings-modal .settings-list');
+  if (!list) return;
+  let btn = $('#settings-snow');
+  if (!isXmasSeason()) { btn?.remove(); return; }
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'settings-snow';
+    btn.className = 'settings-item';
+    btn.innerHTML = '<span class="settings-item-icon">❄️</span><span class="settings-item-text">'
+      + '<span class="settings-item-name"></span><span class="settings-item-desc"></span></span>';
+    btn.addEventListener('click', () => {
+      try { localStorage.setItem('xmasSnow', xmasSnowOn() ? '0' : '1'); } catch (_) {}
+      renderXmasSnow();
+      renderXmasSettings();
+      track('xmas_snow_toggle', { on: String(xmasSnowOn()) });
+    });
+    list.prepend(btn);
+  }
+  btn.querySelector('.settings-item-name').textContent = t('settings_snow_name');
+  btn.querySelector('.settings-item-desc').textContent = t(xmasSnowOn() ? 'settings_snow_on' : 'settings_snow_off');
+}
+
 function openSettingsModal() {
   const modal = $('#settings-modal');
   if (!modal) return;
@@ -3303,7 +3444,7 @@ function renderStatsStrip() {
     <div class="stat-pill stat-pill-streak is-clickable${streakBig}${trophies.length ? ' has-trophies' : ''}${pending ? ' is-pending' : ''}" id="streak-info-open" role="button" tabindex="0" aria-label="${t('streak_pill_aria')}">
       <div class="stat-pill-streak-main">
         <div class="stat-pill-head">
-          <span class="stat-pill-icon">🔥</span>
+          <span class="stat-pill-icon">${isXmasSeason() ? '🕯️' : '🔥'}</span>
           <span class="stat-pill-num">${s.streak}<span class="stat-pill-unit"> ${plurDayWord(s.streak)}</span></span>
         </div>
         <div class="stat-pill-label">${labelText}</div>
@@ -3801,18 +3942,21 @@ function renderTrialPill() {
   picker.querySelector('.trial-pill')?.remove();
   document.body.classList.remove('has-trial-pill');
   if (state.premium) return;
+  const sale = isXmasSale();
   try {
-    if (!Number(localStorage.getItem('trialNudgeShown') || 0)) return;
+    // Během vánoční slevy se pilulka ukáže všem uživatelům zdarma, ne jen těm,
+    // kdo už viděli nabídku zkušební verze. Skrytí křížkem platí dál.
+    if (!sale && !Number(localStorage.getItem('trialNudgeShown') || 0)) return;
     const hid = daysSinceKey(localStorage.getItem('trialPillHiddenAt'));
     if (hid !== null && hid < TRIAL_PILL_SNOOZE) return;
   } catch (_) { return; }
   const pill = document.createElement('div');
   pill.className = 'trial-pill';
   pill.innerHTML = `
-    <button type="button" class="trial-pill-go">🔓 ${t('trial_pill')}</button>
+    <button type="button" class="trial-pill-go">${sale ? t('trial_pill_sale') : `🔓 ${t('trial_pill')}`}</button>
     <button type="button" class="trial-pill-close" aria-label="${t('trial_pill_close')}">×</button>`;
   pill.querySelector('.trial-pill-go').addEventListener('click', () => {
-    track('trial_pill_clicked');
+    track('trial_pill_clicked', sale ? { sale: 'xmas' } : undefined);
     showPaywall();
   });
   pill.querySelector('.trial-pill-close').addEventListener('click', () => {
@@ -5118,8 +5262,30 @@ function updateCloudUI(user) {
   }
 }
 
+// Ceny v paywallu během vánoční slevy. data-tone se přepne na vánoční klíč,
+// aby případné nové vykreslení textů podle stylu slevu nepřepsalo.
+function applyXmasSalePaywall(m) {
+  if (!isXmasSale() || m.dataset.xmasSale) return;
+  m.dataset.xmasSale = '1';
+  const banner = document.createElement('div');
+  banner.className = 'paywall-sale-banner';
+  banner.innerHTML = t('sale_banner');
+  m.querySelector('.paywall-trial-banner')?.before(banner);
+  [['yearly', 'sale_price_yearly_html', 'sale_yearly_note'],
+   ['lifetime', 'sale_price_lifetime_html', 'sale_lifetime_note']].forEach(([plan, priceKey, noteKey]) => {
+    const opt = m.querySelector(`.paywall-option[data-plan="${plan}"]`);
+    if (!opt) return;
+    opt.classList.add('is-sale');
+    const price = opt.querySelector('.paywall-option-price');
+    const note = opt.querySelector('.paywall-option-note');
+    if (price) price.innerHTML = t(priceKey);
+    if (note) { note.dataset.tone = noteKey; note.textContent = t(noteKey); }
+  });
+}
+
 function showPaywall(sub) {
   const m = $('#paywall');
+  applyXmasSalePaywall(m);
   m.classList.remove('hidden');
   track('paywall_shown', sub ? { sub: sub.id } : undefined);
   // Inline sign-in prompt if not signed in
@@ -5366,7 +5532,28 @@ function updateSyncStatus(status) {
 const teacher = {
   selected: new Set(), // ids vybraných skupin (sub.id)
   pages: null,         // poslední vygenerovaný test: { tests: [html], key: html }
+  xmas: false,         // vánoční písemka: test jen ze sloves XMAS_VERBS
 };
+
+// Vánoční písemka (jen v sezóně, viz isXmasSeason): slovesa, která se k Vánocům
+// hodí. Vybere skupiny, ve kterých jsou, a test pak bere jen tato slovesa.
+// V odkazu digitálního testu je to jeden bit nad bity skupin (viz dtEncode).
+const XMAS_VERBS = ['bring', 'give', 'buy', 'sing', 'eat', 'drink', 'send', 'make', 'find', 'hang',
+  'wake', 'sleep', 'spend', 'meet', 'feel', 'ring', 'light', 'freeze', 'wear', 'fly'];
+const isXmasVerb = (v) => XMAS_VERBS.includes(v.inf);
+
+function teacherSetXmas(on) {
+  teacher.xmas = on;
+  if (on) {
+    teacher.selected = new Set();
+    state.data.sections.forEach((sec) => sec.subsections.forEach((sub) => {
+      if (sub.verbs.some(isXmasVerb)) teacher.selected.add(sub.id);
+    }));
+    $$('#teacher-groups input[data-sub]').forEach((i) => { i.checked = teacher.selected.has(i.dataset.sub); });
+  }
+  $('#tt-xmas')?.setAttribute('aria-pressed', on ? 'true' : 'false');
+  updateTeacherCount();
+}
 
 function teacherSelectedSubs() {
   const out = [];
@@ -5377,6 +5564,10 @@ function teacherSelectedSubs() {
 }
 
 function updateTeacherCount() {
+  if (teacher.xmas) {
+    $('#teacher-count-info').textContent = t('teacher_xmas_selected', XMAS_VERBS.length);
+    return;
+  }
   const subs = teacherSelectedSubs();
   const n = subs.reduce((a, s) => a + s.verbs.length, 0);
   $('#teacher-count-info').textContent = subs.length ? t('teacher_selected', n, subs.length) : '';
@@ -5386,6 +5577,23 @@ function renderTeacherSetup() {
   const c = $('#teacher-groups');
   if (!c) return;
   c.innerHTML = '';
+  $('#tt-xmas')?.remove();
+  if (isXmasSeason()) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.id = 'tt-xmas';
+    card.className = 'tt-xmas-card';
+    card.setAttribute('aria-pressed', teacher.xmas ? 'true' : 'false');
+    card.innerHTML = `<span class="tt-xmas-icon" aria-hidden="true">🎄</span>
+      <span class="tt-xmas-text"><strong>${t('teacher_xmas_card_title')}</strong>
+      <span>${t('teacher_xmas_card_desc')}</span></span>
+      <span class="tt-xmas-check" aria-hidden="true">✓</span>`;
+    card.addEventListener('click', () => {
+      teacherSetXmas(!teacher.xmas);
+      if (teacher.xmas) track('teacher_xmas_preset');
+    });
+    c.before(card);
+  }
   state.data.sections.forEach((sec) => {
     const head = document.createElement('div');
     head.className = 'teacher-sec-head';
@@ -5414,6 +5622,7 @@ function renderTeacherSetup() {
     });
     c.appendChild(grid);
     const setAll = (on) => {
+      if (teacher.xmas) teacherSetXmas(false);
       sec.subsections.forEach((sub) => { if (on) teacher.selected.add(sub.id); else teacher.selected.delete(sub.id); });
       grid.querySelectorAll('input').forEach((i) => { i.checked = on; });
       updateTeacherCount();
@@ -5424,6 +5633,7 @@ function renderTeacherSetup() {
   c.addEventListener('change', (e) => {
     const id = e.target && e.target.dataset ? e.target.dataset.sub : null;
     if (!id) return;
+    if (teacher.xmas) teacherSetXmas(false); // ruční změna = vlastní výběr
     if (e.target.checked) teacher.selected.add(id); else teacher.selected.delete(id);
     updateTeacherCount();
   });
@@ -5571,6 +5781,7 @@ function teacherBuildVariant(pool, s) {
 }
 
 function teacherGroupsLine(subs) {
+  if (teacher.xmas) return t('teacher_xmas_line');
   if (subs.length > 8) return t('teacher_groups_label') + t('teacher_groups_mix', subs.length);
   return t('teacher_groups_label') + subs.map((s) => s.pattern).join(' · ');
 }
@@ -5582,7 +5793,7 @@ function teacherDocHeader(s, titleKey, variantLabel, subs) {
       <div class="tt-title-row">
         ${s.color ? '<img class="tt-logo" src="icon-192.png" alt="" />' : ''}
         <div class="tt-title-block">
-          <h1>${t(titleKey)}${variantLabel ? ` — ${t('teacher_variant', variantLabel)}` : ''}</h1>
+          <h1>${t(teacher.xmas && titleKey === 'teacher_test_title' ? 'teacher_xmas_title' : titleKey)}${variantLabel ? ` — ${t('teacher_variant', variantLabel)}` : ''}</h1>
           <div class="tt-sub">${teacherGroupsLine(subs)}</div>
         </div>
       </div>
@@ -5703,7 +5914,8 @@ function teacherGenerate() {
   const subs = teacherSelectedSubs();
   if (!subs.length) { toast(t('teacher_none_selected'), 'error'); return; }
   const s = teacherSettings();
-  const pool = subs.flatMap((sub) => sub.verbs);
+  let pool = subs.flatMap((sub) => sub.verbs);
+  if (teacher.xmas) pool = pool.filter(isXmasVerb);
   const labels = s.variants ? ['A', 'B'] : [null];
   const variants = labels.map((label) => ({ label, rows: teacherBuildVariant(pool, s) }));
   teacher.pages = {
@@ -5790,7 +6002,9 @@ function dtHash(s) {
 // Zadání → krátký řetězec do odkazu. Bitové pole: skupiny | počet | typ | jméno | seed
 function dtEncode(cfg) {
   const all = allSubIdsInOrder();
-  let v = 0n;
+  // Bit nad skupinami = vánoční písemka. Starší verze appky ho při čtení
+  // ignorují (berou jen bity skupin), takže odkaz neshodí, jen nefiltrují.
+  let v = cfg.xmas ? 1n : 0n;
   for (let i = all.length - 1; i >= 0; i--) {
     v = (v << 1n) | (cfg.subIds.includes(all[i]) ? 1n : 0n);
   }
@@ -5845,15 +6059,17 @@ function dtDecode(code) {
     const count = Number(v & 127n); v >>= 7n;
     const all = allSubIdsInOrder();
     const subIds = all.filter((_, i) => ((v >> BigInt(i)) & 1n) === 1n);
+    const xmas = ((v >> BigInt(all.length)) & 1n) === 1n;
     if (!subIds.length || !count) return null;
-    return { subIds, count, type, askName, scoring, limitMode, limitSec, seed };
+    return { subIds, count, type, askName, scoring, limitMode, limitSec, seed, xmas };
   } catch (_) { return null; }
 }
 
 // Slovesa testu — vždy ve stejném pořadí pro daný odkaz.
 function dtBuildPool(cfg) {
   const sel = new Set(cfg.subIds);
-  const all = flattenVerbs(state.data, sel);
+  let all = flattenVerbs(state.data, sel);
+  if (cfg.xmas) all = all.filter(isXmasVerb);
   const rnd = mulberry32(cfg.seed);
   return shuffleWith(all, rnd).slice(0, Math.min(cfg.count, all.length));
 }
@@ -6023,6 +6239,12 @@ function dtOpen(code) {
   $('.quiz-done').classList.add('hidden');
   const intro = $('#dt-intro');
   intro.classList.remove('hidden');
+  const introTitle = intro.querySelector('h2');
+  const introIcon = intro.querySelector('.dt-intro-icon');
+  if (introTitle && !introTitle.dataset.def) introTitle.dataset.def = introTitle.textContent;
+  if (introIcon && !introIcon.dataset.def) introIcon.dataset.def = introIcon.textContent;
+  if (introTitle) introTitle.textContent = cfg.xmas ? t('dt_xmas_title') : introTitle.dataset.def;
+  if (introIcon) introIcon.textContent = cfg.xmas ? '🎄' : introIcon.dataset.def;
   const pool = dtBuildPool(cfg);
   $('#dt-intro-sub').textContent = t('dt_intro_sub', pool.length);
   const nameRow = $('#dt-name-row');
@@ -6223,7 +6445,8 @@ function dtCreateLink() {
   if (!subs.length) { toast(t('teacher_none_selected'), 'error'); return; }
   // Premium brána: odkaz mimo skupiny zdarma smí vytvořit jen předplatitel.
   // Vytvořený odkaz pak funguje každému žákovi v plném rozsahu.
-  if (!state.premium && subs.some((s) => !isFreeSub(s.id))) {
+  // Vánoční písemka je dárek pro všechny učitele — brána se na ni nevztahuje.
+  if (!teacher.xmas && !state.premium && subs.some((s) => !isFreeSub(s.id))) {
     toast(t('dt_premium_blocked'), 'error', 6000);
     showPaywall();
     return;
@@ -6231,7 +6454,8 @@ function dtCreateLink() {
   const s = teacherSettings();
   const cfg = {
     subIds: subs.map((x) => x.id),
-    count: Math.min(s.count, subs.reduce((n, x) => n + x.verbs.length, 0)),
+    count: Math.min(s.count, teacher.xmas ? XMAS_VERBS.length : subs.reduce((n, x) => n + x.verbs.length, 0)),
+    xmas: teacher.xmas,
     // Digitální test respektuje typ zvolený výše pro papír.
     type: DT_TYPE_FROM_PAPER[s.type] || 'mixed',
     askName: $('#dt-ask-name').checked,
@@ -6348,6 +6572,8 @@ async function init() {
   renderAutoSetup();
   renderTeacherSetup();
   renderSectionChips($('#quiz-filter'), state.quiz.selectedSections);
+  renderXmasSnow();
+  renderXmasSettings();
   renderStatsStrip();
   // Backfill: if a user upgrades to this build with an already-running streak,
   // mark every milestone they passed as pending so they can claim retroactively.

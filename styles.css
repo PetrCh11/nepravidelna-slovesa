@@ -6254,3 +6254,137 @@ body.has-trial-pill:not(.practicing):has(#view-lesson.active) .app-footer { padd
 .tt-type-cards { margin-bottom: 18px; }
 .quiz-next-row .btn.is-guarded { opacity: 0.55; filter: grayscale(0.3); }
 .quiz-next-row .btn.is-guarded.is-confirm { opacity: 1; filter: none; background: #e8590c; box-shadow: 0 0 0 3px rgba(232, 89, 12, 0.25); }
+
+/* ---------- Vánoce (html.xmas — app.js, od 1. adventní neděle do 6. 1.) ---------- */
+/* Čepice na logu */
+html.xmas .logo-btn { position: relative; }
+html.xmas .logo-btn::before {
+  /* Rovně shora, lem o 3 px širší než logo na každé straně (.logo-img: 34 px,
+     na mobilu 28 px; .logo-btn má padding 4px 8px, logo začíná na 8/4 px). */
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: -14px;
+  width: 40px;
+  height: 25px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 40'%3E%3Cpath d='M6 29 C8 13 22 3 38 4 C50 5 57 10 56 17 C52 13 47 13 45 18 C44 22 50 26 58 29 Z' fill='%23d62828'/%3E%3Cpath d='M16 20 C21 11 30 7 40 7' stroke='%23ff6b6b' stroke-width='2.5' fill='none' stroke-linecap='round' opacity='.6'/%3E%3Crect x='1' y='27' width='62' height='12' rx='6' fill='%23fff' stroke='%23e3e3e3'/%3E%3Ccircle cx='55' cy='17' r='6' fill='%23fff' stroke='%23e3e3e3'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.18));
+}
+@media (max-width: 480px) {
+  html.xmas .logo-btn::before { width: 34px; height: 21.25px; top: -11px; }
+}
+/* Světýlka pod hlavičkou */
+html.xmas .app-header::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  bottom: -6px;
+  height: 10px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12px 4px, #e63946 0 3px, transparent 3.6px),
+    radial-gradient(circle at 36px 6px, #f4c430 0 3px, transparent 3.6px),
+    radial-gradient(circle at 60px 4px, #2a9d55 0 3px, transparent 3.6px),
+    radial-gradient(circle at 84px 6px, #4a90e2 0 3px, transparent 3.6px);
+  background-size: 96px 10px;
+  background-repeat: repeat-x;
+  animation: xmas-twinkle 2.6s ease-in-out infinite alternate;
+}
+@keyframes xmas-twinkle { from { opacity: 0.65; } to { opacity: 1; } }
+/* Sníh za obsahem — při procvičování a v Car mode schovaný */
+.xmas-snow {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.xmas-flake {
+  position: absolute;
+  top: -20px;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: rgba(130, 160, 205, 0.55);
+  animation-name: xmas-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.xmas-flake.is-glyph {
+  width: auto; height: auto;
+  background: none;
+  border-radius: 0;
+  font-size: var(--size);
+  line-height: 1;
+  color: rgba(120, 150, 200, 0.7);
+}
+[data-theme="dark"] .xmas-flake { background: rgba(255, 255, 255, 0.7); }
+[data-theme="dark"] .xmas-flake.is-glyph { background: none; color: rgba(255, 255, 255, 0.75); }
+@keyframes xmas-fall {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(var(--sway), 105vh, 0); }
+}
+body.practicing .xmas-snow, body.auto-driving .xmas-snow { display: none; }
+/* Konfety: vločky, hvězdičky a cukroví */
+.confetti-piece.glyph { background: none; width: auto; height: auto; line-height: 1; }
+/* Vánoční písemka v Teacher zone */
+.tt-xmas-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 14px;
+  border: 1.5px dashed rgba(214, 40, 40, 0.55);
+  background: linear-gradient(135deg, rgba(214, 40, 40, 0.10), rgba(42, 157, 85, 0.10));
+  transition: border-color 0.15s, transform 0.15s;
+}
+.tt-xmas-card:hover { transform: translateY(-1px); border-color: #d62828; }
+.tt-xmas-card[aria-pressed="true"] { border-style: solid; border-color: #2a9d55; background: linear-gradient(135deg, rgba(214, 40, 40, 0.16), rgba(42, 157, 85, 0.18)); }
+.tt-xmas-icon { font-size: 1.8rem; line-height: 1; }
+.tt-xmas-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.tt-xmas-text span { font-size: 0.85rem; opacity: 0.8; }
+.tt-xmas-check {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-weight: 800; font-size: 0.85rem;
+  border: 1.5px solid rgba(42, 157, 85, 0.6);
+  color: transparent;
+}
+.tt-xmas-card[aria-pressed="true"] .tt-xmas-check { background: #2a9d55; border-color: #2a9d55; color: #fff; }
+@media (prefers-reduced-motion: reduce) {
+  html.xmas .app-header::after { animation: none; }
+}
+/* Vánoční sleva v paywallu (isXmasSale v app.js) */
+.paywall-sale-banner {
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(214, 40, 40, 0.14), rgba(42, 157, 85, 0.14));
+  border: 1px solid rgba(214, 40, 40, 0.35);
+}
+.paywall-sale-banner strong { color: #c1121f; }
+[data-theme="dark"] .paywall-sale-banner strong { color: #ff8a8a; }
+.paywall-old-price {
+  display: block;
+  font-size: 0.6em;
+  font-weight: 600;
+  opacity: 0.55;
+  line-height: 1.1;
+  text-align: right;
+}
+.paywall-option.is-sale .paywall-option-price { color: #c1121f; }
+[data-theme="dark"] .paywall-option.is-sale .paywall-option-price { color: #ff8a8a; }
+/* Pilulka nesmí ležet přes otevřený paywall ani jiná okna */
+body:has(#paywall:not(.hidden)) .trial-pill,
+body:has(.modal-backdrop:not(.hidden)) .trial-pill { display: none; }
+.paywall-option.is-sale .paywall-option-price { text-align: right; }
+.paywall-option.is-sale .paywall-period { display: block; line-height: 1.1; }
