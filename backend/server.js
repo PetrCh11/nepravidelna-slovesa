@@ -160,7 +160,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 // JSON parser for the rest
 app.use(express.json());
 
-// Vánoční sleva −30 % na roční a doživotní Premium (CZK i PLN), v roce 2026 od 16. 11. (jinak od 1. adventní)
+// Vánoční sleva −30 % na roční a doživotní Premium (CZK i PLN), v roce 2026 od 16. 11. (jinak od 1. adventní
 // neděle) do konce Štědrého dne (časy v UTC = půlnoc v Praze). Kupony jsou ve
 // Stripe (Product catalog → Coupons) a samy expirují 24. 12. 23:59:
 //   VANOCE30-NAVZDY — jednorázově, na doživotní nákup
