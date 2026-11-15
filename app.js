@@ -491,6 +491,7 @@ function firstAdventSunday(year) {
   const fourth = new Date(year, 11, 25 - (xmas.getDay() || 7)); // neděle před 25. 12.
   return new Date(year, 11, fourth.getDate() - 21);
 }
+const XMAS_EARLY_START = { 2026: new Date(2026, 10, 16) };
 function isXmasSeason() {
   try {
     const forced = localStorage.getItem('xmasPreview');
@@ -499,7 +500,10 @@ function isXmasSeason() {
   } catch (_) {}
   const d = new Date();
   if (d.getMonth() === 0) return d.getDate() <= 6;
-  return d >= firstAdventSunday(d.getFullYear());
+  const y = d.getFullYear();
+  // Rok 2026 začínáme dřív než o 1. adventní neděli (od 16. 11.).
+  const start = XMAS_EARLY_START[y] ? Math.min(XMAS_EARLY_START[y], firstAdventSunday(y)) : firstAdventSunday(y);
+  return d >= start;
 }
 (function applyXmasPreviewParam() {
   const m = /[?&]xmas=(1|0|auto)\b/.exec(location.search);
@@ -514,7 +518,7 @@ window.isXmasSeason = isXmasSeason; // lang/pl.js si z ní bere vánoční hlá�
 // Vánoční sleva −30 % na roční a doživotní Premium. Období MUSÍ sedět s backendem
 // (backend/server.js, XMAS_SALE) — ten slevu doopravdy přidá do Stripe Checkoutu,
 // tady se jen ukazují ceny. Náhled ?xmas=1 ukáže i slevu, zaplatí se ale plná cena.
-const XMAS_SALE_START = Date.UTC(2026, 10, 28, 23); // 29. 11. 2026 00:00 Praha
+const XMAS_SALE_START = Date.UTC(2026, 10, 15, 23); // 16. 11. 2026 00:00 Praha
 const XMAS_SALE_END = Date.UTC(2026, 11, 24, 23);   // 25. 12. 2026 00:00 Praha
 function isXmasSale() {
   try {
