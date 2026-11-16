@@ -6388,3 +6388,59 @@ body:has(#paywall:not(.hidden)) .trial-pill,
 body:has(.modal-backdrop:not(.hidden)) .trial-pill { display: none; }
 .paywall-option.is-sale .paywall-option-price { text-align: right; }
 .paywall-option.is-sale .paywall-period { display: block; line-height: 1.1; }
+/* Vánoce: Santa vykukuje zpoza kartičky – shora nebo zboku, někdy s bublinou (maybeSantaPeek v app.js) */
+html, body { overflow-x: clip; }
+.lesson-question { position: relative; }
+.lesson-question > .q-card { z-index: 1; }
+.xmas-santa {
+  position: absolute;
+  z-index: 0;
+  font-size: 46px;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0;
+  --tilt: 1;
+  --hx: 0px; --hy: 0px; --sx: 0px; --sy: 0px; --r: 0deg;
+  animation: xmas-santa-peek 3.4s ease-in-out both;
+}
+.xmas-santa.from-top   { top: 0; --hy: 14px; --sy: -30px; --r: 8deg; }
+.xmas-santa.from-right { right: 0; --hx: -20px; --sx: 34px; --r: 16deg; --tilt: 1 !important; }
+.xmas-santa.from-left  { left: 0; --hx: 20px; --sx: -34px; --r: 16deg; --tilt: -1 !important; }
+@keyframes xmas-santa-peek {
+  0%   { transform: translate(var(--hx), var(--hy)) rotate(0deg); opacity: 0; }
+  8%   { opacity: 1; }
+  20%  { transform: translate(var(--sx), var(--sy)) rotate(calc(var(--tilt) * var(--r))); }
+  40%  { transform: translate(var(--sx), var(--sy)) rotate(calc(var(--tilt) * var(--r) * -0.6)); }
+  60%  { transform: translate(var(--sx), var(--sy)) rotate(calc(var(--tilt) * var(--r) * 1.1)); }
+  78%  { transform: translate(var(--sx), var(--sy)) rotate(0deg); }
+  92%  { opacity: 1; }
+  100% { transform: translate(var(--hx), var(--hy)) rotate(0deg); opacity: 0; }
+}
+.xmas-santa-bubble {
+  position: absolute;
+  z-index: 3;
+  max-width: 200px;
+  padding: 7px 12px;
+  border-radius: 16px;
+  background: #fff;
+  color: #b3261e;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.25;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .15);
+  pointer-events: none;
+  opacity: 0;
+  animation: xmas-santa-bubble 3.4s ease-in-out both;
+}
+.xmas-santa-bubble.from-top   { top: -82px; }
+.xmas-santa-bubble.from-right { right: 30px; }
+.xmas-santa-bubble.from-left  { left: 30px; }
+@keyframes xmas-santa-bubble {
+  0%, 20%  { opacity: 0; transform: scale(.6); }
+  27%      { opacity: 1; transform: scale(1.05); }
+  31%, 74% { opacity: 1; transform: scale(1); }
+  82%, 100% { opacity: 0; transform: scale(.8); }
+}
+@media (max-width: 420px) { .xmas-santa-bubble { white-space: normal; max-width: 160px; } }
+@media (prefers-reduced-motion: reduce) { .xmas-santa, .xmas-santa-bubble { display: none; } }

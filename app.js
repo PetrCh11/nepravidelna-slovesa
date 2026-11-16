@@ -515,6 +515,62 @@ function isXmasSeason() {
 })();
 window.isXmasSeason = isXmasSeason; // lang/pl.js si z ní bere vánoční hlášky
 
+// Vánoce: Santa občas vykoukne zpoza horní hrany kartičky při procvičování.
+// Jen zřídka (ať neruší) a nejdřív po pár kartičkách; při omezeném pohybu nikdy.
+// Náhled kdykoli: localStorage.santaTest = '1' → vykoukne u každé kartičky.
+let santaLastAt = 0;
+let santaCards = 0;
+function maybeSantaPeek(container) {
+  if (!container || !isXmasSeason()) return;
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  let test = false;
+  try { test = localStorage.getItem('santaTest') === '1'; } catch (_) {}
+  santaCards += 1;
+  if (!test) {
+    if (santaCards < 3 || Date.now() - santaLastAt < 45000 || Math.random() > 0.18) return;
+  }
+  santaLastAt = Date.now();
+  container.querySelectorAll('.xmas-santa, .xmas-santa-bubble').forEach((el) => el.remove());
+  const rnd = (min, max) => min + Math.random() * (max - min);
+  const delay = `${rnd(0.6, 2).toFixed(2)}s`;
+  // Kde vykoukne: zpoza horní hrany (kdekoli po šířce), nebo zboku (v různé výšce).
+  const side = ['top', 'top', 'left', 'right'][Math.floor(Math.random() * 4)];
+  const tilt = Math.random() < 0.5 ? 1 : -1;
+  const s = document.createElement('span');
+  s.className = `xmas-santa from-${side}`;
+  s.textContent = '🎅';
+  s.setAttribute('aria-hidden', 'true');
+  s.style.animationDelay = delay;
+  s.style.setProperty('--tilt', tilt);
+  const pos = side === 'top' ? rnd(4, 84) : rnd(10, 68);
+  if (side === 'top') s.style.left = `${pos}%`;
+  else s.style.top = `${pos}%`;
+  s.addEventListener('animationend', () => s.remove());
+  container.prepend(s);
+  // Někdy k tomu bublina s hláškou.
+  let line = '';
+  if (Math.random() < 0.45) {
+    const lines = ['Ho ho ho!', 'Ho ho ho! 🎄', 'Ho ho ho!', 'Merry Christmas!', 'Have you been good this year?',
+      'I see you practising! 👀', 'Keep going! 🎁', 'Nice list? Nice job!', 'Santa came, saw… and went! 🦌',
+      'I brought you some verbs! 🎁', 'Ho ho ho — go, went, gone! 🛷'];
+    line = lines[Math.floor(Math.random() * lines.length)];
+    const b = document.createElement('span');
+    b.className = `xmas-santa-bubble from-${side}`;
+    b.textContent = line;
+    b.setAttribute('aria-hidden', 'true');
+    b.style.animationDelay = delay;
+    if (side === 'top') {
+      if (pos > 50) b.style.right = `calc(${100 - pos}% - 30px)`;
+      else b.style.left = `calc(${pos}% + 10px)`;
+    } else {
+      b.style.top = `calc(${pos}% - 46px)`;
+    }
+    b.addEventListener('animationend', () => b.remove());
+    container.append(b);
+  }
+  track('xmas_santa_peek', { where: side, bubble: line ? 'yes' : 'no' });
+}
+
 // Vánoční sleva −30 % na roční a doživotní Premium. Období MUSÍ sedět s backendem
 // (backend/server.js, XMAS_SALE) — ten slevu doopravdy přidá do Stripe Checkoutu,
 // tady se jen ukazují ceny. Náhled ?xmas=1 ukáže i slevu, zaplatí se ale plná cena.
@@ -2673,6 +2729,8 @@ function askStage2Verb(verb, step) {
       <button type="button" class="give-up-btn" id="give-up-btn">${t('giveup_btn')}</button>
     </div>
   `;
+
+  maybeSantaPeek(q);
 
   const inputs = Array.from(q.querySelectorAll('.quiz-fill-inputs input'));
   const fieldResults = {};
