@@ -6444,3 +6444,5 @@ html, body { overflow-x: clip; }
 }
 @media (max-width: 420px) { .xmas-santa-bubble { white-space: normal; max-width: 160px; } }
 @media (prefers-reduced-motion: reduce) { .xmas-santa, .xmas-santa-bubble { display: none; } }
+/* Mobil: dočasné místo pod kartičkou při psaní, ať jde kartičku posunout nahoru (fitQuizCard v app.js) */
+body.kb-room { padding-bottom: 70vh; }

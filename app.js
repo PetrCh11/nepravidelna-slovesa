@@ -571,6 +571,50 @@ function maybeSantaPeek(container) {
   track('xmas_santa_peek', { where: side, bubble: line ? 'yes' : 'no' });
 }
 
+// Mobil: při psaní do kartičky (lekce i test) nechceme, aby prohlížeč vystředil
+// pole nad klávesnici — kartička má být vidět celá, od horní hrany (i se Santou
+// nad ní). Zarovnáme ji pod horní okraj viditelné plochy; posuneme níž jen
+// tolik, aby aktivní pole nezajelo pod klávesnici. Dole přidáme dočasně místo
+// (body.kb-room), aby šlo stránku posunout i když je krátká.
+const QUIZ_CARD_SEL = '.lesson-question .q-card, #quiz-card';
+function fitQuizCard(input) {
+  const card = input?.closest(QUIZ_CARD_SEL);
+  if (!card) return;
+  const vv = window.visualViewport;
+  const visTop = vv ? vv.offsetTop : 0;
+  const visH = vv ? vv.height : window.innerHeight;
+  const r = card.getBoundingClientRect();
+  let delta = r.top - visTop - 44;
+  const ir = input.getBoundingClientRect();
+  const inputBottom = ir.bottom - visTop - delta;
+  if (inputBottom + 12 > visH) delta += inputBottom + 12 - visH;
+  if (Math.abs(delta) > 3) window.scrollBy({ top: delta, behavior: 'instant' });
+}
+(function installQuizCardFit() {
+  if (typeof matchMedia !== 'function' || !matchMedia('(pointer: coarse)').matches) return;
+  let timers = [];
+  const activeQuizInput = () => {
+    const a = document.activeElement;
+    return a && a.tagName === 'INPUT' && a.closest(QUIZ_CARD_SEL) ? a : null;
+  };
+  const schedule = () => {
+    timers.forEach(clearTimeout);
+    timers = [0, 120, 350, 700].map((ms) => setTimeout(() => {
+      const a = activeQuizInput();
+      if (a) fitQuizCard(a);
+    }, ms));
+  };
+  document.addEventListener('focusin', (e) => {
+    if (e.target.tagName !== 'INPUT' || !e.target.closest(QUIZ_CARD_SEL)) return;
+    document.body.classList.add('kb-room');
+    schedule();
+  });
+  document.addEventListener('focusout', () => {
+    setTimeout(() => { if (!activeQuizInput()) document.body.classList.remove('kb-room'); }, 400);
+  });
+  window.visualViewport?.addEventListener('resize', () => { if (activeQuizInput()) schedule(); });
+})();
+
 // Vánoční sleva −30 % na roční a doživotní Premium. Období MUSÍ sedět s backendem
 // (backend/server.js, XMAS_SALE) — ten slevu doopravdy přidá do Stripe Checkoutu,
 // tady se jen ukazují ceny. Náhled ?xmas=1 ukáže i slevu, zaplatí se ale plná cena.
@@ -2838,7 +2882,7 @@ function askStage2Verb(verb, step) {
     next.textContent = t('next_btn');
     next.addEventListener('click', stage2Next, { once: true });
     q.querySelector('.q-card').appendChild(next);
-    next.focus();
+    next.focus({ preventScroll: true });
     updateLessonBar();
   };
 
@@ -2853,10 +2897,10 @@ function askStage2Verb(verb, step) {
       if (!isAtomicCheck) {
         markField(inp);
         const nextEmpty = inputs.find((x) => !(x.dataset.form in fieldResults));
-        if (nextEmpty) nextEmpty.focus();
+        if (nextEmpty) nextEmpty.focus({ preventScroll: true });
         else finalize();
       } else {
-        if (idx < inputs.length - 1) inputs[idx + 1].focus();
+        if (idx < inputs.length - 1) inputs[idx + 1].focus({ preventScroll: true });
         else finalize();
       }
     };
@@ -2968,7 +3012,7 @@ function askStage2Verb(verb, step) {
     finalize();
   });
 
-  setTimeout(() => q.querySelector('input')?.focus(), 50);
+  setTimeout(() => q.querySelector('input')?.focus({ preventScroll: true }), 50);
   updateStageDots();
   updateLessonBar();
 }
@@ -5022,8 +5066,8 @@ function quizRender() {
       const advance = (e) => {
         if (e) e.preventDefault();
         const nextEmpty = fillInputs.find((x) => !x.value.trim());
-        if (nextEmpty && nextEmpty !== inp) { nextEmpty.focus(); return; }
-        if (idx < fillInputs.length - 1) { fillInputs[idx + 1].focus(); return; }
+        if (nextEmpty && nextEmpty !== inp) { nextEmpty.focus({ preventScroll: true }); return; }
+        if (idx < fillInputs.length - 1) { fillInputs[idx + 1].focus({ preventScroll: true }); return; }
         submitFill();
       };
       inp.addEventListener('keydown', (e) => {
@@ -5034,7 +5078,7 @@ function quizRender() {
         if (e.inputType === 'insertLineBreak') advance(e);
       });
     });
-    setTimeout(() => fillInputs[0]?.focus(), 50);
+    setTimeout(() => fillInputs[0]?.focus({ preventScroll: true }), 50);
   }
   card.querySelectorAll('[data-speak]').forEach((el) =>
     el.addEventListener('click', (e) => { e.stopPropagation(); speak(el.dataset.speak, state.dialect); })
@@ -5108,7 +5152,7 @@ function handleQuizAnswer(ok, verb, qText, aText, detail) {
   $('#quiz-score').textContent = state.quiz.score;
   const next = $('#quiz-card #quiz-next');
   next.classList.remove('hidden');
-  next.focus();
+  next.focus({ preventScroll: true });
   next.addEventListener('click', quizNext, { once: true });
 }
 
