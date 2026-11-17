@@ -597,10 +597,15 @@ function fitQuizCard(input) {
   if (inputBottom + 12 > visH) delta += inputBottom + 12 - visH;
   if (Math.abs(delta) > 3) window.scrollBy({ top: delta, behavior: 'instant' });
 }
-// Klávesnice je venku = viditelná plocha je výrazně menší než okno.
+// Klávesnice je venku = viditelná plocha je výrazně menší než layout viewport.
+// Pozor: na iOS se window.innerHeight s klávesnicí ZMENŠUJE (je to výška
+// viditelné plochy), proto porovnáváme s documentElement.clientHeight, který
+// klávesnice nemění (iOS i Android Chrome).
 function isKeyboardOpen() {
   const vv = window.visualViewport;
-  return !!vv && window.innerHeight - vv.height > 120;
+  if (!vv) return false;
+  const full = Math.max(document.documentElement.clientHeight, window.innerHeight);
+  return full - vv.height * (vv.scale || 1) > 120;
 }
 const IS_TOUCH = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 // Nová kartička bez klávesnice → ukaž stránku úplně odshora. Zarovnání na
