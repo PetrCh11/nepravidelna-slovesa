@@ -58,13 +58,26 @@ body {
 
 /* Safe-area padding for iOS PWA */
 body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+/* iOS appka z plochy (status bar black-translucent): pruh pod hodinami/Dynamic
+   Islandem v barvě appky, ať jsou bílé hodiny a baterie čitelné. Mimo appku je
+   safe-area-inset-top 0 → pruh má nulovou výšku. */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: #5dc9bd;
+  z-index: 1000;
+  pointer-events: none;
+}
+[data-theme="dark"] body::before { background: #2b6f68; }
 
 /* ---------- Header ---------- */
 .app-header {
   background: var(--bg-elev);
   border-bottom: 1px solid var(--border);
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   z-index: 10;
   backdrop-filter: blur(8px);
 }
@@ -4654,7 +4667,7 @@ body.practicing .app-footer { display: none; }
   }
   /* Reclaim the space the header used to provide so content isn't jammed
      under the status bar / notch. */
-  body.practicing main.container { padding-top: calc(env(safe-area-inset-top, 0px) + 8px); }
+  body.practicing main.container { padding-top: 8px; } /* safe-area už řeší padding body */
   /* Keep the group label clear of the floating ☰. */
   body.practicing .lesson-topbar { padding-right: 48px; }
 }
@@ -4903,7 +4916,7 @@ body.auto-driving { overflow: hidden; }
 /* ===== PWA install banner ===== */
 .install-banner {
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   z-index: 200;
   background: linear-gradient(135deg, #5dc9bd, #7c6ff5);
   color: #fff;
