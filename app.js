@@ -590,8 +590,20 @@ function fitQuizCard(input) {
   if (inputBottom + 12 > visH) delta += inputBottom + 12 - visH;
   if (Math.abs(delta) > 3) window.scrollBy({ top: delta, behavior: 'instant' });
 }
+// Klávesnice je venku = viditelná plocha je výrazně menší než okno.
+function isKeyboardOpen() {
+  const vv = window.visualViewport;
+  return !!vv && window.innerHeight - vv.height > 120;
+}
+const IS_TOUCH = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+// Nová kartička bez klávesnice → ukaž stránku úplně odshora. Zarovnání na
+// kartičku (fitQuizCard) přijde až ve chvíli, kdy vyjede klávesnice.
+function showCardFromTop() {
+  if (!IS_TOUCH || isKeyboardOpen()) return;
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
 (function installQuizCardFit() {
-  if (typeof matchMedia !== 'function' || !matchMedia('(pointer: coarse)').matches) return;
+  if (!IS_TOUCH) return;
   let timers = [];
   const activeQuizInput = () => {
     const a = document.activeElement;
@@ -601,7 +613,7 @@ function fitQuizCard(input) {
     timers.forEach(clearTimeout);
     timers = [0, 120, 350, 700].map((ms) => setTimeout(() => {
       const a = activeQuizInput();
-      if (a) fitQuizCard(a);
+      if (a && isKeyboardOpen()) fitQuizCard(a);
     }, ms));
   };
   document.addEventListener('focusin', (e) => {
@@ -2775,6 +2787,7 @@ function askStage2Verb(verb, step) {
   `;
 
   maybeSantaPeek(q);
+  showCardFromTop();
 
   const inputs = Array.from(q.querySelectorAll('.quiz-fill-inputs input'));
   const fieldResults = {};
@@ -4961,6 +4974,7 @@ function quizRender() {
   if (mode === 'mixed') mode = qRand() < 0.5 ? 'mc' : 'fill';
   const card = $('#quiz-card');
   card.innerHTML = '';
+  showCardFromTop();
   if (mode === 'mc') {
     const ask = qRand() < 0.5 ? 'past' : 'pp';
     const askLabel = ask === 'past' ? 'past simple' : 'past participle';
