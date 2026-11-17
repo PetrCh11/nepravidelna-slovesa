@@ -586,8 +586,12 @@ function fitQuizCard(input) {
   // V appce z plochy sahá stránka až pod hodiny/Dynamic Island (safe-area,
   // stejná hodnota jako padding-top body) → horní hranu karty dáme kousek pod ně.
   const safeTop = parseFloat(getComputedStyle(document.body).paddingTop) || 0;
-  const r = card.getBoundingClientRect();
-  let delta = r.top - visTop - safeTop - 14;
+  // V lekci zarovnáme nahoru řádek s kroky (1) studium → 2) v pořadí → …),
+  // karta je hned pod ním; v testu (bez kroků) samotnou kartu.
+  const pills = card.closest('.lesson-question') ? document.getElementById('step-pills') : null;
+  const anchor = pills && pills.offsetParent && pills.childElementCount ? pills : card;
+  const r = anchor.getBoundingClientRect();
+  let delta = r.top - visTop - safeTop - (anchor === card ? 14 : 8);
   const ir = input.getBoundingClientRect();
   const inputBottom = ir.bottom - visTop - delta;
   if (inputBottom + 12 > visH) delta += inputBottom + 12 - visH;
