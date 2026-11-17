@@ -65,12 +65,25 @@ body::before {
   content: '';
   position: fixed;
   top: 0; left: 0; right: 0;
+  /* Jen přesně výška lišty — nic nepřekrývá obsah stránky (logo). Dole plynule
+     mizí do pozadí, pod hodinami je barva ještě dost sytá pro bílé písmo. */
   height: env(safe-area-inset-top, 0px);
-  background: #5dc9bd;
-  z-index: 1000;
+  background: linear-gradient(to bottom,
+    rgba(93, 201, 189, .97) 0%,
+    rgba(93, 201, 189, .92) 55%,
+    rgba(93, 201, 189, .5) 80%,
+    rgba(93, 201, 189, 0) 100%);
+  /* Pod všemi okny (paywall 100, modaly 300+), nad lištou stránky. */
+  z-index: 90;
   pointer-events: none;
 }
-[data-theme="dark"] body::before { background: #2b6f68; }
+[data-theme="dark"] body::before {
+  background: linear-gradient(to bottom,
+    rgba(43, 111, 104, .97) 0%,
+    rgba(43, 111, 104, .92) 55%,
+    rgba(43, 111, 104, .5) 80%,
+    rgba(43, 111, 104, 0) 100%);
+}
 
 /* ---------- Header ---------- */
 .app-header {
@@ -6459,3 +6472,10 @@ html, body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) { .xmas-santa, .xmas-santa-bubble { display: none; } }
 /* Mobil: dočasné místo pod kartičkou při psaní, ať jde kartičku posunout nahoru (fitQuizCard v app.js) */
 body.kb-room { padding-bottom: 70vh; }
+/* iOS appka z plochy: okna na celou obrazovku začínají až pod hodinami /
+   Dynamic Islandem, ať křížek nezajede pod horní lištu. */
+.modal-backdrop, .paywall-backdrop, .ios-install-modal, .why-modal, .tone-modal {
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+}
+.modal { max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px)); }
+.toast-container { top: calc(16px + env(safe-area-inset-top, 0px)); }
