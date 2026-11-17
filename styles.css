@@ -6480,3 +6480,17 @@ body::after {
   width: calc(var(--pill-on) * 84);
   right: calc((100vw - 126px) / 4 - 42px);
 }
+/* Telefon: lišta s logem se nedrží nahoře (odjede se stránkou) a nemá matné
+   „sklo“ (backdrop blur) — logo leží přímo na pozadí stránky, ostře. */
+@media (max-width: 600px) {
+  .app-header,
+  [data-theme="dark"] .app-header {
+    position: relative;
+    top: auto;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    border-bottom: 0;
+  }
+}
