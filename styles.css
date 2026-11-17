@@ -58,32 +58,6 @@ body {
 
 /* Safe-area padding for iOS PWA */
 body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-/* iOS appka z plochy (status bar black-translucent): pruh pod hodinami/Dynamic
-   Islandem v barvě appky, ať jsou bílé hodiny a baterie čitelné. Mimo appku je
-   safe-area-inset-top 0 → pruh má nulovou výšku. */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  /* Jen přesně výška lišty — nic nepřekrývá obsah stránky (logo). Dole plynule
-     mizí do pozadí, pod hodinami je barva ještě dost sytá pro bílé písmo. */
-  height: env(safe-area-inset-top, 0px);
-  background: linear-gradient(to bottom,
-    rgba(93, 201, 189, .97) 0%,
-    rgba(93, 201, 189, .92) 55%,
-    rgba(93, 201, 189, .5) 80%,
-    rgba(93, 201, 189, 0) 100%);
-  /* Pod všemi okny (paywall 100, modaly 300+), nad lištou stránky. */
-  z-index: 90;
-  pointer-events: none;
-}
-[data-theme="dark"] body::before {
-  background: linear-gradient(to bottom,
-    rgba(43, 111, 104, .97) 0%,
-    rgba(43, 111, 104, .92) 55%,
-    rgba(43, 111, 104, .5) 80%,
-    rgba(43, 111, 104, 0) 100%);
-}
 
 /* ---------- Header ---------- */
 .app-header {
@@ -6479,30 +6453,30 @@ body.kb-room { padding-bottom: 70vh; }
 }
 .modal { max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px)); }
 .toast-container { top: calc(16px + env(safe-area-inset-top, 0px)); }
-/* iOS appka z plochy: iOS rozmazává (liquid glass) i kousek POD lištou s hodinami.
-   Obsah proto začíná o --sb-gap níž a mezeru vyplní plynulý přechod pruhu. */
-@media (display-mode: standalone) {
-  :root { --sb-gap: 18px; }
-  body { padding-top: calc(env(safe-area-inset-top, 0px) + var(--sb-gap)); }
-  body::before {
-    height: calc(env(safe-area-inset-top, 0px) + var(--sb-gap));
-    background: linear-gradient(to bottom,
-      rgba(93, 201, 189, .97) 0,
-      rgba(93, 201, 189, .92) calc(env(safe-area-inset-top, 0px) * .6),
-      rgba(93, 201, 189, .45) env(safe-area-inset-top, 0px),
-      rgba(93, 201, 189, 0) 100%);
-  }
-  [data-theme="dark"] body::before {
-    background: linear-gradient(to bottom,
-      rgba(43, 111, 104, .97) 0,
-      rgba(43, 111, 104, .92) calc(env(safe-area-inset-top, 0px) * .6),
-      rgba(43, 111, 104, .45) env(safe-area-inset-top, 0px),
-      rgba(43, 111, 104, 0) 100%);
-  }
-  .app-header, .install-banner { top: calc(env(safe-area-inset-top, 0px) + var(--sb-gap)); }
-  .practice-menu-btn { top: calc(env(safe-area-inset-top, 0px) + var(--sb-gap) + 6px); }
-  body.practicing #menu-dropdown { top: calc(env(safe-area-inset-top, 0px) + var(--sb-gap) + 52px); }
-  .modal-backdrop, .paywall-backdrop, .ios-install-modal, .why-modal, .tone-modal {
-    padding-top: calc(env(safe-area-inset-top, 0px) + var(--sb-gap) + 8px);
-  }
+/* iOS appka z plochy: průhledná lišta → bílé hodiny jsou na světlé stránce špatně
+   čitelné. Pod hodiny (vlevo) a pod signál/baterii (vpravo) dáme pilulky.
+   Velikost přes clamp: při malém safe-area (starší iPhony s hodinami uprostřed,
+   Safari, na šířku) vyjde 0 → pilulky se neukážou. */
+body::before, body::after {
+  content: '';
+  position: fixed;
+  z-index: 90; /* pod okny (paywall 100, modaly 300+) */
+  pointer-events: none;
+  --pill-on: clamp(0px, (env(safe-area-inset-top, 0px) - 40px) * 1000, 1px);
+  height: calc(var(--pill-on) * 26);
+  top: calc(env(safe-area-inset-top, 0px) * .53 - 13px);
+  border-radius: 13px;
+  /* barvy appky: oranžová --primary → korálově růžová jako hlavní tlačítka, průhledně */
+  background: linear-gradient(135deg, rgba(255, 107, 53, .6), rgba(240, 82, 120, .6));
+  box-shadow: 0 2px 8px rgba(255, 107, 53, .18);
+}
+/* vlevo pod hodinami */
+body::before {
+  width: calc(var(--pill-on) * 64);
+  left: calc((100vw - 126px) / 4 - 32px);
+}
+/* vpravo pod signálem, Wi-Fi a baterií */
+body::after {
+  width: calc(var(--pill-on) * 84);
+  right: calc((100vw - 126px) / 4 - 42px);
 }
