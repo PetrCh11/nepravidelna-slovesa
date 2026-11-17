@@ -583,8 +583,11 @@ function fitQuizCard(input) {
   const vv = window.visualViewport;
   const visTop = vv ? vv.offsetTop : 0;
   const visH = vv ? vv.height : window.innerHeight;
+  // V appce z plochy sahá stránka až pod hodiny/Dynamic Island (safe-area,
+  // stejná hodnota jako padding-top body) → horní hranu karty dáme kousek pod ně.
+  const safeTop = parseFloat(getComputedStyle(document.body).paddingTop) || 0;
   const r = card.getBoundingClientRect();
-  let delta = r.top - visTop - 44;
+  let delta = r.top - visTop - safeTop - 14;
   const ir = input.getBoundingClientRect();
   const inputBottom = ir.bottom - visTop - delta;
   if (inputBottom + 12 > visH) delta += inputBottom + 12 - visH;
@@ -604,27 +607,32 @@ function showCardFromTop() {
 }
 (function installQuizCardFit() {
   if (!IS_TOUCH) return;
-  let timers = [];
   const activeQuizInput = () => {
     const a = document.activeElement;
     return a && a.tagName === 'INPUT' && a.closest(QUIZ_CARD_SEL) ? a : null;
   };
-  const schedule = () => {
-    timers.forEach(clearTimeout);
-    timers = [0, 120, 350, 700].map((ms) => setTimeout(() => {
+  // Zarovnat JEN JEDNOU, až se klávesnice usadí: během vysouvání chodí desítky
+  // resize událostí a iOS si pole posouvá sám — opakované zarovnávání se s ním
+  // přetahovalo a kartička poskakovala.
+  let settleTimer = 0;
+  const fitWhenSettled = (ms) => {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
       const a = activeQuizInput();
       if (a && isKeyboardOpen()) fitQuizCard(a);
-    }, ms));
+    }, ms);
   };
   document.addEventListener('focusin', (e) => {
     if (e.target.tagName !== 'INPUT' || !e.target.closest(QUIZ_CARD_SEL)) return;
     document.body.classList.add('kb-room');
-    schedule();
+    // Klávesnice už je venku (přechod na další pole) → stačí krátce počkat;
+    // jinak čekáme na resize od vysouvající se klávesnice (s pojistkou).
+    fitWhenSettled(isKeyboardOpen() ? 60 : 700);
   });
   document.addEventListener('focusout', () => {
     setTimeout(() => { if (!activeQuizInput()) document.body.classList.remove('kb-room'); }, 400);
   });
-  window.visualViewport?.addEventListener('resize', () => { if (activeQuizInput()) schedule(); });
+  window.visualViewport?.addEventListener('resize', () => { if (activeQuizInput()) fitWhenSettled(220); });
 })();
 
 // Vánoční sleva −30 % na roční a doživotní Premium. Období MUSÍ sedět s backendem
