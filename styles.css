@@ -6494,3 +6494,8 @@ body::after {
     border-bottom: 0;
   }
 }
+/* iOS appka z plochy: iOS rozmazává i kousek pod hodinami → úvodní lištu
+   s logem posuneme o kousek níž (jen nahoře na stránce, lišta odjíždí se stránkou). */
+@media (max-width: 600px) and (display-mode: standalone) {
+  .app-header { margin-top: 18px; }
+}
