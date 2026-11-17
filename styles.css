@@ -6479,3 +6479,30 @@ body.kb-room { padding-bottom: 70vh; }
 }
 .modal { max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px)); }
 .toast-container { top: calc(16px + env(safe-area-inset-top, 0px)); }
+/* iOS appka z plochy: iOS rozmazává (liquid glass) i kousek POD lištou s hodinami.
+   Obsah proto začíná o --sb-gap níž a mezeru vyplní plynulý přechod pruhu. */
+@media (display-mode: standalone) {
+  :root { --sb-gap: 18px; }
+  body { padding-top: calc(env(safe-area-inset-top, 0px) + var(--sb-gap)); }
+  body::before {
+    height: calc(env(safe-area-inset-top, 0px) + var(--sb-gap));
+    background: linear-gradient(to bottom,
+      rgba(93, 201, 189, .97) 0,
+      rgba(93, 201, 189, .92) calc(env(safe-area-inset-top, 0px) * .6),
+      rgba(93, 201, 189, .45) env(safe-area-inset-top, 0px),
+      rgba(93, 201, 189, 0) 100%);
+  }
+  [data-theme="dark"] body::before {
+    background: linear-gradient(to bottom,
+      rgba(43, 111, 104, .97) 0,
+      rgba(43, 111, 104, .92) calc(env(safe-area-inset-top, 0px) * .6),
+      rgba(43, 111, 104, .45) env(safe-area-inset-top, 0px),
+      rgba(43, 111, 104, 0) 100%);
+  }
+  .app-header, .install-banner { top: calc(env(safe-area-inset-top, 0px) + var(--sb-gap)); }
+  .practice-menu-btn { top: calc(env(safe-area-inset-top, 0px) + var(--sb-gap) + 6px); }
+  body.practicing #menu-dropdown { top: calc(env(safe-area-inset-top, 0px) + var(--sb-gap) + 52px); }
+  .modal-backdrop, .paywall-backdrop, .ios-install-modal, .why-modal, .tone-modal {
+    padding-top: calc(env(safe-area-inset-top, 0px) + var(--sb-gap) + 8px);
+  }
+}
