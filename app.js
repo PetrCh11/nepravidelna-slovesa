@@ -709,6 +709,19 @@ const TEXTS = {
   mh_intro_desc: { pro: 'Označ slovesa, u kterých si myslíš, že ti budou dělat největší problém.',
                    student: 'Která slovesa ti připadají záludná? Označ je. Pak si na ně dáme bacha.' },
   mh_done_btn:   { pro: 'Hotovo, jdu na to →', student: 'Hotovo, jedem dál →' },
+  mh_note:       { pro: '🎯 Označená slovesa si appka zapamatuje a v Dnešní cílovce je bude prověřovat častěji.',
+                   student: '🎯 Označený si appka zapamatuje a v Boss mode ti je bude podstrkovat častěji. 👀',
+                   hantec: '🎯 Označené si appka zapamatuje a v Betelné šichtě ti je bude dávat častějc.' },
+  // Kartička na výsledcích první dokončené skupiny — co si appka zapsala
+  memo_title:    { pro: '🧠 Appka si zapsala, jak ti to šlo', student: '🧠 Appka si to zapsala', hantec: '🧠 Appka si to zapsala' },
+  memo_good:     { pro: 'Šlo ti', student: 'Dals to', hantec: 'Zmáknuté' },
+  memo_bad:      { pro: 'Potrápila tě', student: 'Zlobily', hantec: 'Zlobily' },
+  memo_bad_p:    { pro: 'Slovesa, která tě potrápila, ti appka bude vracet v <strong>Dnešní cílovce</strong>, dokud nepůjdou sama. Ta zvládnutá občas prověří, jestli nezapadla.',
+                   student: 'Ty, co zlobily, ti appka bude vracet v <strong>Boss mode</strong>, dokud je nedáš levou zadní. Ty zvládnutý občas prověří. 😉',
+                   hantec: 'Ty, co zlobily, ti appka bude vracet v <strong>Betelné šichtě</strong>, dokud je nezmákneš. Ty zmáknuté občas prubne.' },
+  memo_clean_p:  { pro: 'Všechno bez chyby! 🎯 Appka si to zapsala a občas tě z nich prověří v <strong>Dnešní cílovce</strong>, ať nezapadnou.',
+                   student: 'Nula chyb! 🎯 Appka si to zapsala a občas tě z nich prověří v <strong>Boss mode</strong>, ať nezapadnou.',
+                   hantec: 'Ani jedna chyba! 🎯 Appka si to zapsala a občas ťa z nich prubne v <strong>Betelné šichtě</strong>.' },
   // Fáze 2 — combined pass (1) + finále (2)
   s2_intro_title:{ pro: 'Fáze 2 — Psaní tvarů', student: 'Fáze 2 — Píšeme to ✍️' },
   s2_intro_desc: { pro: 'Vidíš česky, píšeš 3 anglické tvary, potvrdíš Enterem. Když se chyba objeví, sloveso se vrátí na konec fronty a počkáš si na něj. Jdeme na to.',
@@ -2698,6 +2711,7 @@ function stage1Mark() {
         <div class="mark-hero-text">
           <div class="mark-hero-title">${t('mh_title')}</div>
           <div class="mark-hero-sub">${t('mh_sub')}</div>
+          <div class="mark-hero-note">${t('mh_note')}</div>
         </div>
         <div class="mark-counter" id="mark-counter">${L.markedHard.size}</div>
       </div>
@@ -3203,6 +3217,10 @@ function finishLesson() {
       errors: (prev.errors || 0) + (erred ? 1 : 0),
       lastWrong: erred ? now : (prev.lastWrong || null),
       slippedAt: slipped ? (prev.slippedAt || now) : null,
+      // Označeno ve fázi „Zadrž!" → cílovka ho prověřuje častěji (selectSlabaMista).
+      markedAt: p.hard ? now : (prev.markedAt || null),
+      // Kolik kontrol v řadě sloveso prošlo bez chyby (viz CHECK_DAYS).
+      cleanStreak: nextCleanStreak(prev, erred, now),
     };
   });
   persistProgress();
@@ -3294,9 +3312,12 @@ function finishLesson() {
 
   // Připomínka cílovky má přednost před bannerem s instalací — dvě výzvy na
   // jedné obrazovce se perou a student neudělá ani jednu.
-  const nudged = maybeShowSlabaNudge(
+  // Kartička „Co si appka zapsala" jen když se zrovna neukazuje připomínka
+  // cílovky (ta si navíc vede počítadlo, takže se volá vždy první).
+  const nudgedSlaba = maybeShowSlabaNudge(
     (L.sub && L.sub.id === 'slabaMista') || L.isReview ? 'slaba' : isReview ? 'review' : 'group'
   );
+  const nudged = nudgedSlaba || renderResultsMemo(L, isRealGroupLesson(L));
   // Offer "Install app" after the success moment — short delay so the user
   // first sees their result. Throttled to once per 7 days via install.js.
   if (!nudged) {
@@ -3318,6 +3339,38 @@ function finishLesson() {
     `;
     list.appendChild(row);
   });
+}
+
+// Jednorázová kartička na výsledcích (první dokončená skupina na zařízení):
+// ukáže, co si appka o studentovi zapsala, a vysvětlí, že z toho skládá
+// cílovku. Vrací true, když se zobrazila.
+function renderResultsMemo(L, isGroup) {
+  let box = $('#results-memo');
+  if (!box) {
+    const anchor = $('#results-slaba-nudge');
+    if (!anchor) return false;
+    box = document.createElement('div');
+    box.id = 'results-memo';
+    box.className = 'results-memo hidden';
+    anchor.parentNode.insertBefore(box, anchor);
+  }
+  box.classList.add('hidden');
+  if (!isGroup) return false;
+  try { if (localStorage.getItem('memoCardSeen')) return false; } catch (_) { return false; }
+  const good = L.verbs.filter((v) => L.perVerb.get(v.inf).status === 'green').map((v) => v.inf);
+  const bad = L.verbs.filter((v) => L.perVerb.get(v.inf).status !== 'green').map((v) => v.inf);
+  const row = (cls, icon, label, list) => list.length
+    ? `<div class="memo-row ${cls}"><span class="memo-lbl">${icon} ${label}:</span> <span class="memo-verbs">${list.join(', ')}</span></div>`
+    : '';
+  box.innerHTML = `
+    <strong class="memo-title">${t('memo_title')}</strong>
+    ${row('memo-good', '✅', t('memo_good'), good)}
+    ${row('memo-bad', '⚠️', t('memo_bad'), bad)}
+    <p class="memo-p">${t(bad.length ? 'memo_bad_p' : 'memo_clean_p')}</p>`;
+  box.classList.remove('hidden');
+  try { localStorage.setItem('memoCardSeen', todayKey()); } catch (_) {}
+  track('memo_card_shown', { good: good.length, bad: bad.length });
+  return true;
 }
 
 function persistProgress() {
@@ -3739,7 +3792,10 @@ function exitLesson() {
   $('#verb-chips').innerHTML = '';
   renderLessonPicker();
   renderStatsStrip();
-  if (justDone && !maybeShowSlabaIntro() && !maybeShowTrialNudge()) highlightJustDoneSub(justDone);
+  // Vysvětlení cílovky se ukáže při prvním návratu na přehled, kdy už je z čeho
+  // ji složit — i když student mezitím šel rovnou na další skupinu.
+  const introShown = maybeShowSlabaIntro();
+  if (justDone && !introShown && !maybeShowTrialNudge()) highlightJustDoneSub(justDone);
 }
 
 function stageIntroStart() {
@@ -3802,6 +3858,35 @@ const SLABA_PRIORITY_GREENS = new Set([
   'hurt', 'quit', 'spread', 'upset',
 ]);
 
+// ---------- Kontroly „vyléčených" sloves (opakování v rozestupech) ----------
+// Sloveso, které někdy zlobilo, po zvládnutí nezmizí: cílovka ho přednostně
+// prověří za 2 dny, pak za týden, 3 týdny a 2 měsíce. Každá včasná kontrola
+// bez chyby posune další dál, chyba ho vrátí mezi slabá. Po poslední kontrole
+// je sloveso opravdu zvládnuté a chodí už jen namátkou.
+const CHECK_DAYS = [2, 7, 21, 60];
+const DAY_MS = 86400000;
+
+// Stejný den opakovaná lekce se jako kontrola nepočítá — posun nastane, jen
+// když od posledního setkání uplynulo aspoň ~80 % aktuálního rozestupu.
+function nextCleanStreak(prev, erred, now) {
+  if (erred) return 0;
+  if (!prev.status || prev.status !== 'green') return 1; // právě se „vyléčilo"
+  const streak = prev.cleanStreak || 1; // starší data bez počítadla
+  if (streak > CHECK_DAYS.length) return streak;
+  const gap = CHECK_DAYS[streak - 1] * DAY_MS;
+  return (now - (prev.lastSeen || 0)) >= gap * 0.8 ? streak + 1 : streak;
+}
+
+// Kolikrát „po splatnosti" kontrola je (≥ 1 = má se prověřit), nebo 0, když
+// sloveso kontrolu nepotřebuje (nikdy nezlobilo, ještě nevypršela, absolvované).
+function checkDueRatio(p, now) {
+  if (!p || p.status !== 'green' || !p.errors) return 0;
+  const streak = p.cleanStreak || 1;
+  if (streak > CHECK_DAYS.length) return 0;
+  const ratio = (now - (p.lastSeen || 0)) / (CHECK_DAYS[streak - 1] * DAY_MS);
+  return ratio >= 1 ? ratio : 0;
+}
+
 function selectSlabaMista(sec = null) {
   if (!state.data) return null;
   // Pool of verbs the student can practice (premium gate respected).
@@ -3835,7 +3920,9 @@ function selectSlabaMista(sec = null) {
     // freshly-slipped green, so floor the score to keep it competitive.
     const slipBoost = p.slippedAt ? 4.0 : 1.0;
     const base = p.slippedAt ? Math.max(errorRate, 0.4) : errorRate;
-    return { verb: v, score: base * statusBoost * recency * slipBoost };
+    // Student ho sám označil ve fázi „Zadrž!" → mírně vpřed.
+    const markBoost = p.markedAt ? 1.25 : 1.0;
+    return { verb: v, score: base * statusBoost * recency * slipBoost * markBoost };
   });
   scored.sort((a, b) => b.score - a.score);
 
@@ -3847,9 +3934,23 @@ function selectSlabaMista(sec = null) {
   scored.slice(0, targetWeak).forEach((s) => picked.push(s.verb));
   // Editorial preference: priority greens go first (shuffled among themselves),
   // then any remaining slots get random non-priority greens.
-  const priorityGreens = shuffle(greens.filter((v) => SLABA_PRIORITY_GREENS.has(v.inf)));
-  const otherGreens    = shuffle(greens.filter((v) => !SLABA_PRIORITY_GREENS.has(v.inf)));
-  [...priorityGreens, ...otherGreens].slice(0, targetGreen).forEach((v) => picked.push(v));
+  // Zvládnutá slovesa, která si student sám označil jako záludná, jdou na
+  // kontrolu jako první.
+  // Pořadí pro kontrolní místa: nejdřív „vyléčená" slovesa, kterým vypršela
+  // kontrola (nejvíc po splatnosti první), pak označená v „Zadrž!", pak
+  // redakční výběr a nakonec náhodně zbytek.
+  const dueGreens = greens
+    .map((v) => ({ v, r: checkDueRatio(state.progress[v.inf], now) }))
+    .filter((x) => x.r > 0)
+    .sort((a, b) => b.r - a.r)
+    .map((x) => x.v);
+  const dueSet = new Set(dueGreens.map((v) => v.inf));
+  const restGreens     = greens.filter((v) => !dueSet.has(v.inf));
+  const markedGreens   = shuffle(restGreens.filter((v) => state.progress[v.inf].markedAt));
+  const unmarked       = restGreens.filter((v) => !state.progress[v.inf].markedAt);
+  const priorityGreens = shuffle(unmarked.filter((v) => SLABA_PRIORITY_GREENS.has(v.inf)));
+  const otherGreens    = shuffle(unmarked.filter((v) => !SLABA_PRIORITY_GREENS.has(v.inf)));
+  [...dueGreens, ...markedGreens, ...priorityGreens, ...otherGreens].slice(0, targetGreen).forEach((v) => picked.push(v));
   // If still under target (very few seen verbs), pad with any seen verb we
   // haven't included yet — better to have a slightly shorter dose than to
   // repeat the same verb.

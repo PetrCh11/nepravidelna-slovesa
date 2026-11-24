@@ -197,6 +197,21 @@
       mh_sub: 'Które wyglądają podejrzanie? Zaznacz je — poświęcimy im potem więcej uwagi.',
       mh_intro_desc: 'Zaznacz czasowniki, które według ciebie sprawią ci największy problem.',
       mh_done_btn: 'Gotowe, jedziemy dalej →',
+      mh_note: {
+        pro: '🎯 Zaznaczone czasowniki aplikacja zapamięta i w Dzisiejszym targecie będzie je sprawdzać częściej.',
+        student: '🎯 Zaznaczone aplikacja zapamięta i w Boss mode będzie ci je częściej podsuwać. 👀',
+      },
+      memo_title: { pro: '🧠 Aplikacja zapisała, jak ci poszło', student: '🧠 Aplikacja to zapisała' },
+      memo_good: { pro: 'Poszło ci', student: 'Ogarnięte' },
+      memo_bad: { pro: 'Sprawiły kłopot', student: 'Dały popalić' },
+      memo_bad_p: {
+        pro: 'Te, które sprawiły kłopot, aplikacja będzie ci podsuwać w <strong>Dzisiejszym targecie</strong>, dopóki nie zaczną wchodzić same. Opanowane od czasu do czasu sprawdzi, czy nie wyleciały z głowy.',
+        student: 'Te, które dały popalić, aplikacja będzie ci podsuwać w <strong>Boss mode</strong>, dopóki ich nie ogarniesz. Opanowane czasem sprawdzi. 😉',
+      },
+      memo_clean_p: {
+        pro: 'Wszystko bez błędu! 🎯 Aplikacja to zapisała i od czasu do czasu sprawdzi je w <strong>Dzisiejszym targecie</strong>, żeby nie wyleciały z głowy.',
+        student: 'Zero błędów! 🎯 Aplikacja to zapisała i czasem sprawdzi je w <strong>Boss mode</strong>, żeby nie wyleciały z głowy.',
+      },
       // Faza 2
       s2_intro_title: 'Faza 2 — Piszemy formy ✍️',
       s2_intro_desc: 'Widzisz polskie słowo, wpisujesz 3 angielskie formy, zatwierdzasz Enterem. Jeśli pojawi się błąd, czasownik wraca na koniec kolejki i spotkacie się jeszcze raz. Do dzieła!',

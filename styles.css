@@ -6568,3 +6568,27 @@ body::after {
   .auto-stage-top { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
 }
 .auto-stage-bottom { margin-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
+
+/* ---------- Kartička „Appka si zapsala" na výsledcích první skupiny ---------- */
+.results-memo {
+  max-width: 560px;
+  margin: 18px auto 4px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--card-bg, #fff);
+  border: 1px solid rgba(124, 111, 245, 0.35);
+  box-shadow: 0 4px 16px rgba(124, 111, 245, 0.12);
+  text-align: left;
+  animation: slaba-nudge-in 0.35s ease both;
+}
+.results-memo.hidden { display: none; }
+.memo-title { display: block; font-size: 1.02rem; margin-bottom: 8px; }
+.memo-row { font-size: 0.92rem; line-height: 1.45; margin: 3px 0; }
+.memo-lbl { font-weight: 600; }
+.memo-verbs { font-style: italic; }
+.memo-p { margin: 10px 0 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+.memo-p strong { color: var(--text, inherit); }
+@media (prefers-reduced-motion: reduce) { .results-memo { animation: none; } }
+
+/* Poznámka ve fázi „Zadrž!" — označení má skutečný dopad na cílovku */
+.mark-hero-note { margin-top: 6px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; opacity: 0.9; }
