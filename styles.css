@@ -6499,3 +6499,72 @@ body::after {
 @media (max-width: 600px) and (display-mode: standalone) {
   .app-header { margin-top: 18px; }
 }
+
+/* ---------- Nahlášení chyby u slovesa ---------- */
+.report-btn {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+  opacity: 0.45;
+  transition: opacity 0.15s, color 0.15s;
+}
+.report-btn:hover, .report-btn:focus-visible { opacity: 1; color: #b3261e; }
+.report-btn-card {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  font-size: 0.78rem;
+  padding: 4px 6px;
+}
+.report-btn-row {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  font-size: 0.72rem;
+  padding: 3px 5px;
+  opacity: 0.3;
+}
+.verb-card { position: relative; }
+@media (hover: none) { .report-btn-row { opacity: 0.4; } }
+.report-card { text-align: left; }
+.report-card .modal-emoji, .report-card .modal-title, .report-card .modal-sub { text-align: center; }
+.report-cats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; justify-content: center; }
+.report-cat {
+  font-family: inherit;
+  font-size: 0.88rem;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+.report-cat.is-on { border-color: #ff6b35; background: rgba(255,107,53,0.12); font-weight: 700; }
+.report-msg, .report-email {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 16px; /* iOS: menší písmo = zoom při focusu */
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  margin-bottom: 10px;
+  resize: vertical;
+}
+.report-err { color: #b3261e; font-size: 0.88rem; margin-bottom: 10px; text-align: center; }
+.report-err.hidden { display: none; }
+.report-send { width: 100%; }
+
+/* Car mode přes celou obrazovku: v appce z plochy (black-translucent) by horní
+   lišta s tlačítkem Zamíchat vjela pod Dynamic Island / hodiny. */
+.auto-stage-top { padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
+@media (max-width: 560px) {
+  .auto-stage-top { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
+}
+.auto-stage-bottom { margin-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }

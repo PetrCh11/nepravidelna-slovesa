@@ -361,7 +361,84 @@ app.post('/create-portal-session', async (req, res) => {
 
 // welcomeLangs: jazyky uvítacího mailu — zvenku je z toho poznat, která verze běží.
 // dupGuard: pojistka proti dvojí platbě + bezpečné rušení předplatného (2026-10).
-app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now(), welcomeLangs: ['cs', 'pl'], dupGuard: true, xmasSale: { start: XMAS_SALE.start, end: XMAS_SALE.end, active: !!xmasCouponFor(Object.keys(XMAS_SALE.coupons)[0]) } }));
+// ---------- Nahlášení chyby u slovesa (z appky, i bez přihlášení) ----------
+// Uloží do Firestore `errorReports` (status 'new') a pošle e-mail autorovi
+// na REPORT_EMAIL_TO. Ochrana: honeypot `website`, limit délky, max 5 hlášení
+// na IP za 10 minut (v paměti — po restartu se vynuluje, což nevadí).
+const REPORT_CATS = new Set(['form', 'rejected', 'translation', 'audio', 'other']);
+const reportHits = new Map(); // ip -> [timestamps]
+function reportRateOk(ip) {
+  const now = Date.now();
+  const recent = (reportHits.get(ip) || []).filter((ts) => now - ts < 10 * 60 * 1000);
+  if (recent.length >= 5) { reportHits.set(ip, recent); return false; }
+  recent.push(now);
+  reportHits.set(ip, recent);
+  if (reportHits.size > 5000) reportHits.clear();
+  return true;
+}
+const clip = (v, n) => String(v ?? '').slice(0, n);
+const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+app.post('/report-error', async (req, res) => {
+  const b = req.body || {};
+  if (b.website) return res.json({ ok: true }); // honeypot → tiše zahodit
+  const ip = String(req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+  if (!reportRateOk(ip)) return res.status(429).json({ error: 'too_many' });
+  const verb = b.verb || {};
+  if (!verb.inf || typeof verb.inf !== 'string') return res.status(400).json({ error: 'missing_verb' });
+  const category = REPORT_CATS.has(b.category) ? b.category : 'other';
+  const email = /^[^\s@]{1,100}@[^\s@]{1,100}\.[^\s@]{2,20}$/.test(String(b.email || '').trim()) ? String(b.email).trim() : '';
+  let answers = null;
+  if (b.answers && typeof b.answers === 'object') {
+    answers = {};
+    for (const k of ['inf', 'past', 'pp']) if (k in b.answers) answers[k] = clip(b.answers[k], 80);
+  }
+  const uid = await verifyUid(req);
+  const doc = {
+    verb: { inf: clip(verb.inf, 60), past: clip(verb.past, 80), pp: clip(verb.pp, 80), cs: clip(verb.cs, 200) },
+    category,
+    message: clip(b.message, 1000),
+    email,
+    answers,
+    where: clip(b.where, 40),
+    dialect: clip(b.dialect, 10),
+    lang: clip(b.lang, 5) || 'cs',
+    page: clip(b.page, 300),
+    uid: uid || null,
+    userAgent: clip(req.headers['user-agent'], 300),
+    status: 'new',
+    createdAt: Date.now(),
+  };
+  try {
+    const ref = await db.collection('errorReports').add(doc);
+    console.log('Error report saved →', ref.id, doc.verb.inf, category);
+    const to = process.env.REPORT_EMAIL_TO;
+    if (to) {
+      const catLabel = { form: 'Špatný tvar', rejected: 'Odpověď neuznána', translation: 'Překlad', audio: 'Výslovnost', other: 'Jiné' }[category];
+      const ans = answers ? Object.entries(answers).map(([k, v]) => `${k}: <b>${escHtml(v) || '—'}</b>`).join(' · ') : '—';
+      const html = `
+        <h2 style="margin:0 0 8px">⚑ ${escHtml(doc.verb.inf)} – ${escHtml(doc.verb.past)} – ${escHtml(doc.verb.pp)}</h2>
+        <p style="margin:0 0 12px;color:#555">${escHtml(doc.verb.cs)} · jazyk <b>${escHtml(doc.lang)}</b> · ${escHtml(doc.where)} · ${escHtml(doc.dialect)}</p>
+        <p><b>Kategorie:</b> ${catLabel}</p>
+        <p><b>Zpráva:</b><br>${escHtml(doc.message).replace(/\n/g, '<br>') || '<i>(bez textu)</i>'}</p>
+        <p><b>Co žák napsal:</b> ${ans}</p>
+        <p><b>E-mail pro odpověď:</b> ${email ? `<a href="mailto:${escHtml(email)}">${escHtml(email)}</a>` : '<i>neuveden</i>'}</p>
+        <p style="color:#888;font-size:12px">ID ${ref.id} · uid ${escHtml(uid || '—')} · ${escHtml(doc.page)}</p>`;
+      sendEmail({
+        to,
+        subject: `⚑ Nahlášená chyba: ${doc.verb.inf} (${catLabel}, ${doc.lang})`,
+        html,
+        text: `${doc.verb.inf} – ${doc.verb.past} – ${doc.verb.pp}\nKategorie: ${catLabel}\nZpráva: ${doc.message}\nOdpovědi: ${JSON.stringify(answers)}\nE-mail: ${email || '-'}\nID: ${ref.id}`,
+      }).catch((e) => console.error('Report email failed:', e?.message || e));
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Report save failed:', e);
+    res.status(500).json({ error: 'save_failed' });
+  }
+});
+
+app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now(), welcomeLangs: ['cs', 'pl'], errorReports: true, dupGuard: true, xmasSale: { start: XMAS_SALE.start, end: XMAS_SALE.end, active: !!xmasCouponFor(Object.keys(XMAS_SALE.coupons)[0]) } }));
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Slovesa backend listening on :${port}`));

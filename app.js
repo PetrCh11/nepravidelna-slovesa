@@ -726,6 +726,22 @@ const TEXTS = {
   tip_field:     { pro: 'Po každém tvaru zmáčkni <kbd>Enter</kbd>',
                    student: 'Po každym tvaru <kbd>Enter</kbd>' },
   giveup_btn:    { pro: 'Nevím 😭', student: 'Vzdávám 🏳️' },
+  report_btn: 'Nahlásit chybu',
+  report_btn_title: 'Nahlásit chybu u tohoto slovesa',
+  report_title: 'Našli jste chybu?',
+  report_sub: (v) => `Sloveso <strong>${v}</strong>. Co je špatně?`,
+  report_cat_form: 'Špatný tvar slovesa',
+  report_cat_rejected: 'Moje odpověď byla správně, ale appka ji neuznala',
+  report_cat_translation: 'Špatný překlad',
+  report_cat_audio: 'Výslovnost',
+  report_cat_other: 'Něco jiného',
+  report_msg_ph: 'Popište prosím, co je špatně (nepovinné)',
+  report_email_ph: 'Váš e-mail, pokud chcete odpověď (nepovinné)',
+  report_send: 'Odeslat',
+  report_sending: 'Odesílám…',
+  report_thanks: 'Díky! Hlášení dorazilo, podívám se na něj. 🙏',
+  report_error: 'Odeslání se nepovedlo. Zkuste to prosím znovu.',
+  report_need_detail: 'Vyberte, co je špatně, nebo to krátce popište.',
   giveup_confirm:{ pro: 'Vážně? Klikni znovu 😭', student: 'Fakt? Klikni ještě jednou 😭' },
   // Feedback — combined pass (random pick from phrase pools above)
   // Gettery, ne statické objekty: pool se skládá při každém vyvolání t(),
@@ -2478,6 +2494,107 @@ function updateLessonBar() {
 }
 
 // ---------- Stage 1: Study view — read all verbs in the group ----------
+// ---------- Nahlášení chyby u slovesa ----------
+// Nenápadné tlačítko u každého slovesa → modál s kategorií + popisem →
+// POST {BACKEND_URL}/report-error (backend uloží do Firestore errorReports
+// a pošle autorovi e-mail). ctx.answers = co žák zrovna napsal (procvičování).
+function reportBtnHtml(inf, extraCls = '') {
+  return `<button type="button" class="report-btn ${extraCls}" data-report="${inf}" title="${t('report_btn_title')}" aria-label="${t('report_btn_title')}">⚑</button>`;
+}
+function wireReportBtns(root, getCtx = () => ({})) {
+  root.querySelectorAll('[data-report]').forEach((b) => {
+    b.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const verb = flattenVerbs(state.data).find((v) => v.inf === b.dataset.report);
+      if (verb) openReportModal(verb, getCtx(verb, b));
+    });
+  });
+}
+function openReportModal(verb, ctx = {}) {
+  document.getElementById('report-modal')?.remove();
+  const past = pickForm(verb, 'past', state.dialect);
+  const pp = pickForm(verb, 'pp', state.dialect);
+  const label = `${verb.inf} – ${past} – ${pp}`;
+  const cats = ['form', 'rejected', 'translation', 'audio', 'other'];
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-backdrop report-modal';
+  wrap.id = 'report-modal';
+  wrap.setAttribute('role', 'dialog');
+  wrap.setAttribute('aria-modal', 'true');
+  wrap.innerHTML = `
+    <div class="modal report-card">
+      <button type="button" class="modal-close" aria-label="×">×</button>
+      <div class="modal-emoji">⚑</div>
+      <h2 class="modal-title">${t('report_title')}</h2>
+      <p class="modal-sub">${t('report_sub', label)}</p>
+      <div class="report-cats">
+        ${cats.map((c) => `<button type="button" class="report-cat${c === ctx.defaultCat ? ' is-on' : ''}" data-cat="${c}">${t('report_cat_' + c)}</button>`).join('')}
+      </div>
+      <textarea class="report-msg" rows="3" maxlength="1000" placeholder="${t('report_msg_ph')}"></textarea>
+      <input class="report-email" type="email" maxlength="200" autocomplete="email" placeholder="${t('report_email_ph')}" />
+      <div class="report-err hidden"></div>
+      <button type="button" class="btn btn-primary report-send">${t('report_send')}</button>
+    </div>`;
+  document.body.appendChild(wrap);
+  const user = cloud.getCurrentUser();
+  const emailInp = wrap.querySelector('.report-email');
+  if (user && user.email) emailInp.value = user.email;
+  let cat = ctx.defaultCat || null;
+  const close = () => { wrap.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
+  wrap.querySelector('.modal-close').addEventListener('click', close);
+  wrap.querySelectorAll('.report-cat').forEach((b) => b.addEventListener('click', () => {
+    cat = b.dataset.cat;
+    wrap.querySelectorAll('.report-cat').forEach((x) => x.classList.toggle('is-on', x === b));
+  }));
+  const err = wrap.querySelector('.report-err');
+  const send = wrap.querySelector('.report-send');
+  send.addEventListener('click', async () => {
+    const message = wrap.querySelector('.report-msg').value.trim();
+    if (!cat && !message) {
+      err.textContent = t('report_need_detail');
+      err.classList.remove('hidden');
+      return;
+    }
+    err.classList.add('hidden');
+    send.disabled = true;
+    send.textContent = t('report_sending');
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      const token = user ? await cloud.getIdToken().catch(() => null) : null;
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const resp = await fetch(`${BACKEND_URL}/report-error`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          verb: { inf: verb.inf, past, pp, cs: verb.cs },
+          category: cat || 'other',
+          message,
+          email: emailInp.value.trim(),
+          answers: ctx.answers || null,
+          where: ctx.where || '',
+          dialect: state.dialect,
+          lang: document.documentElement.lang || 'cs',
+          page: location.href,
+          website: '', // honeypot (boti ho vyplní)
+        }),
+      });
+      if (!resp.ok) throw new Error('http ' + resp.status);
+      close();
+      toast(t('report_thanks'), 'success');
+      track('report_error', { where: ctx.where || '', category: cat || 'other' });
+    } catch (e) {
+      send.disabled = false;
+      send.textContent = t('report_send');
+      err.textContent = t('report_error');
+      err.classList.remove('hidden');
+    }
+  });
+}
+
 function stage1Study() {
   scrollLessonTop();
   $('#lesson-stage-intro').classList.add('hidden');
@@ -2509,6 +2626,7 @@ function stage1Study() {
         </div>
         <button class="speak-btn study-speak" data-speak="${phonInf(v.inf)}, ${phon(past)}, ${phon(pp)}" title="${t('speak_all_title')}">🔊</button>
         <div class="study-cs">${v.cs}</div>
+        ${reportBtnHtml(v.inf, 'report-btn-row')}
       </div>
     `;
   }).join('');
@@ -2532,6 +2650,7 @@ function stage1Study() {
   q.querySelectorAll('[data-speak]').forEach((el) =>
     el.addEventListener('click', (e) => { e.stopPropagation(); speak(el.dataset.speak, state.dialect); })
   );
+  wireReportBtns(q, () => ({ where: 'study' }));
   q.querySelector('#study-done').addEventListener('click', () => {
     // Go straight to interlude (mezifáze) — no extra intro screen
     L.stage = 1.5;
@@ -2800,8 +2919,15 @@ function askStage2Verb(verb, step) {
       <div class="q-feedback"></div>
       <div class="q-actions">${isAtomicCheck ? `<button class="btn btn-primary" id="s2-check">${t('check_btn')}</button>` : ''}</div>
       <button type="button" class="give-up-btn" id="give-up-btn">${t('giveup_btn')}</button>
+      <button type="button" class="report-btn report-btn-card" data-report="${verb.inf}" title="${t('report_btn_title')}" aria-label="${t('report_btn_title')}">⚑ ${t('report_btn')}</button>
     </div>
   `;
+  wireReportBtns(q, () => {
+    const answers = {};
+    q.querySelectorAll('.quiz-fill-inputs input').forEach((inp) => { answers[inp.dataset.form] = inp.value.trim(); });
+    const typed = Object.values(answers).some(Boolean);
+    return { where: step === 2 ? 'practice_final' : 'practice', answers: typed ? answers : null, defaultCat: typed && q.querySelector('.fill-row input.wrong') ? 'rejected' : null };
+  });
 
   maybeSantaPeek(q);
   showCardFromTop();
@@ -4409,10 +4535,12 @@ function renderVerbCard(verb) {
     <span class="verb-form" data-speak="${phon(pp)}">${highlightVowel(pp, ppV)}</span>
     <button class="speak-btn" data-speak="${phonInf(verb.inf)}, ${phon(past)}, ${phon(pp)}" title="${t('speak_all_title')}">🔊</button>
     <div class="verb-cs">${verb.cs}${altParts.length ? `<div class="verb-alt">${altParts.join(' · ')}</div>` : ''}</div>
+    ${reportBtnHtml(verb.inf, 'report-btn-row')}
   `;
   card.querySelectorAll('[data-speak]').forEach((el) =>
     el.addEventListener('click', (e) => { e.stopPropagation(); speak(el.dataset.speak, state.dialect); })
   );
+  wireReportBtns(card, () => ({ where: 'browse' }));
   return card;
 }
 
