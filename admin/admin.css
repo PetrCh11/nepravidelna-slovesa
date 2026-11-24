@@ -71,7 +71,8 @@ code { background: var(--panel2); padding: 1px 6px; border-radius: 6px; font-siz
 }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); padding: 0 6px 18px; }
 .brand-logo { width: 40px; height: 40px; border-radius: 11px; }
-.brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.brand .brand-kicker { font-size: 0.62rem; white-space: nowrap; }
 .brand-name { font-size: 1.15rem; font-weight: 800; }
 .nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .nav-item {

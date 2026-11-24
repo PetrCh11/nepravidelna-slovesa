@@ -163,7 +163,7 @@ async function renderChat(main, openId) {
     drawChatList(openId);
   });
   await loadChatList(openId);
-  if (openId) await openConversation(openId, true);
+  if (openId) { await openConversation(openId, true); loadChatList(openId); }
   modTimer = setInterval(async () => {
     if (document.hidden) return;
     await loadChatList(openId);
@@ -275,7 +275,7 @@ async function openConversation(id, first) {
       else toast(res.emailed ? 'Odesláno do appky i e-mailem ✓' : 'Odesláno ✓', 'ok');
       convSig = '';
       await openConversation(id, false);
-      loadChatList(id);
+      await loadChatList(id);
     } catch (e) {
       toast('Odeslání selhalo: ' + e.message, 'error');
     } finally {
