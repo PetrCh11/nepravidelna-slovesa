@@ -12,7 +12,7 @@
   <link rel="icon" href="/icon-192.png" />
   <link rel="apple-touch-icon" href="/icon-180.png" />
   <link rel="manifest" href="/admin/manifest.json" />
-  <link rel="stylesheet" href="/admin/admin.css?v=3" />
+  <link rel="stylesheet" href="/admin/admin.css?v=4" />
 </head>
 <body>
   <!-- Přihlášení -->
@@ -23,6 +23,12 @@
       <h1 class="gate-title">Administrace</h1>
       <p id="gate-msg" class="gate-msg">Načítám…</p>
       <button id="gate-login" class="btn btn-primary hidden" type="button">Přihlásit se přes Google</button>
+      <form id="gate-code" class="gate-code hidden" autocomplete="off">
+        <div class="gate-or"><span>nebo kódem z jiného zařízení</span></div>
+        <input id="gate-code-inp" class="code-inp" inputmode="text" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="XXXX-XXXX" />
+        <button class="btn btn-ghost" type="submit">Přihlásit kódem</button>
+        <p class="gate-hint">Kód vygenerujete na počítači, kde jste v adminu přihlášen: <strong>Nastavení → Přihlásit další zařízení</strong>.</p>
+      </form>
       <button id="gate-logout" class="btn btn-ghost hidden" type="button">Odhlásit a zkusit jiný účet</button>
     </div>
   </div>
@@ -53,6 +59,6 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script type="module" src="/admin/admin.js?v=3"></script>
+  <script type="module" src="/admin/admin.js?v=4"></script>
 </body>
 </html>

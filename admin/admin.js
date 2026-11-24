@@ -5,7 +5,7 @@
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js';
 
 const BACKEND_URL = 'https://nepravidelna-slovesa-production.up.railway.app';
@@ -69,6 +69,39 @@ const gateMsg = (html) => { $('#gate-msg').innerHTML = html; };
 $('#gate-login').addEventListener('click', async () => {
   try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch (e) { gateMsg(`Přihlášení se nepovedlo: ${esc(e.code || e.message)}`); }
 });
+// Přihlášení kódem (spárování z jiného, už přihlášeného zařízení)
+const standaloneIOS = (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
+  && (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true);
+$('#gate-code-inp').addEventListener('input', (e) => {
+  let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  if (v.length > 4) v = v.slice(0, 4) + '-' + v.slice(4);
+  e.target.value = v;
+});
+$('#gate-code').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const code = $('#gate-code-inp').value.trim();
+  if (code.replace(/-/g, '').length !== 8) { gateMsg('Kód má 8 znaků (XXXX-XXXX).'); return; }
+  const btn = e.target.querySelector('button');
+  btn.disabled = true;
+  gateMsg('Ověřuji kód…');
+  try {
+    const r = await fetch(BACKEND_URL + '/admin/pair/redeem', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      gateMsg(data.error === 'expired' ? 'Kód vypršel nebo už byl použit. Vygenerujte nový.'
+        : data.error === 'bad_code' ? 'Špatný kód, zkuste to znovu.'
+        : data.error === 'too_many' ? 'Moc pokusů, zkuste to za pár minut.' : 'Přihlášení se nepovedlo.');
+      return;
+    }
+    await signInWithCustomToken(auth, data.token);
+  } catch (err) {
+    gateMsg('Přihlášení se nepovedlo: ' + esc(err.code || err.message));
+  } finally {
+    btn.disabled = false;
+  }
+});
 const doLogout = () => signOut(auth);
 $('#gate-logout').addEventListener('click', doLogout);
 $('#logout').addEventListener('click', doLogout);
@@ -77,10 +110,14 @@ let me = null;
 onAuthStateChanged(auth, async (user) => {
   $('#shell').classList.add('hidden');
   $('#gate').classList.remove('hidden');
-  $('#gate-login').classList.toggle('hidden', !!user);
+  $('#gate-login').classList.toggle('hidden', !!user || standaloneIOS);
+  $('#gate-code').classList.toggle('hidden', !!user);
   $('#gate-logout').classList.add('hidden');
   stopTimers();
-  if (!user) { gateMsg('Přihlaste se účtem, který má přístup do administrace.'); return; }
+  if (!user) {
+    gateMsg(standaloneIOS ? 'V aplikaci na ploše se přihlaste <strong>kódem</strong> — Google přihlášení tady iPhone nedovolí.' : 'Přihlaste se účtem, který má přístup do administrace.');
+    return;
+  }
   gateMsg('Ověřuji přístup…');
   try {
     me = await api('/admin/me');
@@ -448,6 +485,11 @@ async function renderSettings(main) {
       <header class="pane-head"><h1>Nastavení</h1></header>
       <div class="settings">
         <article class="card" id="push-card"><h2>🔔 Upozornění na nové zprávy</h2><div class="muted">Načítám…</div></article>
+        <article class="card" id="pair-card">
+          <h2>📱 Přihlásit další zařízení</h2>
+          <p class="small muted" style="margin:0 0 12px">Hlavně pro iPhone s adminem na ploše, kde Google přihlášení nefunguje. Vygenerujte kód a zadejte ho na úvodní obrazovce adminu na druhém zařízení. Platí 10 minut a jen jednou.</p>
+          <div id="pair-box"><button class="btn btn-primary" id="pair-gen">Vygenerovat kód</button></div>
+        </article>
         <article class="card">
           <h2>👤 Přístup</h2>
           <p class="small">Přihlášen: <strong>${esc(me.email)}</strong>. Kdo má přístup, určuje proměnná <code>ADMIN_EMAILS</code> v Railway.</p>
@@ -455,6 +497,28 @@ async function renderSettings(main) {
       </div>
     </section>`;
   drawPushCard();
+  $('#pair-gen').addEventListener('click', genPairCode);
+}
+let pairTimer = null;
+async function genPairCode() {
+  const box = $('#pair-box');
+  try {
+    const r = await api('/admin/pair/create', { method: 'POST' });
+    box.innerHTML = `<div class="pair-code">${esc(r.code)}</div><div class="small muted" id="pair-left"></div><button class="btn btn-ghost btn-sm" id="pair-gen" style="margin-top:10px">Nový kód</button>`;
+    $('#pair-gen').addEventListener('click', genPairCode);
+    clearInterval(pairTimer);
+    const tick = () => {
+      const s = Math.max(0, Math.round((r.exp - Date.now()) / 1000));
+      const el = $('#pair-left');
+      if (!el) { clearInterval(pairTimer); return; }
+      el.textContent = s ? `Platí ještě ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : 'Kód vypršel.';
+      if (!s) clearInterval(pairTimer);
+    };
+    tick();
+    pairTimer = setInterval(tick, 1000);
+  } catch (e) {
+    toast('Nepovedlo se: ' + e.message, 'error');
+  }
 }
 async function drawPushCard() {
   const card = $('#push-card');

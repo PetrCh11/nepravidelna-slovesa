@@ -53,16 +53,75 @@ export function registerSupportRoutes(app, { db, admin, sendEmail }) {
   }
 
   const adminEmails = () => (process.env.ADMIN_EMAILS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  // Přístup: Google účet z ADMIN_EMAILS (ověřený e-mail), nebo zařízení
+  // spárované jednorázovým kódem (custom token s claimem adminPair — e-mail
+  // se pak bere z uživatelského záznamu a znovu kontroluje proti ADMIN_EMAILS).
   async function requireAdmin(req, res) {
     const d = await decodeToken(req);
     if (!d) { res.status(401).json({ error: 'unauthenticated' }); return null; }
-    const email = String(d.email || '').toLowerCase();
-    if (!d.email_verified || !adminEmails().includes(email)) {
+    let email = String(d.email || '').toLowerCase();
+    let ok = !!d.email_verified && adminEmails().includes(email);
+    if (!ok && d.adminPair === true) {
+      try {
+        const u = await admin.auth().getUser(d.uid);
+        email = String(u.email || '').toLowerCase();
+        ok = adminEmails().includes(email);
+      } catch { ok = false; }
+    }
+    if (!ok) {
       res.status(403).json({ error: 'forbidden', email });
       return null;
     }
-    return d;
+    return { ...d, email };
   }
+
+  // ---------- Párování zařízení kódem ----------
+  // iPhone s adminem „na ploše" má oddělené úložiště a Google přihlášení
+  // (popup/redirect přes firebaseapp.com) v něm selže. Na přihlášeném zařízení
+  // se proto vygeneruje jednorázový kód (10 min) a nové zařízení ho vymění
+  // za Firebase custom token.
+  const pairRef = db.collection('adminConfig').doc('pairing');
+  const pairLimit = makeLimiter(10, 10 * 60 * 1000);
+  const hashCode = (c) => crypto.createHash('sha256').update('pair:' + String(c).toUpperCase().replace(/[^A-Z0-9]/g, '')).digest('hex');
+  app.post('/admin/pair/create', async (req, res) => {
+    const d = await requireAdmin(req, res);
+    if (!d) return;
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = crypto.randomBytes(8);
+    const code = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
+    const exp = Date.now() + 10 * 60 * 1000;
+    try {
+      await pairRef.set({ hash: hashCode(code), uid: d.uid, exp, attempts: 0 });
+      res.json({ code: code.slice(0, 4) + '-' + code.slice(4), exp });
+    } catch (e) {
+      console.error('Pair create failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+  app.post('/admin/pair/redeem', async (req, res) => {
+    if (!pairLimit(ipOf(req))) return res.status(429).json({ error: 'too_many' });
+    const code = String(req.body?.code || '');
+    try {
+      const snap = await pairRef.get();
+      const p = snap.exists ? snap.data() : null;
+      if (!p || p.exp < Date.now()) return res.status(400).json({ error: 'expired' });
+      if (p.hash !== hashCode(code)) {
+        // Po 5 chybných pokusech kód zneplatnit
+        if ((p.attempts || 0) + 1 >= 5) await pairRef.delete();
+        else await pairRef.update({ attempts: (p.attempts || 0) + 1 });
+        return res.status(400).json({ error: 'bad_code' });
+      }
+      await pairRef.delete();
+      const u = await admin.auth().getUser(p.uid);
+      if (!adminEmails().includes(String(u.email || '').toLowerCase())) return res.status(403).json({ error: 'forbidden' });
+      const token = await admin.auth().createCustomToken(p.uid, { adminPair: true });
+      console.log('Admin pair: zařízení spárováno →', u.email);
+      res.json({ token });
+    } catch (e) {
+      console.error('Pair redeem failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
 
   // Najde (případně připraví) konverzaci volajícího. Přihlášený má 'u_<uid>';
   // pokud ale už dřív psal nepřihlášený z tohoto zařízení, pokračuje se v té
