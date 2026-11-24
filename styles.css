@@ -6446,6 +6446,37 @@ html, body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) { .xmas-santa, .xmas-santa-bubble { display: none; } }
 /* Mobil: dočasné místo pod kartičkou při psaní, ať jde kartičku posunout nahoru (fitQuizCard v app.js) */
 body.kb-room { padding-bottom: 70vh; }
+/* Mobil při psaní (body.kb-room jen na dotykových zařízeních): zhuštěná
+   kartička, aby se nad klávesnici vešla celá i s hodnocením a „Další". */
+body.kb-room .lesson-question .q-card { padding: 12px 14px 44px; }
+body.kb-room .lesson-question .q-card .q-emoji { font-size: 1.7rem; line-height: 1.1; margin-bottom: 2px; }
+body.kb-room .lesson-question .q-card .q-prompt { font-size: 1.12rem; padding: 3px 44px; margin-bottom: 4px; }
+body.kb-room .lesson-question .q-card .q-sub { font-size: 0.8rem; margin-bottom: 6px; }
+body.kb-room .lesson-question .q-card .enter-tip { display: none; }
+body.kb-room .lesson-question .q-card .fill-row { margin-bottom: 5px; }
+body.kb-room .lesson-question .q-card .quiz-fill-inputs { margin-bottom: 6px; }
+body.kb-room .lesson-question .q-card .quiz-fill-inputs input { padding-top: 7px; padding-bottom: 7px; }
+body.kb-room .lesson-question .q-card .q-feedback { margin-top: 2px; }
+body.kb-room .lesson-question .q-card .audio-toggle { top: 8px; right: 8px; width: 30px; height: 30px; }
+/* Plovoucí ☰ by při psaní překrýval tlačítko zvuku v rohu kartičky. */
+body.kb-room .practice-menu-btn { display: none; }
+body.kb-room #quiz-card { padding-top: 12px; padding-bottom: 12px; }
+body.kb-room #quiz-card .q-emoji { font-size: 1.7rem; line-height: 1.1; margin-bottom: 2px; }
+body.kb-room #quiz-card .q-prompt { font-size: 1.1rem; margin-bottom: 4px; }
+body.kb-room #quiz-card .q-hint { margin-bottom: 6px; }
+body.kb-room #quiz-card .quiz-fill-inputs { gap: 5px; margin-bottom: 6px; }
+body.kb-room #quiz-card .quiz-fill-inputs input { padding-top: 7px; padding-bottom: 7px; }
+body.kb-room #quiz-card .quiz-feedback { margin: 4px 0; }
+body.kb-room #quiz-card .quiz-next-row { margin-top: 4px; }
+.quiz-card { position: relative; }
+/* Neviditelné pole, které po vyhodnocení drží klávesnici venku (keepKeyboardOpen v app.js).
+   16px písmo, ať iOS při fokusu nezoomuje. */
+.kb-keeper {
+  position: absolute; left: 0; bottom: 0;
+  width: 1px; height: 1px; padding: 0; margin: 0; border: 0;
+  opacity: 0; font-size: 16px; caret-color: transparent; color: transparent;
+  background: transparent; pointer-events: none;
+}
 /* iOS appka z plochy: okna na celou obrazovku začínají až pod hodinami /
    Dynamic Islandem, ať křížek nezajede pod horní lištu. */
 .modal-backdrop, .paywall-backdrop, .ios-install-modal, .why-modal, .tone-modal {

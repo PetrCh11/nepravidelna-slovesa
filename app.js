@@ -571,31 +571,79 @@ function maybeSantaPeek(container) {
   track('xmas_santa_peek', { where: side, bubble: line ? 'yes' : 'no' });
 }
 
-// Mobil: při psaní do kartičky (lekce i test) nechceme, aby prohlížeč vystředil
-// pole nad klávesnici — kartička má být vidět celá, od horní hrany (i se Santou
-// nad ní). Zarovnáme ji pod horní okraj viditelné plochy; posuneme níž jen
-// tolik, aby aktivní pole nezajelo pod klávesnici. Dole přidáme dočasně místo
-// (body.kb-room), aby šlo stránku posunout i když je krátká.
+// Mobil: při psaní do kartičky (lekce i test) má být nad klávesnicí vidět celá
+// kartička (při psaní je zhuštěná, body.kb-room ve styles.css). Zarovnáme její
+// horní hranu pod horní okraj viditelné plochy; níž posuneme jen tolik, aby
+// aktivní pole nezajelo pod klávesnici. Dole je dočasně místo (body.kb-room),
+// aby šlo stránku posunout i když je krátká.
+//
+// Počítáme s ABSOLUTNÍ pozicí karty v dokumentu (scrollY + rect.top) a cílem
+// scrollTo, ne s visualViewport.offsetTop: iOS Safari (ověřeno na iOS 27) hlásí
+// během vysouvání klávesnice offsetTop, který neodpovídá obrazovce, a po
+// programovém scrollu ho vynuluje — relativní scrollBy pak ujel přesně o ten
+// offset a karta skončila pod klávesnicí. Absolutní cíl je stejný při každém
+// volání, takže opakované zarovnání (resize klávesnice) nic nerozhází.
 const QUIZ_CARD_SEL = '.lesson-question .q-card, #quiz-card';
 function fitQuizCard(input) {
   const card = input?.closest(QUIZ_CARD_SEL);
   if (!card) return;
   const vv = window.visualViewport;
-  const visTop = vv ? vv.offsetTop : 0;
   const visH = vv ? vv.height : window.innerHeight;
   // V appce z plochy sahá stránka až pod hodiny/Dynamic Island (safe-area,
   // stejná hodnota jako padding-top body) → horní hranu karty dáme kousek pod ně.
   const safeTop = parseFloat(getComputedStyle(document.body).paddingTop) || 0;
-  // V lekci zarovnáme nahoru řádek s kroky (1) studium → 2) v pořadí → …),
-  // karta je hned pod ním; v testu (bez kroků) samotnou kartu.
-  const pills = card.closest('.lesson-question') ? document.getElementById('step-pills') : null;
-  const anchor = pills && pills.offsetParent && pills.childElementCount ? pills : card;
-  const r = anchor.getBoundingClientRect();
-  let delta = r.top - visTop - safeTop - (anchor === card ? 14 : 8);
-  const ir = input.getBoundingClientRect();
-  const inputBottom = ir.bottom - visTop - delta;
-  if (inputBottom + 12 > visH) delta += inputBottom + 12 - visH;
-  if (Math.abs(delta) > 3) window.scrollBy({ top: delta, behavior: 'instant' });
+  const y = window.scrollY;
+  const cardTop = y + card.getBoundingClientRect().top;
+  let target = cardTop - safeTop - 8;
+  // Karta se celá nevejde → aspoň aktivní pole musí zůstat nad klávesnicí.
+  const inputBottom = y + input.getBoundingClientRect().bottom;
+  if (inputBottom + 12 > target + visH) target = inputBottom + 12 - visH;
+  target = Math.max(0, Math.round(target));
+  const vvOff = vv ? vv.offsetTop : 0;
+  if (Math.abs(target - y) > 3 || vvOff > 3) window.scrollTo({ top: target, behavior: 'instant' });
+}
+// Mobil: po vyhodnocení slovesa by fokus na tlačítku „Další" zavřel klávesnici
+// a další sloveso by ji zase otevíralo (na iOS jen po ťuknutí do pole). Fokus
+// proto přesuneme do neviditelného pole v kartičce — klávesnice zůstane venku,
+// Enter / „další" na klávesnici vyvolá onEnter (= „Další") a nové sloveso
+// dostane fokus hned (přechod pole → pole klávesnici nezavře).
+function keepKeyboardOpen(card, onEnter) {
+  if (!IS_TOUCH || !card || !isKeyboardOpen()) return false;
+  const k = document.createElement('input');
+  k.className = 'kb-keeper';
+  k.setAttribute('aria-hidden', 'true');
+  k.setAttribute('tabindex', '-1');
+  k.setAttribute('autocomplete', 'off');
+  k.setAttribute('autocorrect', 'off');
+  k.setAttribute('autocapitalize', 'none');
+  k.setAttribute('spellcheck', 'false');
+  k.setAttribute('enterkeyhint', 'next');
+  let fired = false;
+  const go = (e) => {
+    if (e) e.preventDefault();
+    if (fired) return;
+    fired = true;
+    onEnter();
+  };
+  k.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(e); });
+  k.addEventListener('beforeinput', (e) => {
+    if (e.inputType === 'insertLineBreak') go(e);
+    else e.preventDefault(); // psaní do držáku nic nedělá
+  });
+  card.appendChild(k);
+  k.focus({ preventScroll: true });
+  return document.activeElement === k;
+}
+// Fokus na první pole nové kartičky. Synchronně, protože iOS otevře klávesnici
+// jen při focus() přímo v obsluze ťuknutí / klávesy (setTimeout už nestačí);
+// pojistka po 50 ms pro případ, že by fokus ještě něco přebilo.
+function focusFirstField(container) {
+  const first = () => container.querySelector('.quiz-fill-inputs input:not([disabled])');
+  first()?.focus({ preventScroll: true });
+  setTimeout(() => {
+    if (!container.isConnected || container.contains(document.activeElement)) return;
+    first()?.focus({ preventScroll: true });
+  }, 50);
 }
 // Klávesnice je venku = viditelná plocha je výrazně menší než layout viewport.
 // Pozor: na iOS se window.innerHeight s klávesnicí ZMENŠUJE (je to výška
@@ -624,6 +672,7 @@ function showCardFromTop() {
   // resize událostí a iOS si pole posouvá sám — opakované zarovnávání se s ním
   // přetahovalo a kartička poskakovala.
   let settleTimer = 0;
+  let closeTimer = 0;
   const fitWhenSettled = (ms) => {
     clearTimeout(settleTimer);
     settleTimer = setTimeout(() => {
@@ -637,11 +686,39 @@ function showCardFromTop() {
     // Klávesnice už je venku (přechod na další pole) → stačí krátce počkat;
     // jinak čekáme na resize od vysouvající se klávesnice (s pojistkou).
     fitWhenSettled(isKeyboardOpen() ? 60 : 700);
+    // Fokus bez klávesnice (hardwarová klávesnice, fokus mimo ťuknutí na iOS)
+    // → nezhušťovat kartičku zbytečně.
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(() => { if (!isKeyboardOpen()) endTyping(); }, 1500);
   });
+  // Konec psaní (klávesnice pryč) → normální kartička a stránka zase odshora,
+  // ať kartička nezůstane nalepená nahoře pod plovoucím ☰.
+  const endTyping = () => {
+    if (!document.body.classList.contains('kb-room')) return;
+    document.body.classList.remove('kb-room');
+    // Ne přes showCardFromTop: klávesnice se v tu chvíli ještě může zasouvat.
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
   document.addEventListener('focusout', () => {
-    setTimeout(() => { if (!activeQuizInput()) document.body.classList.remove('kb-room'); }, 400);
+    setTimeout(() => { if (!activeQuizInput()) endTyping(); }, 400);
   });
-  window.visualViewport?.addEventListener('resize', () => { if (activeQuizInput()) fitWhenSettled(220); });
+  // iOS: „✓" nad klávesnicí ji schová, ale pole může zůstat ve fokusu (a po
+  // dalším ťuknutí do něj se klávesnice vrátí bez focusin) → řídíme se i
+  // velikostí viditelné plochy. Zavření s prodlevou: během vysouvání
+  // klávesnice chodí resize, kdy ještě „není venku".
+  window.visualViewport?.addEventListener('resize', () => {
+    if (!activeQuizInput()) return;
+    clearTimeout(closeTimer);
+    if (isKeyboardOpen()) {
+      document.body.classList.add('kb-room');
+      fitWhenSettled(220);
+    } else {
+      closeTimer = setTimeout(() => { if (!isKeyboardOpen()) endTyping(); }, 350);
+    }
+  });
+  // iOS si po usazení klávesnice občas viditelnou plochu ještě posune (k poli)
+  // → po zklidnění srovnat znovu (cíl je absolutní, takže to nic nerozhází).
+  window.visualViewport?.addEventListener('scroll', () => { if (activeQuizInput()) fitWhenSettled(260); });
 })();
 
 // Vánoční sleva −30 % na roční a doživotní Premium. Období MUSÍ sedět s backendem
@@ -3104,7 +3181,9 @@ function stage2Finish() {
 }
 
 function askStage2Verb(verb, step) {
-  scrollLessonTop();
+  // S otevřenou klávesnicí (přechod ze slovesa na sloveso) kartu zarovná
+  // fitQuizCard — plynulý posun nahoru by se s ním přetahoval.
+  if (!(IS_TOUCH && isKeyboardOpen())) scrollLessonTop();
   $('#lesson-stage-intro').classList.add('hidden');
   const L = state.lesson;
   const p = L.perVerb.get(verb.inf);
@@ -3277,7 +3356,7 @@ function askStage2Verb(verb, step) {
     next.textContent = t('next_btn');
     next.addEventListener('click', stage2Next, { once: true });
     q.querySelector('.q-card').appendChild(next);
-    next.focus({ preventScroll: true });
+    if (!keepKeyboardOpen(q.querySelector('.q-card'), () => next.click())) next.focus({ preventScroll: true });
     updateLessonBar();
   };
 
@@ -3407,7 +3486,7 @@ function askStage2Verb(verb, step) {
     finalize();
   });
 
-  setTimeout(() => q.querySelector('input')?.focus({ preventScroll: true }), 50);
+  focusFirstField(q);
   updateStageDots();
   updateLessonBar();
 }
@@ -5563,7 +5642,7 @@ function quizRender() {
         if (e.inputType === 'insertLineBreak') advance(e);
       });
     });
-    setTimeout(() => fillInputs[0]?.focus({ preventScroll: true }), 50);
+    focusFirstField(card);
   }
   card.querySelectorAll('[data-speak]').forEach((el) =>
     el.addEventListener('click', (e) => { e.stopPropagation(); speak(el.dataset.speak, state.dialect); })
@@ -5637,8 +5716,8 @@ function handleQuizAnswer(ok, verb, qText, aText, detail) {
   $('#quiz-score').textContent = state.quiz.score;
   const next = $('#quiz-card #quiz-next');
   next.classList.remove('hidden');
-  next.focus({ preventScroll: true });
   next.addEventListener('click', quizNext, { once: true });
+  if (!keepKeyboardOpen($('#quiz-card'), () => next.click())) next.focus({ preventScroll: true });
 }
 
 function quizNext() {
