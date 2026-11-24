@@ -10,9 +10,12 @@
 // Env (Railway):
 //   ADMIN_EMAILS         — Google účty s přístupem do adminu (čárkami)
 //   TELEGRAM_BOT_TOKEN   — volitelné; upozornění na nové zprávy do Telegramu
+//   (Web Push do admin stránky nepotřebuje nic: VAPID klíče si server vygeneruje
+//    sám a uloží do adminConfig/webpush, odběry zařízení do adminConfig/webpush/subs)
 //   REPORT_EMAIL_TO      — záložní upozornění e-mailem, když Telegram není propojený
 
 import crypto from 'node:crypto';
+import webpush from 'web-push';
 
 const ADMIN_URL = 'https://ucseslovesa.cz/admin/';
 const APP_URLS = { cs: 'https://ucseslovesa.cz', pl: 'https://czasowniki.pl' };
@@ -90,6 +93,54 @@ export function registerSupportRoutes(app, { db, admin, sendEmail }) {
     return qs.docs.map((m) => ({ id: m.id, ...m.data() }));
   }
 
+
+  // ---------- Web Push (notifikace do admin stránky / PWA na ploše) ----------
+  const pushRef = db.collection('adminConfig').doc('webpush');
+  let vapid = null;
+  async function getVapid() {
+    if (vapid) return vapid;
+    const snap = await pushRef.get();
+    if (snap.exists && snap.data().publicKey) {
+      vapid = snap.data();
+    } else {
+      const k = webpush.generateVAPIDKeys();
+      vapid = { publicKey: k.publicKey, privateKey: k.privateKey, createdAt: Date.now() };
+      await pushRef.set(vapid);
+      console.log('Web Push: vygenerovány nové VAPID klíče');
+    }
+    return vapid;
+  }
+  const subId = (endpoint) => crypto.createHash('sha256').update(String(endpoint)).digest('hex').slice(0, 40);
+
+  // Pošle notifikaci na všechna přihlášená zařízení; vrátí počet doručených.
+  async function pushAll(payload) {
+    const subs = await pushRef.collection('subs').get();
+    if (subs.empty) return 0;
+    const v = await getVapid();
+    let ok = 0;
+    await Promise.all(subs.docs.map(async (d) => {
+      try {
+        await webpush.sendNotification(d.data().subscription, JSON.stringify(payload), {
+          TTL: 24 * 3600,
+          urgency: 'high',
+          vapidDetails: { subject: 'https://ucseslovesa.cz/admin/', publicKey: v.publicKey, privateKey: v.privateKey },
+        });
+        ok++;
+      } catch (e) {
+        if (e?.statusCode === 404 || e?.statusCode === 410) {
+          await d.ref.delete().catch(() => {});
+          console.log('Web Push: odběr vypršel, smazán →', d.id);
+        } else {
+          console.error('Web Push FAILED →', d.id, e?.statusCode || '', e?.body || e?.message || e);
+        }
+      }
+    }));
+    return ok;
+  }
+  async function unreadTotal() {
+    try { return (await chats.where('unreadAdmin', '>', 0).count().get()).data().count; } catch { return 0; }
+  }
+
   // ---------- Telegram ----------
   async function telegramChatId() {
     if (process.env.TELEGRAM_CHAT_ID) return process.env.TELEGRAM_CHAT_ID;
@@ -117,6 +168,14 @@ export function registerSupportRoutes(app, { db, admin, sendEmail }) {
     ].filter(Boolean).join(' · ');
     const link = `${ADMIN_URL}#chat/${chatId}`;
     try {
+      const delivered = await pushAll({
+        title: `💬 ${chat.email || chat.contactEmail || 'Nová zpráva'}`,
+        body: `${chat.lang === 'pl' ? '🇵🇱 ' : ''}${chat.premium ? '⭐ ' : ''}${clip(text, 180)}`,
+        url: `/admin/#chat/${chatId}`,
+        tag: 'chat-' + chatId,
+        badge: await unreadTotal(),
+      }).catch((e) => { console.error('Web Push notify failed:', e?.message || e); return 0; });
+      if (delivered > 0) return;
       const tgChat = process.env.TELEGRAM_BOT_TOKEN ? await telegramChatId() : null;
       if (tgChat) {
         const r = await telegram('sendMessage', {
@@ -227,6 +286,7 @@ export function registerSupportRoutes(app, { db, admin, sendEmail }) {
         email: d.email,
         counts: { chats: unreadChats.data().count, reports: newReports.data().count },
         telegram: { tokenSet: !!process.env.TELEGRAM_BOT_TOKEN, linked: !!(await telegramChatId()) },
+        pushDevices: (await pushRef.collection('subs').count().get()).data().count,
         email_notify: !!process.env.REPORT_EMAIL_TO,
       });
     } catch (e) {
@@ -351,6 +411,63 @@ export function registerSupportRoutes(app, { db, admin, sendEmail }) {
       await db.collection('errorReports').doc(req.params.id).update({ status, resolvedAt: status === 'new' ? null : Date.now() });
       res.json({ ok: true, status });
     } catch (e) {
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+
+  // Web Push — správa odběrů z admin stránky
+  app.get('/admin/push/key', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    try {
+      const v = await getVapid();
+      const subs = await pushRef.collection('subs').get();
+      res.json({ publicKey: v.publicKey, devices: subs.docs.map((d) => ({ id: d.id, label: d.data().label || '', at: d.data().createdAt })) });
+    } catch (e) {
+      console.error('Push key failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+  app.post('/admin/push/subscribe', async (req, res) => {
+    const d = await requireAdmin(req, res);
+    if (!d) return;
+    const sub = req.body?.subscription;
+    if (!sub || typeof sub.endpoint !== 'string' || !/^https:\/\//.test(sub.endpoint) || !sub.keys?.p256dh || !sub.keys?.auth) {
+      return res.status(400).json({ error: 'bad_subscription' });
+    }
+    try {
+      const id = subId(sub.endpoint);
+      await pushRef.collection('subs').doc(id).set({
+        subscription: { endpoint: sub.endpoint, keys: { p256dh: String(sub.keys.p256dh), auth: String(sub.keys.auth) } },
+        label: clip(req.body?.label, 120),
+        email: d.email,
+        createdAt: Date.now(),
+      });
+      res.json({ ok: true, id });
+    } catch (e) {
+      console.error('Push subscribe failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+  app.post('/admin/push/unsubscribe', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    const endpoint = req.body?.endpoint;
+    const id = req.body?.id || (endpoint ? subId(endpoint) : null);
+    if (!id) return res.status(400).json({ error: 'missing' });
+    try {
+      await pushRef.collection('subs').doc(String(id)).delete();
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+  app.post('/admin/push/test', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    try {
+      const n = await pushAll({ title: '🔔 Funguje to!', body: 'Takhle vám budou chodit nové zprávy z chatu v appce.', url: '/admin/#settings', tag: 'test', badge: await unreadTotal() });
+      res.json({ ok: n > 0, delivered: n });
+    } catch (e) {
+      console.error('Push test failed:', e);
       res.status(500).json({ error: 'failed' });
     }
   });

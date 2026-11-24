@@ -113,6 +113,7 @@ function setBadges(c = {}) {
   }
   const total = (c.chats || 0) + (c.reports || 0);
   document.title = (total ? `(${total}) ` : '') + 'Admin · Nepravidelná slovesa';
+  try { if (c.chats) navigator.setAppBadge?.(c.chats); else navigator.clearAppBadge?.(); } catch { /* nepodporováno */ }
 }
 async function refreshCounts() {
   if (document.hidden) return;
@@ -146,6 +147,7 @@ async function renderChat(main, openId) {
             <button data-f="open">Otevřené</button><button data-f="closed">Uzavřené</button><button data-f="all">Vše</button>
           </div>
         </header>
+        <a class="push-banner hidden" id="push-banner" href="#settings">🔔 Zapněte si upozornění na nové zprávy do mobilu →</a>
         <div class="chat-list" id="chat-list"><div class="muted pad">Načítám…</div></div>
       </section>
       <section class="pane conv-pane" id="conv">
@@ -162,6 +164,7 @@ async function renderChat(main, openId) {
     syncSeg();
     drawChatList(openId);
   });
+  maybePushBanner();
   await loadChatList(openId);
   if (openId) { await openConversation(openId, true); loadChatList(openId); }
   modTimer = setInterval(async () => {
@@ -380,51 +383,130 @@ async function renderReports(main) {
   }
 }
 
+// ---------- 🔔 Web Push ----------
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function deviceLabel() {
+  const ua = navigator.userAgent;
+  const dev = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) || (isIOS && !/iPhone/.test(ua)) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Zařízení';
+  const br = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : '';
+  return `${dev}${br ? ' · ' + br : ''}${isStandalone ? ' (na ploše)' : ''}`;
+}
+function b64ToU8(b64) {
+  const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+async function adminReg() {
+  if (!('serviceWorker' in navigator)) return null;
+  return navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' });
+}
+async function currentSub() {
+  if (!pushSupported()) return null;
+  const reg = await navigator.serviceWorker.getRegistration('/admin/');
+  return reg ? reg.pushManager.getSubscription() : null;
+}
+async function enablePush() {
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') throw new Error(perm === 'denied' ? 'denied' : 'dismissed');
+  await adminReg();
+  const reg = await navigator.serviceWorker.ready;
+  const { publicKey } = await api('/admin/push/key');
+  let sub = await reg.pushManager.getSubscription();
+  if (sub) {
+    // Jiný klíč (např. po resetu na serveru) → přeregistrovat
+    const k = sub.options?.applicationServerKey;
+    if (k && btoa(String.fromCharCode(...new Uint8Array(k))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') !== publicKey) {
+      await sub.unsubscribe();
+      sub = null;
+    }
+  }
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(publicKey) });
+  await api('/admin/push/subscribe', { method: 'POST', body: { subscription: sub.toJSON(), label: deviceLabel() } });
+}
+async function disablePush() {
+  const sub = await currentSub();
+  if (!sub) return;
+  await api('/admin/push/unsubscribe', { method: 'POST', body: { endpoint: sub.endpoint } }).catch(() => {});
+  await sub.unsubscribe();
+}
+// Banner nad seznamem chatů, dokud tohle zařízení nemá zapnuté notifikace
+async function maybePushBanner() {
+  const el = $('#push-banner');
+  if (!el) return;
+  let on = false;
+  try { on = !!(await currentSub()) && Notification.permission === 'granted'; } catch {}
+  el.classList.toggle('hidden', on);
+}
+adminReg().catch(() => {});
+
 // ---------- ⚙️ Nastavení ----------
 async function renderSettings(main) {
-  await refreshCounts();
-  const tg = me.telegram || {};
   main.innerHTML = `
     <section class="pane full-pane">
       <header class="pane-head"><h1>Nastavení</h1></header>
       <div class="settings">
-        <article class="card">
-          <h2>🔔 Upozornění na nové zprávy</h2>
-          <div class="status-row">
-            <span class="dot ${tg.linked ? 'dot-ok' : tg.tokenSet ? 'dot-warn' : 'dot-off'}"></span>
-            <div><strong>Telegram:</strong> ${tg.linked ? 'propojeno — každá nová zpráva přijde jako notifikace.' : tg.tokenSet ? 'token je nastavený, zbývá propojit (krok 3).' : 'zatím nenastaveno.'}</div>
-          </div>
-          <div class="status-row">
-            <span class="dot ${me.email_notify ? (tg.linked ? 'dot-off' : 'dot-ok') : 'dot-off'}"></span>
-            <div><strong>E-mail (záloha):</strong> ${me.email_notify ? (tg.linked ? 'nepoužívá se, dokud funguje Telegram.' : 'chodí na REPORT_EMAIL_TO, jen u první nepřečtené zprávy v konverzaci.') : 'REPORT_EMAIL_TO není nastavené.'}</div>
-          </div>
-          ${tg.linked ? '<button class="btn btn-ghost" id="tg-test">Poslat testovací notifikaci</button> <button class="btn btn-ghost" id="tg-link">Propojit znovu</button>' : `
-          <ol class="steps">
-            <li>V Telegramu otevřete <strong>@BotFather</strong>, pošlete <code>/newbot</code> a zvolte jméno (např. „Slovesa podpora“).</li>
-            <li>Token, který BotFather pošle, vložte v Railway do proměnné <code>TELEGRAM_BOT_TOKEN</code> (Variables) a počkejte na redeploy.</li>
-            <li>Otevřete svého nového bota, pošlete mu <code>/start</code> a pak tady klikněte:</li>
-          </ol>
-          <button class="btn btn-primary" id="tg-link" ${tg.tokenSet ? '' : 'disabled'}>Propojit Telegram</button>`}
-        </article>
+        <article class="card" id="push-card"><h2>🔔 Upozornění na nové zprávy</h2><div class="muted">Načítám…</div></article>
         <article class="card">
           <h2>👤 Přístup</h2>
           <p class="small">Přihlášen: <strong>${esc(me.email)}</strong>. Kdo má přístup, určuje proměnná <code>ADMIN_EMAILS</code> v Railway.</p>
         </article>
       </div>
     </section>`;
-  $('#tg-link')?.addEventListener('click', async (e) => {
+  drawPushCard();
+}
+async function drawPushCard() {
+  const card = $('#push-card');
+  if (!card) return;
+  let devices = [];
+  try { devices = (await api('/admin/push/key')).devices || []; } catch {}
+  let sub = null;
+  try { sub = await currentSub(); } catch {}
+  const on = !!sub && Notification.permission === 'granted';
+  let state;
+  if (!pushSupported() && isIOS && !isStandalone) {
+    state = `
+      <div class="status-row"><span class="dot dot-warn"></span><div><strong>Na iPhonu chodí notifikace jen z ikony na ploše.</strong></div></div>
+      <ol class="steps">
+        <li>Otevřete <strong>ucseslovesa.cz/admin</strong> v Safari.</li>
+        <li>Klepněte na <strong>Sdílet</strong> (čtvereček se šipkou) → <strong>Přidat na plochu</strong>.</li>
+        <li>Spusťte <strong>Admin</strong> z plochy, přejděte do Nastavení a klepněte na „Zapnout notifikace“.</li>
+      </ol>`;
+  } else if (!pushSupported()) {
+    state = '<div class="status-row"><span class="dot dot-off"></span><div>Tento prohlížeč notifikace neumí. Zkuste Chrome nebo Safari.</div></div>';
+  } else if (Notification.permission === 'denied') {
+    state = '<div class="status-row"><span class="dot dot-off"></span><div>Notifikace jsou pro tuto stránku <strong>zakázané</strong>. Povolte je v nastavení prohlížeče (na iPhonu: Nastavení → Oznámení → Admin) a zkuste znovu.</div></div>';
+  } else if (on) {
+    state = `
+      <div class="status-row"><span class="dot dot-ok"></span><div><strong>Zapnuto na tomto zařízení.</strong> Každá nová zpráva z chatu přijde jako notifikace.</div></div>
+      <div class="btn-row"><button class="btn btn-primary" id="push-test">Poslat testovací notifikaci</button><button class="btn btn-ghost" id="push-off">Vypnout na tomto zařízení</button></div>`;
+  } else {
+    state = `
+      <div class="status-row"><span class="dot dot-off"></span><div>Na tomto zařízení zatím vypnuto.</div></div>
+      <div class="btn-row"><button class="btn btn-primary" id="push-on">🔔 Zapnout notifikace</button></div>`;
+  }
+  const others = devices.length
+    ? `<div class="devices"><div class="small muted">Zařízení s notifikacemi (${devices.length}):</div>${devices.map((d) => `
+        <div class="device"><span>📱 ${esc(d.label || 'Zařízení')} <span class="muted small">· od ${fmtTime(d.at)}</span></span><button class="btn-link small" data-del-dev="${esc(d.id)}">odebrat</button></div>`).join('')}</div>`
+    : '';
+  const fallback = `<p class="small muted" style="margin:14px 0 0">Když žádné zařízení notifikace nemá, chodí upozornění e-mailem (jen u první nepřečtené zprávy v konverzaci).</p>`;
+  card.innerHTML = `<h2>🔔 Upozornění na nové zprávy</h2>${state}${others}${fallback}`;
+  $('#push-on')?.addEventListener('click', async (e) => {
     e.target.disabled = true;
-    try {
-      await api('/admin/telegram/link', { method: 'POST' });
-      toast('Telegram propojen ✓', 'ok');
-      renderSettings(main);
-    } catch (err) {
-      const msg = err.message === 'no_message' ? 'Bot zatím nedostal žádnou zprávu — pošlete mu /start a zkuste znovu.' : 'Nepovedlo se: ' + (err.data?.detail || err.message);
-      toast(msg, 'error');
-      e.target.disabled = false;
+    try { await enablePush(); toast('Notifikace zapnuté ✓', 'ok'); }
+    catch (err) {
+      toast(err.message === 'denied' ? 'Notifikace jste zakázal — povolte je v nastavení.' : err.message === 'dismissed' ? 'Povolení nebylo potvrzeno.' : 'Nepovedlo se: ' + err.message, 'error');
     }
+    drawPushCard();
   });
-  $('#tg-test')?.addEventListener('click', async () => {
-    try { const r = await api('/admin/telegram/test', { method: 'POST' }); toast(r.ok ? 'Odesláno — mrkněte do Telegramu' : 'Nepovedlo se: ' + r.detail, r.ok ? 'ok' : 'error'); } catch (e) { toast('Nepovedlo se: ' + e.message, 'error'); }
+  $('#push-off')?.addEventListener('click', async () => { await disablePush(); toast('Vypnuto', 'ok'); drawPushCard(); });
+  $('#push-test')?.addEventListener('click', async () => {
+    try { const r = await api('/admin/push/test', { method: 'POST' }); toast(r.ok ? `Odesláno na ${r.delivered} zaříz. — mrkněte na notifikaci` : 'Žádné zařízení ji nepřijalo.', r.ok ? 'ok' : 'error'); }
+    catch (e) { toast('Nepovedlo se: ' + e.message, 'error'); }
   });
+  card.querySelectorAll('[data-del-dev]').forEach((b) => b.addEventListener('click', async () => {
+    await api('/admin/push/unsubscribe', { method: 'POST', body: { id: b.dataset.delDev } }).catch(() => {});
+    drawPushCard();
+  }));
 }
