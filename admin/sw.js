@@ -8,8 +8,8 @@ self.addEventListener('push', (e) => {
   const jobs = [
     self.registration.showNotification(d.title || 'Nová zpráva', {
       body: d.body || '',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: '/admin/icon-192.png',
+      badge: '/admin/icon-192.png',
       tag: d.tag || undefined,
       renotify: !!d.tag,
       data: { url: d.url || '/admin/' },
