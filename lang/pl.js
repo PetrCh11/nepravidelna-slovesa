@@ -240,6 +240,21 @@
       report_thanks: 'Dzięki! Zgłoszenie dotarło, przyjrzę się mu. 🙏',
       report_error: 'Nie udało się wysłać. Spróbuj ponownie.',
       report_need_detail: 'Wybierz, co jest nie tak, albo krótko to opisz.',
+      // Czat z pomocą
+      chat_menu: '💬 Napisz do nas',
+      chat_title: 'Napisz do nas',
+      chat_sub: 'Odpowiada bezpośrednio autor aplikacji, zwykle w ciągu 24 godzin.',
+      chat_empty: 'Masz pytanie, pomysł albo coś nie działa? Napisz, chętnie pomogę. 🙂',
+      chat_ph: 'Napisz wiadomość…',
+      chat_send: 'Wyślij',
+      chat_email_ph: 'Twój e-mail do odpowiedzi (opcjonalnie)',
+      chat_email_note: 'Odpowiedź zobaczysz tutaj w aplikacji. Jeśli podasz e-mail, wyślę ją też tam.',
+      chat_err: 'Nie udało się wysłać wiadomości. Spróbuj ponownie.',
+      chat_load_err: 'Nie udało się wczytać rozmowy. Spróbuj za chwilę.',
+      chat_admin: 'Autor aplikacji',
+      chat_sent_note: 'Wysłano ✓ Odpowiedź pojawi się tutaj, a przy ☰ Menu zobaczysz kropkę.',
+      chat_new_reply: '💬 Masz nową odpowiedź na czacie.',
+      pw_question: 'Masz pytanie przed zakupem? 💬 Napisz do nas',
       giveup_confirm: 'Na pewno? Kliknij jeszcze raz 😭',
       // Feedback (pooly; hantec spada na pro)
       // Gettery: pool se skládá při každém volání t(), takže sezónní hlášky

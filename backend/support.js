@@ -1,0 +1,384 @@
+// Chat s podporou + admin API (stránka ucseslovesa.cz/admin/).
+//
+// Firestore:
+//   supportChats/{chatId}            — jedna konverzace na zákazníka
+//     chatId = 'u_<uid>' (přihlášený) nebo 'a_<sha256(anonKey)>' (nepřihlášený;
+//     anonKey je náhodný řetězec uložený jen v zařízení zákazníka)
+//   supportChats/{chatId}/messages   — {from: 'user'|'admin', text, at}
+//   adminConfig/telegram             — {chatId} po propojení Telegram bota
+//
+// Env (Railway):
+//   ADMIN_EMAILS         — Google účty s přístupem do adminu (čárkami)
+//   TELEGRAM_BOT_TOKEN   — volitelné; upozornění na nové zprávy do Telegramu
+//   REPORT_EMAIL_TO      — záložní upozornění e-mailem, když Telegram není propojený
+
+import crypto from 'node:crypto';
+
+const ADMIN_URL = 'https://ucseslovesa.cz/admin/';
+const APP_URLS = { cs: 'https://ucseslovesa.cz', pl: 'https://czasowniki.pl' };
+const MAX_TEXT = 2000;
+
+const clip = (v, n) => String(v ?? '').slice(0, n);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const isEmail = (v) => /^[^\s@]{1,100}@[^\s@]{1,100}\.[^\s@]{2,20}$/.test(String(v || '').trim());
+const langOf = (v) => (v === 'pl' ? 'pl' : 'cs');
+
+// Jednoduchý limit v paměti (po restartu se vynuluje, což nevadí).
+function makeLimiter(max, windowMs) {
+  const hits = new Map();
+  return (key) => {
+    const now = Date.now();
+    const recent = (hits.get(key) || []).filter((ts) => now - ts < windowMs);
+    if (recent.length >= max) { hits.set(key, recent); return false; }
+    recent.push(now);
+    hits.set(key, recent);
+    if (hits.size > 5000) hits.clear();
+    return true;
+  };
+}
+
+export function registerSupportRoutes(app, { db, admin, sendEmail }) {
+  const chats = db.collection('supportChats');
+  const sendLimit = makeLimiter(20, 10 * 60 * 1000);   // 20 zpráv / 10 min / IP
+  const readLimit = makeLimiter(120, 10 * 60 * 1000);  // polling
+  const ipOf = (req) => String(req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+
+  async function decodeToken(req) {
+    const m = /^Bearer (.+)$/.exec(req.headers.authorization || '');
+    if (!m) return null;
+    try { return await admin.auth().verifyIdToken(m[1]); } catch { return null; }
+  }
+
+  const adminEmails = () => (process.env.ADMIN_EMAILS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  async function requireAdmin(req, res) {
+    const d = await decodeToken(req);
+    if (!d) { res.status(401).json({ error: 'unauthenticated' }); return null; }
+    const email = String(d.email || '').toLowerCase();
+    if (!d.email_verified || !adminEmails().includes(email)) {
+      res.status(403).json({ error: 'forbidden', email });
+      return null;
+    }
+    return d;
+  }
+
+  // Najde (případně připraví) konverzaci volajícího. Přihlášený má 'u_<uid>';
+  // pokud ale už dřív psal nepřihlášený z tohoto zařízení, pokračuje se v té
+  // anonymní konverzaci (doplní se k ní uid/e-mail), ať se historie neztratí.
+  async function resolveChat(req, anonKey) {
+    const d = await decodeToken(req);
+    const anonId = /^[A-Za-z0-9_-]{20,64}$/.test(String(anonKey || ''))
+      ? 'a_' + crypto.createHash('sha256').update(String(anonKey)).digest('hex').slice(0, 32)
+      : null;
+    if (d) {
+      const uRef = chats.doc('u_' + d.uid);
+      const uSnap = await uRef.get();
+      if (uSnap.exists) return { ref: uRef, snap: uSnap, user: d };
+      if (anonId) {
+        const aRef = chats.doc(anonId);
+        const aSnap = await aRef.get();
+        if (aSnap.exists) return { ref: aRef, snap: aSnap, user: d };
+      }
+      return { ref: uRef, snap: uSnap, user: d };
+    }
+    if (!anonId) return null;
+    const aRef = chats.doc(anonId);
+    return { ref: aRef, snap: await aRef.get(), user: null };
+  }
+
+  async function messagesOf(ref, limit = 300) {
+    const qs = await ref.collection('messages').orderBy('at', 'asc').limitToLast(limit).get();
+    return qs.docs.map((m) => ({ id: m.id, ...m.data() }));
+  }
+
+  // ---------- Telegram ----------
+  async function telegramChatId() {
+    if (process.env.TELEGRAM_CHAT_ID) return process.env.TELEGRAM_CHAT_ID;
+    const s = await db.collection('adminConfig').doc('telegram').get();
+    return s.exists ? s.data().chatId || null : null;
+  }
+  async function telegram(method, body) {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) return { ok: false, description: 'no_token' };
+    const r = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {}),
+    });
+    return r.json().catch(() => ({ ok: false, description: 'bad_json' }));
+  }
+
+  // Upozornění autora na novou zprávu: Telegram (každá zpráva), jinak e-mail
+  // jen u první nepřečtené zprávy v konverzaci (šetří limit MailerSend).
+  async function notifyAdmin(chatId, chat, text, wasUnread) {
+    const who = [
+      chat.lang === 'pl' ? '🇵🇱 PL' : '🇨🇿 CZ',
+      chat.premium ? '⭐ Premium' : null,
+      chat.email || chat.contactEmail || 'anonym',
+    ].filter(Boolean).join(' · ');
+    const link = `${ADMIN_URL}#chat/${chatId}`;
+    try {
+      const tgChat = process.env.TELEGRAM_BOT_TOKEN ? await telegramChatId() : null;
+      if (tgChat) {
+        const r = await telegram('sendMessage', {
+          chat_id: tgChat,
+          text: `💬 ${who}\n\n${clip(text, 3000)}\n\n${link}`,
+          disable_web_page_preview: true,
+        });
+        if (r.ok) return;
+        console.error('Telegram notify FAILED →', r.description);
+      }
+      const to = process.env.REPORT_EMAIL_TO;
+      if (!to || wasUnread) return;
+      const r = await sendEmail({
+        to,
+        subject: `💬 Nová zpráva v chatu (${who})`,
+        html: `<p style="color:#555">${esc(who)}</p><p style="font-size:16px">${esc(text).replace(/\n/g, '<br>')}</p><p><a href="${link}">Odpovědět v adminu →</a></p>`,
+        text: `${who}\n\n${text}\n\nOdpovědět: ${link}`,
+      });
+      if (!r.ok) console.error('Chat notify email FAILED →', chatId, r.reason, r.error || '');
+    } catch (e) {
+      console.error('Chat notify failed:', e?.message || e);
+    }
+  }
+
+  // ---------- Zákaznická strana ----------
+
+  // POST /chat/thread {anonKey, peek} → historie (a označení odpovědí za přečtené),
+  // s peek:true jen počet nepřečtených odpovědí (pro tečku u menu).
+  app.post('/chat/thread', async (req, res) => {
+    if (!readLimit(ipOf(req))) return res.status(429).json({ error: 'too_many' });
+    const b = req.body || {};
+    try {
+      const c = await resolveChat(req, b.anonKey);
+      if (!c || !c.snap.exists) return res.json({ exists: false, unread: 0, messages: [] });
+      const data = c.snap.data();
+      if (b.peek) return res.json({ exists: true, unread: data.unreadUser || 0 });
+      const messages = await messagesOf(c.ref);
+      if (data.unreadUser) await c.ref.update({ unreadUser: 0 });
+      res.json({
+        exists: true,
+        unread: 0,
+        hasEmail: !!(data.email || data.contactEmail),
+        messages: messages.map((m) => ({ id: m.id, from: m.from, text: m.text, at: m.at })),
+      });
+    } catch (e) {
+      console.error('Chat thread failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  // POST /chat/send {anonKey, text, email?, lang, page, website}
+  app.post('/chat/send', async (req, res) => {
+    const b = req.body || {};
+    if (b.website) return res.json({ ok: true }); // honeypot
+    if (!sendLimit(ipOf(req))) return res.status(429).json({ error: 'too_many' });
+    const text = String(b.text || '').trim().slice(0, MAX_TEXT);
+    if (!text) return res.status(400).json({ error: 'empty' });
+    try {
+      const c = await resolveChat(req, b.anonKey);
+      if (!c) return res.status(400).json({ error: 'no_identity' });
+      const now = Date.now();
+      const prev = c.snap.exists ? c.snap.data() : null;
+      const patch = {
+        updatedAt: now,
+        lastText: clip(text, 160),
+        lastFrom: 'user',
+        unreadAdmin: (prev?.unreadAdmin || 0) + 1,
+        status: 'open',
+        lang: langOf(b.lang),
+        page: clip(b.page, 300),
+        userAgent: clip(req.headers['user-agent'], 300),
+      };
+      if (!prev) { patch.createdAt = now; patch.unreadUser = 0; }
+      if (isEmail(b.email)) patch.contactEmail = String(b.email).trim();
+      if (c.user) {
+        patch.uid = c.user.uid;
+        if (c.user.email) patch.email = c.user.email;
+        if (c.user.name) patch.name = clip(c.user.name, 80);
+        try {
+          const u = await db.collection('users').doc(c.user.uid).get();
+          const ud = u.exists ? u.data() : {};
+          const exp = Number(ud.premiumExpiresAt) || 0;
+          patch.premium = !!ud.premium && (!exp || exp > now);
+        } catch { /* nevadí */ }
+      }
+      await c.ref.set(patch, { merge: true });
+      await c.ref.collection('messages').add({ from: 'user', text, at: now });
+      console.log('Chat message →', c.ref.id, patch.lang, text.length + ' zn.');
+      notifyAdmin(c.ref.id, { ...prev, ...patch }, text, (prev?.unreadAdmin || 0) > 0);
+      res.json({ ok: true, at: now });
+    } catch (e) {
+      console.error('Chat send failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  // ---------- Admin ----------
+
+  app.get('/admin/me', async (req, res) => {
+    const d = await requireAdmin(req, res);
+    if (!d) return;
+    try {
+      const [unreadChats, newReports] = await Promise.all([
+        chats.where('unreadAdmin', '>', 0).count().get(),
+        db.collection('errorReports').where('status', '==', 'new').count().get(),
+      ]);
+      res.json({
+        email: d.email,
+        counts: { chats: unreadChats.data().count, reports: newReports.data().count },
+        telegram: { tokenSet: !!process.env.TELEGRAM_BOT_TOKEN, linked: !!(await telegramChatId()) },
+        email_notify: !!process.env.REPORT_EMAIL_TO,
+      });
+    } catch (e) {
+      console.error('Admin me failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  app.get('/admin/chats', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    try {
+      const qs = await chats.orderBy('updatedAt', 'desc').limit(300).get();
+      res.json({ chats: qs.docs.map((d) => ({ id: d.id, ...d.data() })) });
+    } catch (e) {
+      console.error('Admin chats failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  app.get('/admin/chats/:id', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    try {
+      const ref = chats.doc(req.params.id);
+      const snap = await ref.get();
+      if (!snap.exists) return res.status(404).json({ error: 'not_found' });
+      const messages = await messagesOf(ref, 1000);
+      if (snap.data().unreadAdmin) await ref.update({ unreadAdmin: 0 });
+      res.json({ chat: { id: snap.id, ...snap.data(), unreadAdmin: 0 }, messages });
+    } catch (e) {
+      console.error('Admin chat failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  // POST /admin/chats/:id/reply {text, email: bool}
+  app.post('/admin/chats/:id/reply', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    const text = String(req.body?.text || '').trim().slice(0, 5000);
+    if (!text) return res.status(400).json({ error: 'empty' });
+    try {
+      const ref = chats.doc(req.params.id);
+      const snap = await ref.get();
+      if (!snap.exists) return res.status(404).json({ error: 'not_found' });
+      const chat = snap.data();
+      const now = Date.now();
+      await ref.collection('messages').add({ from: 'admin', text, at: now });
+      await ref.update({
+        updatedAt: now,
+        lastText: clip(text, 160),
+        lastFrom: 'admin',
+        unreadAdmin: 0,
+        unreadUser: (chat.unreadUser || 0) + 1,
+      });
+      let emailed = null;
+      const to = chat.contactEmail || chat.email;
+      if (req.body?.email && to) {
+        const pl = chat.lang === 'pl';
+        const url = `${APP_URLS[langOf(chat.lang)]}/?chat=1`;
+        const r = await sendEmail({
+          to,
+          senderName: pl ? 'Czasowniki nieregularne' : null,
+          subject: pl ? 'Odpowiedź na Twoją wiadomość 💬' : 'Odpověď na vaši zprávu 💬',
+          html: `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:16px;line-height:1.6;color:#1d2329;max-width:560px">
+            <p style="margin:0 0 14px;color:#6b7280">${pl ? 'Odpowiedź na Twoją wiadomość w aplikacji:' : 'Odpověď na vaši zprávu v appce:'}</p>
+            <div style="background:#f3f1ff;border-left:4px solid #7c6ff5;border-radius:10px;padding:14px 16px;margin:0 0 18px">${esc(text).replace(/\n/g, '<br>')}</div>
+            <p style="margin:0 0 18px"><a href="${url}" style="display:inline-block;background:linear-gradient(135deg,#5dc9bd,#7c6ff5);color:#fff;text-decoration:none;padding:11px 24px;border-radius:999px;font-weight:700">${pl ? 'Odpowiedz w aplikacji →' : 'Odpovědět v appce →'}</a></p>
+            <p style="margin:0;font-size:13px;color:#8a92a0">${pl ? 'Na tego maila możesz też po prostu odpowiedzieć.' : 'Na tento e-mail můžete také jen odpovědět.'}</p>
+          </div>`,
+          text: `${text}\n\n${pl ? 'Odpowiedz w aplikacji' : 'Odpovědět v appce'}: ${url}`,
+        });
+        emailed = r.ok;
+        if (!r.ok) console.error('Chat reply email FAILED →', ref.id, r.reason, r.error || '');
+      }
+      res.json({ ok: true, at: now, emailed });
+    } catch (e) {
+      console.error('Admin reply failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  // POST /admin/chats/:id/status {status: 'open'|'closed'}
+  app.post('/admin/chats/:id/status', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    const status = req.body?.status === 'closed' ? 'closed' : 'open';
+    try {
+      await chats.doc(req.params.id).update({ status, unreadAdmin: 0 });
+      res.json({ ok: true, status });
+    } catch (e) {
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  // Smazání konverzace i se zprávami (admin potvrzuje v UI).
+  app.delete('/admin/chats/:id', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    try {
+      await db.recursiveDelete(chats.doc(req.params.id));
+      console.log('Chat deleted →', req.params.id);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error('Admin chat delete failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  // Nahlášené chyby u sloves
+  app.get('/admin/reports', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    try {
+      const qs = await db.collection('errorReports').orderBy('createdAt', 'desc').limit(300).get();
+      res.json({ reports: qs.docs.map((d) => ({ id: d.id, ...d.data() })) });
+    } catch (e) {
+      console.error('Admin reports failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  app.post('/admin/reports/:id/status', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    const status = ['new', 'done', 'ignored'].includes(req.body?.status) ? req.body.status : 'new';
+    try {
+      await db.collection('errorReports').doc(req.params.id).update({ status, resolvedAt: status === 'new' ? null : Date.now() });
+      res.json({ ok: true, status });
+    } catch (e) {
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  // Telegram: propojení — autor napíše svému botovi /start a tady klikne „Propojit".
+  app.post('/admin/telegram/link', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    if (!process.env.TELEGRAM_BOT_TOKEN) return res.status(400).json({ error: 'no_token' });
+    try {
+      const r = await telegram('getUpdates', { limit: 50 });
+      if (!r.ok) return res.status(502).json({ error: 'telegram', detail: r.description });
+      const msgs = (r.result || []).map((u) => u.message).filter((m) => m && m.chat && m.chat.type === 'private');
+      const last = msgs[msgs.length - 1];
+      if (!last) return res.status(404).json({ error: 'no_message' });
+      await db.collection('adminConfig').doc('telegram').set({ chatId: String(last.chat.id), linkedAt: Date.now() });
+      await telegram('sendMessage', { chat_id: last.chat.id, text: '✅ Propojeno. Sem vám budou chodit nové zprávy z chatu v appce.' });
+      res.json({ ok: true });
+    } catch (e) {
+      console.error('Telegram link failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  app.post('/admin/telegram/test', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    const id = await telegramChatId();
+    if (!id) return res.status(400).json({ error: 'not_linked' });
+    const r = await telegram('sendMessage', { chat_id: id, text: '🔔 Testovací upozornění z adminu.' });
+    res.json({ ok: !!r.ok, detail: r.description || null });
+  });
+}

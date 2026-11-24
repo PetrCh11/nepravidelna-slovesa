@@ -755,6 +755,21 @@ const TEXTS = {
   report_thanks: 'Díky! Hlášení dorazilo, podívám se na něj. 🙏',
   report_error: 'Odeslání se nepovedlo. Zkuste to prosím znovu.',
   report_need_detail: 'Vyberte, co je špatně, nebo to krátce popište.',
+  // Chat s podporou
+  chat_menu: '💬 Napište nám',
+  chat_title: 'Napište nám',
+  chat_sub: 'Odpovídá přímo autor appky, většinou do 24 hodin.',
+  chat_empty: 'Máte dotaz, nápad, nebo vám něco nefunguje? Napište, rád pomůžu. 🙂',
+  chat_ph: 'Napište zprávu…',
+  chat_send: 'Odeslat',
+  chat_email_ph: 'Váš e-mail pro odpověď (nepovinné)',
+  chat_email_note: 'Odpověď uvidíte tady v appce. Když vyplníte e-mail, pošlu ji i tam.',
+  chat_err: 'Zprávu se nepodařilo odeslat. Zkuste to prosím znovu.',
+  chat_load_err: 'Konverzaci se nepodařilo načíst. Zkuste to za chvíli.',
+  chat_admin: 'Autor appky',
+  chat_sent_note: 'Odesláno ✓ Odpověď se objeví tady a u ☰ Menu uvidíte tečku.',
+  chat_new_reply: '💬 Máte novou odpověď v chatu.',
+  pw_question: 'Máte dotaz před nákupem? 💬 Napište nám',
   giveup_confirm:{ pro: 'Vážně? Klikni znovu 😭', student: 'Fakt? Klikni ještě jednou 😭' },
   // Feedback — combined pass (random pick from phrase pools above)
   // Gettery, ne statické objekty: pool se skládá při každém vyvolání t(),
@@ -2606,6 +2621,216 @@ function openReportModal(verb, ctx = {}) {
       err.classList.remove('hidden');
     }
   });
+}
+
+// ---------- Chat s podporou ----------
+// Menu → 💬 Napište nám. Zprávy jdou přes backend (POST /chat/send, /chat/thread)
+// do Firestore supportChats; autor odpovídá na ucseslovesa.cz/admin/.
+// Identita: přihlášený = uid (ID token), jinak náhodný chatKey v localStorage.
+// Nepřečtené odpovědi → tečka u ☰ Menu (peek při startu a návratu do appky).
+const CHAT_POLL_MS = 12000;
+let chatPollTimer = null;
+let chatLastPeek = 0;
+let chatRendered = '';
+function chatKey() {
+  let k = null;
+  try { k = localStorage.getItem('chatKey'); } catch {}
+  if (!k || !/^[A-Za-z0-9_-]{20,64}$/.test(k)) {
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    k = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    try { localStorage.setItem('chatKey', k); } catch {}
+  }
+  return k;
+}
+async function chatApi(path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = cloud.getCurrentUser() ? await cloud.getIdToken().catch(() => null) : null;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const resp = await fetch(`${BACKEND_URL}${path}`, {
+    method: 'POST', headers, body: JSON.stringify({ anonKey: chatKey(), ...body }),
+  });
+  if (!resp.ok) throw new Error('http ' + resp.status);
+  return resp.json();
+}
+function setChatDot(on) {
+  ['#menu-btn', '#practice-menu-btn', '#support-chat-btn'].forEach((sel) => {
+    const el = document.querySelector(sel);
+    if (el) el.classList.toggle('has-chat-dot', !!on);
+  });
+}
+async function peekChat(force = false) {
+  let started = false;
+  try { started = localStorage.getItem('chatStarted') === '1'; } catch {}
+  if (!started || !BACKEND_URL) return;
+  if (!force && Date.now() - chatLastPeek < 60000) return;
+  chatLastPeek = Date.now();
+  try {
+    const r = await chatApi('/chat/thread', { peek: true });
+    const unread = r.unread || 0;
+    setChatDot(unread > 0);
+    if (unread > 0 && !document.getElementById('chat-modal') && !sessionStorage.getItem('chatToastShown')) {
+      sessionStorage.setItem('chatToastShown', '1');
+      toast(t('chat_new_reply'), 'info', 6000);
+    }
+  } catch { /* offline apod. — nevadí */ }
+}
+function chatTime(ts) {
+  const d = new Date(ts);
+  const lang = document.documentElement.lang || 'cs';
+  const sameDay = d.toDateString() === new Date().toDateString();
+  return sameDay
+    ? d.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleString(lang, { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function renderChatLog(log, messages) {
+  const sig = messages.map((m) => m.id || m.at).join(',');
+  if (sig === chatRendered && log.childElementCount) return;
+  chatRendered = sig;
+  if (!messages.length) {
+    log.innerHTML = `<div class="chat-empty">${escapeChatHtml(t('chat_empty'))}</div>`;
+    return;
+  }
+  log.innerHTML = messages.map((m) => `
+    <div class="chat-msg ${m.from === 'admin' ? 'from-admin' : 'from-user'}">
+      ${m.from === 'admin' ? `<div class="chat-who">${escapeChatHtml(t('chat_admin'))}</div>` : ''}
+      <div class="chat-bubble">${escapeChatHtml(m.text).replace(/\n/g, '<br>')}</div>
+      <div class="chat-time">${chatTime(m.at)}</div>
+    </div>`).join('');
+  log.scrollTop = log.scrollHeight;
+}
+function escapeChatHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function openSupportChat() {
+  try { $('#menu-dropdown').classList.remove('open'); } catch (_) {}
+  document.getElementById('chat-modal')?.remove();
+  chatRendered = '';
+  const user = cloud.getCurrentUser();
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-backdrop chat-modal';
+  wrap.id = 'chat-modal';
+  wrap.setAttribute('role', 'dialog');
+  wrap.setAttribute('aria-modal', 'true');
+  wrap.innerHTML = `
+    <div class="modal chat-card">
+      <div class="chat-head">
+        <img class="chat-logo" src="icon-192.png" alt="" />
+        <div class="chat-head-text">
+          <h2 class="chat-title">${t('chat_title')}</h2>
+          <p class="chat-sub">${t('chat_sub')}</p>
+        </div>
+        <button type="button" class="chat-close" aria-label="×">×</button>
+      </div>
+      <div class="chat-log" aria-live="polite"><div class="chat-loading">…</div></div>
+      <div class="chat-compose">
+        <div class="chat-email-wrap hidden">
+          <input class="chat-email" type="email" maxlength="200" autocomplete="email" placeholder="${t('chat_email_ph')}" />
+          <div class="chat-note">${t('chat_email_note')}</div>
+        </div>
+        <div class="chat-err hidden"></div>
+        <div class="chat-row">
+          <textarea class="chat-input" rows="1" maxlength="2000" placeholder="${t('chat_ph')}"></textarea>
+          <input type="text" class="chat-hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <button type="button" class="chat-send" aria-label="${t('chat_send')}" title="${t('chat_send')}">➤</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  document.body.classList.add('chat-open');
+  track('chat_open');
+  const log = wrap.querySelector('.chat-log');
+  const input = wrap.querySelector('.chat-input');
+  const send = wrap.querySelector('.chat-send');
+  const err = wrap.querySelector('.chat-err');
+  const emailWrap = wrap.querySelector('.chat-email-wrap');
+  const emailInp = wrap.querySelector('.chat-email');
+  let messages = [];
+  const close = () => {
+    clearInterval(chatPollTimer);
+    chatPollTimer = null;
+    wrap.remove();
+    document.body.classList.remove('chat-open');
+    document.removeEventListener('keydown', onKey);
+  };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
+  wrap.querySelector('.chat-close').addEventListener('click', close);
+  const grow = () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px'; };
+  input.addEventListener('input', grow);
+  const load = async (first) => {
+    try {
+      const r = await chatApi('/chat/thread', {});
+      messages = r.messages || [];
+      if (r.exists) { try { localStorage.setItem('chatStarted', '1'); } catch {} }
+      renderChatLog(log, messages);
+      setChatDot(false);
+      if (first) emailWrap.classList.toggle('hidden', !!(user && user.email) || !!r.hasEmail);
+    } catch {
+      if (first) log.innerHTML = `<div class="chat-empty">${escapeChatHtml(t('chat_load_err'))}</div>`;
+    }
+  };
+  load(true);
+  chatPollTimer = setInterval(() => { if (!document.hidden) load(false); }, CHAT_POLL_MS);
+  const doSend = async () => {
+    const text = input.value.trim();
+    if (!text || send.disabled) return;
+    err.classList.add('hidden');
+    send.disabled = true;
+    try {
+      const r = await chatApi('/chat/send', {
+        text,
+        email: emailWrap.classList.contains('hidden') ? '' : emailInp.value.trim(),
+        lang: document.documentElement.lang || 'cs',
+        page: location.href,
+        website: wrap.querySelector('.chat-hp').value,
+      });
+      try { localStorage.setItem('chatStarted', '1'); } catch {}
+      const firstMsg = !messages.length;
+      messages = [...messages, { id: 'local-' + r.at, from: 'user', text, at: r.at || Date.now() }];
+      renderChatLog(log, messages);
+      if (firstMsg) log.insertAdjacentHTML('beforeend', `<div class="chat-sys">${escapeChatHtml(t('chat_sent_note'))}</div>`);
+      if (emailInp.value.trim()) emailWrap.classList.add('hidden');
+      input.value = '';
+      grow();
+      track('chat_send');
+    } catch {
+      err.textContent = t('chat_err');
+      err.classList.remove('hidden');
+    } finally {
+      send.disabled = false;
+      input.focus();
+    }
+  };
+  send.addEventListener('click', doSend);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !_mqMobile.matches) { e.preventDefault(); doSend(); }
+  });
+  if (!_mqMobile.matches) setTimeout(() => input.focus(), 50);
+}
+function initSupportChat() {
+  $('#support-chat-btn')?.addEventListener('click', openSupportChat);
+  // Odkaz „Máte dotaz před nákupem?" v paywallu
+  const pwOpts = document.querySelector('#paywall .paywall-options');
+  if (pwOpts && !document.getElementById('paywall-chat-link')) {
+    pwOpts.insertAdjacentHTML('afterend', `<button type="button" class="paywall-chat-link" id="paywall-chat-link">${t('pw_question')}</button>`);
+    $('#paywall-chat-link').addEventListener('click', () => {
+      $('#paywall')?.classList.add('hidden');
+      openSupportChat();
+    });
+  }
+  // ?chat=1 (odkaz z e-mailu s odpovědí) → rovnou otevřít chat
+  const params = new URLSearchParams(location.search);
+  if (params.get('chat') === '1') {
+    params.delete('chat');
+    const q = params.toString();
+    history.replaceState({}, '', location.pathname + (q ? '?' + q : '') + location.hash);
+    setTimeout(openSupportChat, 400);
+  } else {
+    setTimeout(() => peekChat(true), 4000);
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) peekChat(); });
 }
 
 function stage1Study() {
@@ -7161,6 +7386,7 @@ async function init() {
   });
   $('#settings-btn')?.addEventListener('click', openSettingsModal);
   $('#progress-send-btn')?.addEventListener('click', openProgressSend);
+  initSupportChat();
   initProgressLinkMaker();
   $('#settings-close')?.addEventListener('click', closeSettingsModal);
   $('#settings-modal')?.addEventListener('click', (e) => {

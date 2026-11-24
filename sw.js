@@ -1,5 +1,5 @@
 // Simple cache-first service worker for offline PWA use
-const CACHE = 'slovesa-v252';
+const CACHE = 'slovesa-v253';
 const ASSETS = [
   './',
   './index.html',
@@ -20,7 +20,7 @@ const ASSETS = [
   './pl/icon-180.png',
   './pl/icon-192.png',
   './pl/icon-512.png',
-  './lang/pl.js?v=25',
+  './lang/pl.js?v=26',
 ];
 
 self.addEventListener('install', (e) => {
@@ -36,6 +36,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const { request } = e;
   if (request.method !== 'GET') return;
+  // Administrace se nikdy necachuje (vždy čerstvá data i kód)
+  if (new URL(request.url).pathname.startsWith('/admin')) return;
   e.respondWith(
     caches.match(request).then((hit) => hit || fetch(request).then((resp) => {
       // cache same-origin successful GETs

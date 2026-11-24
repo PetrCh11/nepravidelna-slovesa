@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0e1016" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Slovesa Admin" />
+  <title>Admin · Nepravidelná slovesa</title>
+  <link rel="icon" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icon-180.png" />
+  <link rel="manifest" href="/admin/manifest.json" />
+  <link rel="stylesheet" href="/admin/admin.css?v=1" />
+</head>
+<body>
+  <!-- Přihlášení -->
+  <div id="gate" class="gate">
+    <div class="gate-card">
+      <img class="gate-logo" src="/icon-192.png" alt="" />
+      <div class="brand-kicker">Nepravidelná slovesa</div>
+      <h1 class="gate-title">Administrace</h1>
+      <p id="gate-msg" class="gate-msg">Načítám…</p>
+      <button id="gate-login" class="btn btn-primary hidden" type="button">Přihlásit se přes Google</button>
+      <button id="gate-logout" class="btn btn-ghost hidden" type="button">Odhlásit a zkusit jiný účet</button>
+    </div>
+  </div>
+
+  <!-- Aplikace -->
+  <div id="shell" class="shell hidden">
+    <aside class="side">
+      <a class="brand" href="#chat">
+        <img class="brand-logo" src="/icon-192.png" alt="" />
+        <span class="brand-text"><span class="brand-kicker">Nepravidelná slovesa</span><span class="brand-name">Admin</span></span>
+      </a>
+      <nav class="nav" id="nav">
+        <a class="nav-item" data-mod="chat" href="#chat"><span class="nav-ico">💬</span><span class="nav-lbl">Chat</span><span class="nav-badge hidden" id="badge-chat"></span></a>
+        <a class="nav-item" data-mod="reports" href="#reports"><span class="nav-ico">⚑</span><span class="nav-lbl">Nahlášené chyby</span><span class="nav-badge hidden" id="badge-reports"></span></a>
+        <a class="nav-item" data-mod="settings" href="#settings"><span class="nav-ico">⚙️</span><span class="nav-lbl">Nastavení</span></a>
+        <div class="nav-sep">Připravujeme</div>
+        <span class="nav-item is-soon"><span class="nav-ico">🎟️</span><span class="nav-lbl">Promo kódy</span></span>
+        <span class="nav-item is-soon"><span class="nav-ico">👥</span><span class="nav-lbl">Zákazníci</span></span>
+        <span class="nav-item is-soon"><span class="nav-ico">📊</span><span class="nav-lbl">Přehled</span></span>
+        <span class="nav-item is-soon"><span class="nav-ico">🌍</span><span class="nav-lbl">Jazyky</span></span>
+      </nav>
+      <div class="side-foot">
+        <div class="me" id="me-email"></div>
+        <button class="btn-link" id="logout" type="button">Odhlásit</button>
+      </div>
+    </aside>
+    <main class="main" id="main"></main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script type="module" src="/admin/admin.js?v=1"></script>
+</body>
+</html>
