@@ -593,11 +593,16 @@ function fitQuizCard(input) {
   // stejná hodnota jako padding-top body) → horní hranu karty dáme kousek pod ně.
   const safeTop = parseFloat(getComputedStyle(document.body).paddingTop) || 0;
   const y = window.scrollY;
-  const cardTop = y + card.getBoundingClientRect().top;
-  let target = cardTop - safeTop - 8;
+  // V lekci nahoře ukázat i řádek se symboly sloves (postup ve skupině);
+  // kroky (1) studium → …) jsou při psaní schované (body.kb-room).
+  const chips = card.closest('.lesson-question') ? document.getElementById('verb-chips') : null;
+  const anchor = chips && chips.offsetParent && chips.childElementCount ? chips : card;
+  const anchorTop = y + anchor.getBoundingClientRect().top;
+  let target = anchorTop - safeTop - 6;
   // Karta se celá nevejde → aspoň aktivní pole musí zůstat nad klávesnicí.
   const inputBottom = y + input.getBoundingClientRect().bottom;
-  if (inputBottom + 12 > target + visH) target = inputBottom + 12 - visH;
+  const pad = input.classList.contains('kb-keeper') ? 4 : 12; // držák je na samém spodku karty
+  if (inputBottom + pad > target + visH) target = inputBottom + pad - visH;
   target = Math.max(0, Math.round(target));
   const vvOff = vv ? vv.offsetTop : 0;
   if (Math.abs(target - y) > 3 || vvOff > 3) window.scrollTo({ top: target, behavior: 'instant' });
@@ -815,6 +820,16 @@ const TEXTS = {
   },
   tip_field:     { pro: 'Po každém tvaru zmáčkni <kbd>Enter</kbd>',
                    student: 'Po každym tvaru <kbd>Enter</kbd>' },
+  // Mobil: Enter je na klávesnici vpravo dole — u dalšího pole šipka ➜,
+  // u posledního ✓ (enterkeyhint next/done).
+  tip_field_touch:  { pro: 'Po každém tvaru ťukni vpravo dole na <kbd>➜</kbd> / <kbd>✓</kbd>',
+                      student: 'Po každym tvaru ťukni vpravo dole na <kbd>➜</kbd> / <kbd>✓</kbd>' },
+  tip_atomic_touch: { pro: 'Vpravo dole <kbd>➜</kbd> / <kbd>✓</kbd> = další pole, vyhodnotí se na konci',
+                      student: 'Vpravo dole <kbd>➜</kbd> / <kbd>✓</kbd> = další pole. Vyhodnocení až na konci.' },
+  tip_enter_nudge_touch: {
+    pro: '👆 Ťukni vpravo dole na <kbd>➜</kbd> / <kbd>✓</kbd> místo ťukání do polí — hned uvidíš, jestli je tvar správně.',
+    student: '👆 Dej vpravo dole <kbd>➜</kbd> / <kbd>✓</kbd> místo ťukání do polí — hned víš, jestli to sedí.',
+  },
   giveup_btn:    { pro: 'Nevím 😭', student: 'Vzdávám 🏳️' },
   report_btn: 'Nahlásit chybu',
   report_btn_title: 'Nahlásit chybu u tohoto slovesa',
@@ -2044,11 +2059,12 @@ function noteManualFieldSwitch() {
   if (!L || L.enterHintShown) return;
   L.manualSwitches = (L.manualSwitches || 0) + 1;
   if (L.manualSwitches < 2) return;
-  const tip = document.querySelector('.enter-tip');
+  const touch = IS_TOUCH;
+  const tip = document.querySelector(touch ? '.enter-tip-touch' : '.enter-tip');
   if (!tip) return;
   L.enterHintShown = true;
   const original = tip.innerHTML;
-  tip.innerHTML = t('tip_enter_nudge');
+  tip.innerHTML = t(touch ? 'tip_enter_nudge_touch' : 'tip_enter_nudge');
   tip.classList.add('is-nudging');
   setTimeout(() => {
     tip.classList.remove('is-nudging');
@@ -3206,6 +3222,7 @@ function askStage2Verb(verb, step) {
   }
 
   const tipText = isAtomicCheck ? t('tip_atomic') : t('tip_field');
+  const tipTouch = isAtomicCheck ? t('tip_atomic_touch') : t('tip_field_touch');
 
   const fieldHtml = (key, placeholder) => {
     const auraCls = auraSet.has(key) ? ' has-aura' : '';
@@ -3229,6 +3246,7 @@ function askStage2Verb(verb, step) {
       <div class="q-prompt">${verb.cs}</div>
       <div class="q-sub">${progressText}</div>
       <div class="enter-tip">${tipText}</div>
+      <div class="enter-tip enter-tip-touch">${tipTouch}</div>
       <div class="quiz-fill-inputs">
         ${fieldHtml('inf', t('form_inf'))}
         ${fieldHtml('past', t('form_past_full'))}
@@ -5591,6 +5609,7 @@ function quizRender() {
     card.innerHTML = `
       <div class="q-emoji">${verb.emoji || '❓'}</div>
       ${promptHTML}
+      <div class="enter-tip enter-tip-touch">${t('tip_field_touch')}</div>
       <div class="quiz-fill-inputs">
         ${blanks.map((k, i) => `<input data-form="${k}" placeholder="${labels[k]}" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" enterkeyhint="${i === blanks.length - 1 ? 'done' : 'next'}" inputmode="text" />`).join('')}
       </div>

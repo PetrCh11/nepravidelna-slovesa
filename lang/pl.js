@@ -219,6 +219,9 @@
       s2_finale_desc: 'Wszystkie czasowniki w losowej kolejności. Wpisujesz wszystkie 3 formy naraz, wynik zobaczysz po Enterze — 1× bez błędu wystarczy, żeby czasownik wypadł z kolejki.',
       tip_atomic: '<kbd>Enter</kbd> = następne pole, sprawdzenie na końcu',
       tip_field: 'Po każdej formie naciśnij <kbd>Enter</kbd>',
+      tip_field_touch: 'Po każdej formie stuknij w prawym dolnym rogu <kbd>➜</kbd> / <kbd>✓</kbd>',
+      tip_atomic_touch: 'W prawym dolnym rogu <kbd>➜</kbd> / <kbd>✓</kbd> = następne pole, sprawdzenie na końcu',
+      tip_enter_nudge_touch: '👆 Stuknij w prawym dolnym rogu <kbd>➜</kbd> / <kbd>✓</kbd> zamiast stukać w pola — od razu zobaczysz, czy forma jest dobra.',
       tip_enter_nudge: {
         pro: '👆 Spróbuj <kbd>Enter</kbd> zamiast klikania — od razu zobaczysz, czy forma jest dobra.',
         student: '👆 Daj <kbd>Enter</kbd> zamiast klikania — od razu wiesz, czy się zgadza.',

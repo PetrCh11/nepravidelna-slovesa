@@ -1553,6 +1553,13 @@ main { flex: 1; padding: 28px 0 48px; }
 @media (prefers-reduced-motion: reduce) {
   .enter-tip.is-nudging { animation: none; }
 }
+/* Nápověda k Enteru: na dotykových zařízeních místo „zmáčkni Enter"
+   ukazujeme klávesu vpravo dole na softwarové klávesnici. */
+.enter-tip-touch { display: none; }
+@media (pointer: coarse) {
+  .enter-tip:not(.enter-tip-touch) { display: none; }
+  .enter-tip-touch { display: block; }
+}
 .enter-tip kbd {
   display: inline-block;
   padding: 1px 6px;
@@ -6449,15 +6456,24 @@ body.kb-room { padding-bottom: 70vh; }
 /* Mobil při psaní (body.kb-room jen na dotykových zařízeních): zhuštěná
    kartička, aby se nad klávesnici vešla celá i s hodnocením a „Další". */
 body.kb-room .lesson-question .q-card { padding: 12px 14px 44px; }
-body.kb-room .lesson-question .q-card .q-emoji { font-size: 1.7rem; line-height: 1.1; margin-bottom: 2px; }
+body.kb-room .lesson-question .q-card .q-emoji { font-size: 1.5rem; line-height: 1.1; margin-bottom: 2px; }
 body.kb-room .lesson-question .q-card .q-prompt { font-size: 1.12rem; padding: 3px 44px; margin-bottom: 4px; }
 body.kb-room .lesson-question .q-card .q-sub { font-size: 0.8rem; margin-bottom: 6px; }
-body.kb-room .lesson-question .q-card .enter-tip { display: none; }
+body.kb-room .lesson-question .q-card .enter-tip { margin-bottom: 5px; }
 body.kb-room .lesson-question .q-card .fill-row { margin-bottom: 5px; }
 body.kb-room .lesson-question .q-card .quiz-fill-inputs { margin-bottom: 6px; }
 body.kb-room .lesson-question .q-card .quiz-fill-inputs input { padding-top: 7px; padding-bottom: 7px; }
-body.kb-room .lesson-question .q-card .q-feedback { margin-top: 2px; }
+body.kb-room .lesson-question .q-card .q-feedback { margin-top: 2px; font-size: 0.8rem; line-height: 1.25; }
+/* Po vyhodnocení už nápověda ke klávese není potřeba → místo pro hodnocení,
+   ať nahoře zůstanou vidět i symboly sloves. */
+body.kb-room .q-card:has(.q-feedback:not(:empty)) .enter-tip-touch,
+body.kb-room #quiz-card:has(.quiz-feedback:not(:empty)) .enter-tip-touch { display: none; }
+body.kb-room .lesson-progress .verb-chips { padding: 2px 0 6px; }
 body.kb-room .lesson-question .q-card .audio-toggle { top: 8px; right: 8px; width: 30px; height: 30px; }
+/* Řádek s kroky (1) studium → 2) …) při psaní schovat, ať se nad klávesnici
+   vejdou symboly sloves i celá kartička (fitQuizCard zarovná na symboly). */
+body.kb-room .lesson-progress .step-pills { display: none; }
+body.kb-room #quiz-card .enter-tip-touch { margin-bottom: 5px; }
 /* Plovoucí ☰ by při psaní překrýval tlačítko zvuku v rohu kartičky. */
 body.kb-room .practice-menu-btn { display: none; }
 body.kb-room #quiz-card { padding-top: 12px; padding-bottom: 12px; }
