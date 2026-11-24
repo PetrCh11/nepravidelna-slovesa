@@ -2,6 +2,9 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
+  <script>/* režim podle telefonu ještě před vykreslením (logika = resolveTheme v app.js) */
+    try { var s = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light', o = localStorage.getItem('themeOverride'), l = localStorage.getItem('theme');
+      document.documentElement.dataset.theme = (o && localStorage.getItem('themeOverrideSys') === s) ? o : (!o && (l === 'dark' || l === 'light') ? l : s); } catch (e) {}</script>
   <meta name="msvalidate.01" content="B22865F1E3016651F8E45103CDFF397A" />
   <!-- Polská verze žije na vlastní doméně czasowniki.pl; /pl/ na ucseslovesa.cz
        jen přesměrovává (na czasowniki.pl je podmínka neškodná — hostname nesedí). -->

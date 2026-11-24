@@ -220,7 +220,7 @@ function isPremiumActive() {
 const state = {
   data: null,
   dialect: localStorage.getItem('dialect') || 'BrE',
-  theme: localStorage.getItem('theme') || 'light',
+  theme: resolveTheme(),
   style: localStorage.getItem('style') || 'pro', // 'pro' | 'student' | 'hantec'
   currentView: 'lesson',
   lesson: null, // lesson state when active
@@ -5788,6 +5788,30 @@ function dtRevealReview() {
 // Theme + dialect + menu
 // ============================================================
 
+// Režim podle telefonu (prefers-color-scheme). Ruční přepnutí tlačítkem 🌙/☀️
+// platí, dokud telefon sám nepřepne den/noc — pak appka zase následuje systém.
+// localStorage: themeOverride ('light'|'dark') + themeOverrideSys (systémový
+// režim v okamžiku přepnutí). Starý klíč 'theme' se jednou převede.
+function systemTheme() {
+  try { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; } catch { return 'light'; }
+}
+function resolveTheme() {
+  const sys = systemTheme();
+  try {
+    const legacy = localStorage.getItem('theme');
+    if (legacy) {
+      localStorage.removeItem('theme');
+      if ((legacy === 'dark' || legacy === 'light') && legacy !== sys && !localStorage.getItem('themeOverride')) {
+        localStorage.setItem('themeOverride', legacy);
+        localStorage.setItem('themeOverrideSys', sys);
+      }
+    }
+    const o = localStorage.getItem('themeOverride');
+    if (o && localStorage.getItem('themeOverrideSys') === sys) return o;
+    if (o) { localStorage.removeItem('themeOverride'); localStorage.removeItem('themeOverrideSys'); }
+  } catch {}
+  return sys;
+}
 function applyTheme() {
   document.documentElement.dataset.theme = state.theme;
   const ht = $('#theme-toggle');
@@ -5799,9 +5823,30 @@ function applyTheme() {
 }
 function toggleTheme() {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('theme', state.theme);
+  const sys = systemTheme();
+  try {
+    if (state.theme === sys) {
+      localStorage.removeItem('themeOverride');
+      localStorage.removeItem('themeOverrideSys');
+    } else {
+      localStorage.setItem('themeOverride', state.theme);
+      localStorage.setItem('themeOverrideSys', sys);
+    }
+  } catch {}
   applyTheme();
 }
+try {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    state.theme = resolveTheme();
+    applyTheme();
+  });
+} catch {}
+// Telefon mohl přepnout den/noc, zatímco byla appka na pozadí
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  const next = resolveTheme();
+  if (next !== state.theme) { state.theme = next; applyTheme(); }
+});
 
 // ---------- Sound-effects menu toggle ----------
 function applySoundEffectsUI() {
