@@ -36,8 +36,12 @@ export async function sendEmail({ to, subject, html, text, senderName }) {
     const resp = await client.email.send(params);
     return { ok: true, id: resp?.body?.message_id || null };
   } catch (e) {
-    console.error('[email] send failed:', e?.message || e);
-    return { ok: false, reason: 'send_error', error: e?.message };
+    // MailerSend SDK hází objekt odpovědi ({statusCode, body, headers}) → vypiš jen podstatné.
+    const detail = e?.statusCode
+      ? `HTTP ${e.statusCode} ${JSON.stringify(e.body?.message || e.body || '')}`
+      : (e?.message || String(e));
+    console.error('[email] send failed →', to, detail);
+    return { ok: false, reason: 'send_error', error: detail };
   }
 }
 

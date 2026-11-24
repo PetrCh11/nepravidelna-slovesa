@@ -117,8 +117,9 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
               else if (interval === 'month') plan = 'monthly';
             } catch {}
             const tpl = welcomeEmail({ plan, isPromo: false, lang: meta.lang });
-            await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text, senderName: tpl.senderName });
-            console.log('Welcome email sent →', email, plan);
+            const r = await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text, senderName: tpl.senderName });
+            if (r.ok) console.log('Welcome email sent →', email, plan, meta.lang || 'cs');
+            else console.error('Welcome email FAILED →', email, plan, r.reason, r.error || '');
           }
         } catch (e) {
           console.error('Welcome email failed:', e?.message || e);
@@ -312,8 +313,9 @@ app.post('/redeem-code', async (req, res) => {
           lang = profile?.exists ? profile.data().lang : undefined;
         }
         const tpl = welcomeEmail({ plan: 'promo', isPromo: true, lang });
-        await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text, senderName: tpl.senderName });
-        console.log('Promo welcome email sent →', email);
+        const r = await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text, senderName: tpl.senderName });
+        if (r.ok) console.log('Promo welcome email sent →', email, lang || 'cs');
+        else console.error('Promo welcome email FAILED →', email, r.reason, r.error || '');
       }
     } catch (e) {
       console.error('Promo welcome email failed:', e?.message || e);
@@ -429,6 +431,8 @@ app.post('/report-error', async (req, res) => {
         subject: `⚑ Nahlášená chyba: ${doc.verb.inf} (${catLabel}, ${doc.lang})`,
         html,
         text: `${doc.verb.inf} – ${doc.verb.past} – ${doc.verb.pp}\nKategorie: ${catLabel}\nZpráva: ${doc.message}\nOdpovědi: ${JSON.stringify(answers)}\nE-mail: ${email || '-'}\nID: ${ref.id}`,
+      }).then((r) => {
+        if (!r.ok) console.error('Report email FAILED →', ref.id, r.reason, r.error || '');
       }).catch((e) => console.error('Report email failed:', e?.message || e));
     }
     res.json({ ok: true });
