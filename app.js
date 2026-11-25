@@ -598,7 +598,9 @@ function fitQuizCard(input) {
   const chips = card.closest('.lesson-question') ? document.getElementById('verb-chips') : null;
   const anchor = chips && chips.offsetParent && chips.childElementCount ? chips : card;
   const anchorTop = y + anchor.getBoundingClientRect().top;
-  let target = anchorTop - safeTop - 6;
+  // Odstup od horního okraje: Safari (iOS 26+) horní pruh pod hodinami
+  // rozmazává (liquid glass) → symboly sloves posunout kousek pod něj.
+  let target = anchorTop - safeTop - 22;
   // Karta se celá nevejde → aspoň aktivní pole musí zůstat nad klávesnicí.
   const inputBottom = y + input.getBoundingClientRect().bottom;
   const pad = input.classList.contains('kb-keeper') ? 4 : 12; // držák je na samém spodku karty
