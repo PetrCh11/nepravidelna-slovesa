@@ -1,5 +1,5 @@
 // Simple cache-first service worker for offline PWA use
-const CACHE = 'slovesa-v257';
+const CACHE = 'slovesa-v258';
 const ASSETS = [
   './',
   './index.html',
@@ -37,7 +37,12 @@ self.addEventListener('fetch', (e) => {
   const { request } = e;
   if (request.method !== 'GET') return;
   // Administrace se nikdy necachuje (vždy čerstvá data i kód)
-  if (new URL(request.url).pathname.startsWith('/admin')) return;
+  const url = new URL(request.url);
+  if (url.pathname.startsWith('/admin')) return;
+  // Cizí domény (Firestore long-poll, Firebase, Plausible, Stripe…) nechat prohlížeči.
+  // Dlouhé spojení přes SW drželo starý worker „zaneprázdněný", takže nová verze
+  // appky čekala (waiting) a aktivovala se až po zavření všech oken.
+  if (url.origin !== location.origin) return;
   e.respondWith(
     caches.match(request).then((hit) => hit || fetch(request).then((resp) => {
       // cache same-origin successful GETs
