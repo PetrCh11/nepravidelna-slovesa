@@ -1,7 +1,7 @@
 // Administrace appky — ucseslovesa.cz/admin/
 // Přihlášení přes Google (stejný Firebase projekt jako appka); všechna data jdou
 // přes backend (Railway), který pustí jen účty z env ADMIN_EMAILS.
-// Moduly: #chat, #reports, #settings — další (promo kódy, zákazníci…) přibudou.
+// Moduly: #chat, #reports, #overview, #customers, #web, #promo, #langs, #settings.
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
 import {
@@ -171,6 +171,7 @@ function route() {
   if (mod === 'customers') return renderCustomers(main);
   if (mod === 'overview') return renderOverview(main);
   if (mod === 'web') return renderWeb(main);
+  if (mod === 'langs') return renderLangs(main);
   if (mod === 'promo') return arg ? renderPromoDetail(main, decodeURIComponent(arg)) : renderPromo(main);
   return renderChat(main, arg ? decodeURIComponent(arg) : null);
 }
@@ -712,6 +713,181 @@ async function drawGsc() {
         </div>
       </div>`;
   }).join('');
+}
+
+// ---------- 🌍 Jazyky ----------
+// Jen kontrola (žádná editace): čte živé soubory webu přímo v prohlížeči —
+// české TEXTS z /app.js (zdroj pravdy), jazykový pack /lang/<kód>.js (spuštěný
+// v izolovaném window), data/verbs.json a index.html mutace. Nový jazyk = další
+// položka v LANGS (postup v docs/i18n.md).
+const LANGS = [
+  { code: 'pl', flag: '🇵🇱', name: 'Polština', pack: '/lang/pl.js', index: '/pl/index.html', site: 'https://czasowniki.pl' },
+];
+// Záměrné rozdíly — nehlásit.
+const I18N_IGNORE_IDS = new Set(['tone-pick-hantec']); // hantec (brněnský styl) je jen česky
+const I18N_PACK_ONLY = new Set(['wv_app_labels']);     // čte se z packu napřímo, bez t()
+// Soubory, které se na doménu mutace kopírují beze změny (build-pl.sh) → musí být shodné.
+const I18N_SYNC_FILES = ['app.js', 'lang/pl.js', 'cloud.js', 'styles.css', 'data/verbs.json'];
+// Znaky, které polština nemá — v překladu podezřelé (zapomenutá čeština).
+const CZ_CHARS = /[ěščřžůťďňýáíéú]/i;
+
+const fetchText = async (url) => {
+  const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'nc=' + Date.now(), { cache: 'no-store' });
+  if (!r.ok) throw new Error(url + ' → ' + r.status);
+  return r.text();
+};
+function csTextKeys(app) {
+  const s = app.indexOf('const TEXTS = {');
+  const e = app.indexOf('\n};', s);
+  if (s < 0 || e < 0) throw new Error('V app.js nenalezen slovník TEXTS');
+  const block = app.slice(s, e);
+  const keys = new Map(); // klíč → ukázka české hodnoty
+  const re = /^ {2}(?:get\s+)?([A-Za-z_$][\w$]*)\s*[:(]([^\n]*)/gm;
+  let m;
+  while ((m = re.exec(block))) {
+    const sample = (m[2].match(/'([^']{2,})'|`([^`]{2,})`|"([^"]{2,})"/) || []).slice(1).find(Boolean) || '';
+    keys.set(m[1], sample);
+  }
+  const used = new Set([...app.matchAll(/\bt\('([A-Za-z_0-9]+)'\s*[,)]/g)].map((x) => x[1]));
+  return { keys, used };
+}
+function runPack(src) {
+  const win = {};
+  new Function('window', src)(win); // stejný původ, náš vlastní soubor
+  if (!win.LANG_PACK) throw new Error('pack nenastavil window.LANG_PACK');
+  return win.LANG_PACK;
+}
+const flatStrings = (v) => {
+  if (typeof v === 'string') return [v];
+  if (typeof v === 'function') return [];
+  if (Array.isArray(v)) return v.flatMap(flatStrings);
+  if (v && typeof v === 'object') return Object.values(v).flatMap(flatStrings);
+  return [];
+};
+function htmlIdsAndText(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const ids = new Set([...doc.querySelectorAll('[id]')].map((e) => e.id));
+  doc.querySelectorAll('script,style,template').forEach((e) => e.remove());
+  const texts = [];
+  const walker = doc.createTreeWalker(doc.body || doc.documentElement, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) { const t = walker.currentNode.nodeValue.trim(); if (t) texts.push(t); }
+  doc.querySelectorAll('[alt],[title],[aria-label],[placeholder]').forEach((e) => {
+    ['alt', 'title', 'aria-label', 'placeholder'].forEach((a) => { const v = e.getAttribute(a); if (v) texts.push(v); });
+  });
+  doc.querySelectorAll('meta[content]').forEach((e) => { if (/description|title/.test(e.getAttribute('name') || e.getAttribute('property') || '')) texts.push(e.getAttribute('content')); });
+  return { ids, texts };
+}
+async function analyzeLang(L, base) {
+  const res = { L, issues: 0 };
+  const pack = runPack(await fetchText(L.pack));
+  const pt = pack.texts || {};
+  res.textsTotal = base.cs.keys.size;
+  res.missing = [...base.cs.keys.keys()].filter((k) => !(k in pt)).map((k) => ({ k, cs: base.cs.keys.get(k) }));
+  res.extra = Object.keys(pt).filter((k) => !base.cs.keys.has(k) && !I18N_PACK_ONLY.has(k));
+  res.suspicious = [];
+  for (const [k, v] of Object.entries(pt)) {
+    const bad = flatStrings(v).find((x) => CZ_CHARS.test(x));
+    if (bad) res.suspicious.push({ k, v: bad });
+  }
+  const d = pack.data || {};
+  res.verbs = base.verbs.filter((v) => !(d.verbs && d.verbs[v]));
+  res.groups = base.groups.filter((g) => !(d.groups && d.groups[g] && d.groups[g].pattern && d.groups[g].rule));
+  res.sections = base.sections.filter((s) => !(d.sections && d.sections[s]));
+  res.voice = pack.voice || '';
+  res.prices = pack.stripePrices ? Object.keys(pack.stripePrices) : [];
+  // index.html mutace vs. český
+  const h = htmlIdsAndText(await fetchText(L.index));
+  res.htmlMissingIds = [...base.html.ids].filter((id) => !h.ids.has(id) && !I18N_IGNORE_IDS.has(id));
+  res.htmlCz = [...new Set(h.texts.filter((t) => CZ_CHARS.test(t)))];
+  res.issues = res.missing.length + res.suspicious.length + res.verbs.length + res.groups.length + res.sections.length + res.htmlMissingIds.length + res.htmlCz.length;
+  return res;
+}
+async function checkSync(L) {
+  if (!L.site) return null;
+  const out = [];
+  for (const f of I18N_SYNC_FILES) {
+    const path = f.replace('lang/pl.js', L.pack.replace(/^\//, ''));
+    try {
+      const [a, b] = await Promise.all([fetchText('/' + path), fetchText(L.site + '/' + path)]);
+      out.push({ f: path, same: a === b });
+    } catch (e) { out.push({ f: path, same: null, err: e.message }); }
+  }
+  return out;
+}
+const pct = (have, total) => (total ? Math.round((have / total) * 100) : 100);
+function langListHtml(items, fmt, limit = 40) {
+  if (!items.length) return '';
+  const more = items.length > limit ? `<div class="muted small">… a dalších ${items.length - limit}</div>` : '';
+  return `<div class="table">${items.slice(0, limit).map(fmt).join('')}</div>${more}`;
+}
+async function renderLangs(main) {
+  main.innerHTML = `
+    <section class="pane full-pane">
+      <header class="pane-head"><h1>Jazyky</h1><button class="btn btn-ghost btn-sm" id="lang-refresh" title="Znovu zkontrolovat">↻</button></header>
+      <div class="wrap" id="lang-body"><div class="muted">Kontroluji překlady…</div></div>
+    </section>`;
+  $('#lang-refresh').addEventListener('click', () => renderLangs(main));
+  const body = $('#lang-body');
+  let base;
+  try {
+    const [app, verbsJson, idx] = await Promise.all([fetchText('/app.js'), fetchText('/data/verbs.json'), fetchText('/index.html')]);
+    const data = JSON.parse(verbsJson);
+    base = { cs: csTextKeys(app), verbs: [], groups: [], sections: [], html: htmlIdsAndText(idx) };
+    data.sections.forEach((sec) => { base.sections.push(sec.id); sec.subsections.forEach((sub) => { base.groups.push(sub.id); sub.verbs.forEach((v) => base.verbs.push(v.inf)); }); });
+  } catch (e) { body.innerHTML = `<div class="card">Nepodařilo se načíst zdroj: ${esc(e.message)}</div>`; return; }
+  const undefinedKeys = [...base.cs.used].filter((k) => !base.cs.keys.has(k));
+  let html = `<article class="card">
+      <h2>🇨🇿 Čeština (zdroj pravdy)</h2>
+      <div class="kpis kpis-sm">
+        <div class="kpi"><div class="kpi-lbl">Texty</div><div class="kpi-val">${base.cs.keys.size}</div></div>
+        <div class="kpi"><div class="kpi-lbl">Slovesa</div><div class="kpi-val">${base.verbs.length}</div></div>
+        <div class="kpi"><div class="kpi-lbl">Skupiny</div><div class="kpi-val">${base.groups.length}</div></div>
+        <div class="kpi"><div class="kpi-lbl">Sekce</div><div class="kpi-val">${base.sections.length}</div></div>
+      </div>
+      ${undefinedKeys.length ? `<div class="status-row" style="margin-top:12px"><span class="dot dot-warn"></span><div>Appka volá texty, které v TEXTS nejsou (uživatel by viděl jen název klíče): ${undefinedKeys.map((k) => `<code>${esc(k)}</code>`).join(', ')}</div></div>` : ''}
+    </article>`;
+  for (const L of LANGS) {
+    let r;
+    try { r = await analyzeLang(L, base); } catch (e) { html += `<article class="card"><h2>${L.flag} ${esc(L.name)}</h2><div class="muted">Kontrola selhala: ${esc(e.message)}</div></article>`; continue; }
+    const textsHave = r.textsTotal - r.missing.length;
+    const row = (lbl, have, total) => `<div class="kpi"><div class="kpi-lbl">${lbl}</div><div class="kpi-val">${pct(have, total)} %</div><div class="kpi-sub">${have} / ${total}</div></div>`;
+    html += `<article class="card" id="lang-${L.code}">
+      <div class="card-head"><h2>${L.flag} ${esc(L.name)} <span class="tag ${r.issues ? 'tag-gold' : 'tag-ok'}">${r.issues ? r.issues + ' k řešení' : 'vše přeloženo'}</span></h2>
+        <div class="row-gap">${L.site ? `<a class="small" href="${esc(L.site)}" target="_blank" rel="noopener">${esc(L.site.replace(/^https:\/\//, ''))} ↗</a>` : ''}</div></div>
+      <div class="kpis kpis-sm">
+        ${row('Texty', textsHave, r.textsTotal)}
+        ${row('Slovesa', base.verbs.length - r.verbs.length, base.verbs.length)}
+        ${row('Skupiny', base.groups.length - r.groups.length, base.groups.length)}
+        ${row('Sekce', base.sections.length - r.sections.length, base.sections.length)}
+      </div>
+      <div class="small muted" style="margin:10px 0 4px">Hlas pro čtení: <code>${esc(r.voice || '—')}</code> · Stripe ceny: ${r.prices.length ? r.prices.map(esc).join(', ') : '<span class="tag tag-hot">chybí — platilo by se v Kč</span>'}</div>
+      ${r.missing.length ? `<h4>Nepřeložené texty (ukáže se česky)</h4>${langListHtml(r.missing, (x) => `<div class="tr tr-lang"><code>${esc(x.k)}</code><span class="muted">${esc(x.cs)}</span></div>`)}` : ''}
+      ${r.suspicious.length ? `<h4>Podezřelé — v překladu je česká diakritika</h4>${langListHtml(r.suspicious, (x) => `<div class="tr tr-lang"><code>${esc(x.k)}</code><span>${esc(x.v)}</span></div>`)}` : ''}
+      ${r.verbs.length ? `<h4>Slovesa bez překladu</h4><p>${r.verbs.map((v) => `<code>${esc(v)}</code>`).join(' ')}</p>` : ''}
+      ${r.groups.length ? `<h4>Skupiny bez vzorce/pravidla</h4><p>${r.groups.map((v) => `<code>${esc(v)}</code>`).join(' ')}</p>` : ''}
+      ${r.sections.length ? `<h4>Sekce bez názvu</h4><p>${r.sections.map((v) => `<code>${esc(v)}</code>`).join(' ')}</p>` : ''}
+      ${r.htmlMissingIds.length ? `<h4>Prvky z české stránky, které v ${esc(L.index)} chybí</h4><p class="small muted">Typicky nová funkce, kterou jsme do mutace zapomněli přidat.</p><p>${r.htmlMissingIds.map((v) => `<code>#${esc(v)}</code>`).join(' ')}</p>` : ''}
+      ${r.htmlCz.length ? `<h4>Česky vypadající text v ${esc(L.index)}</h4>${langListHtml(r.htmlCz, (x) => `<div class="tr tr-lang1"><span>${esc(x)}</span></div>`)}` : ''}
+      ${r.extra.length ? `<details class="small muted" style="margin-top:10px"><summary>Klíče jen v packu (${r.extra.length}) — v češtině už nejsou, nejspíš přebytečné</summary><p>${r.extra.map((v) => `<code>${esc(v)}</code>`).join(' ')}</p></details>` : ''}
+      <div id="sync-${L.code}" class="lang-sync"><div class="muted small">Porovnávám nasazenou verzi…</div></div>
+    </article>`;
+  }
+  html += `<article class="card"><h2>➕ Nový jazyk</h2><p class="muted small">Postup je v <code>docs/i18n.md</code>: jazykový pack <code>lang/&lt;kód&gt;.js</code>, přeložený <code>&lt;kód&gt;/index.html</code>, ikony, Stripe ceny v místní měně a build/deploy skript. Až bude, objeví se tady s procenty hotového překladu.</p></article>`;
+  body.innerHTML = html;
+  for (const L of LANGS) {
+    const box = $('#sync-' + L.code);
+    if (!box) continue;
+    const s = await checkSync(L);
+    if (!s) { box.innerHTML = ''; continue; }
+    const behind = s.filter((x) => x.same === false);
+    const failed = s.filter((x) => x.same === null);
+    box.innerHTML = `<div class="status-row" style="margin:14px 0 0"><span class="dot ${behind.length ? 'dot-warn' : failed.length ? 'dot-off' : 'dot-ok'}"></span><div>
+      ${behind.length
+        ? `<strong>${esc(L.site.replace(/^https:\/\//, ''))} je pozadu</strong> — liší se ${behind.map((x) => `<code>${esc(x.f)}</code>`).join(', ')}. Je potřeba nasadit mutaci (<code>sh tools/deploy-pl.sh</code>).`
+        : failed.length ? `Nepodařilo se porovnat: ${failed.map((x) => esc(x.f)).join(', ')}`
+        : `<strong>${esc(L.site.replace(/^https:\/\//, ''))} má aktuální verzi</strong> <span class="muted small">(${s.length} sdílených souborů shodných s ucseslovesa.cz)</span>`}
+    </div></div>`;
+  }
 }
 
 // ---------- 🎟️ Promo kódy ----------

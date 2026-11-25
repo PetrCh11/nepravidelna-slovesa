@@ -337,3 +337,9 @@ code { background: var(--panel2); padding: 1px 6px; border-radius: 6px; font-siz
   .nav::-webkit-scrollbar { display: none; }
   .nav-item { flex: 0 0 auto; min-width: 64px; }
 }
+
+/* Jazyky */
+.tr-lang { grid-template-columns: minmax(140px, 220px) 1fr; }
+.tr-lang1 { grid-template-columns: 1fr; }
+#main h4 { margin: 16px 0 6px; font-size: 0.85rem; }
+.lang-sync code, #main .card p code { font-size: 0.8rem; }
