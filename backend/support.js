@@ -461,6 +461,7 @@ export function registerSupportRoutes(app, { db, admin, sendEmail }) {
     usedCount: Number(d.usedCount || 0),
     maxUses: Number(d.maxUses || 0) || null,
     durationDays: Number(d.durationDays || 0) || null,
+    premiumUntil: Number(d.premiumUntil || 0) || null,
     expiresAt: Number(d.expiresAt || 0) || null,
     lastRedeemedAt: Number(d.lastRedeemedAt || 0) || null,
     createdAt: Number(d.createdAt || 0) || null,
@@ -679,5 +680,5 @@ export function registerSupportRoutes(app, { db, admin, sendEmail }) {
     res.json({ ok: !!r.ok, detail: r.description || null });
   });
 
-  return { requireAdmin };
+  return { requireAdmin, pushAll };
 }

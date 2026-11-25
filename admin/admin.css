@@ -360,3 +360,8 @@ code { background: var(--panel2); padding: 1px 6px; border-radius: 6px; font-siz
   .fn-lbl { grid-column: 1 / -1; }
   .fn-split { grid-column: 1 / -1; margin-top: -2px; }
 }
+
+/* Školní licence */
+.sch-card { margin-bottom: 10px; }
+.sch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; font-size: 0.9rem; }
+@media (max-width: 720px) { .sch-grid { grid-template-columns: 1fr; } }

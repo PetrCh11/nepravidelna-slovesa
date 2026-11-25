@@ -569,6 +569,7 @@
           expired: 'Kod już wygasł.',
           exhausted: 'Kod został wyczerpany — wszystkie miejsca zajęte.',
           already_redeemed: 'Ten kod został już przez ciebie użyty.',
+          already_premium: 'Masz już opłacone Premium — kod nie jest potrzebny. 🙂',
           invalid_code_format: 'Kod ma zły format.',
           no_user: 'Najpierw zaloguj się przez Google.',
           no_backend: 'Backend jest niedostępny. Spróbuj później.',

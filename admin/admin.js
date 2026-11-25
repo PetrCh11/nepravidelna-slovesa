@@ -172,6 +172,7 @@ function route() {
   if (mod === 'overview') return renderOverview(main);
   if (mod === 'web') return renderWeb(main);
   if (mod === 'langs') return renderLangs(main);
+  if (mod === 'schools') return renderSchools(main);
   if (mod === 'promo') return arg ? renderPromoDetail(main, decodeURIComponent(arg)) : renderPromo(main);
   return renderChat(main, arg ? decodeURIComponent(arg) : null);
 }
@@ -932,8 +933,113 @@ async function renderLangs(main) {
   }
 }
 
+// ---------- 🏫 Školní licence ----------
+const SCHOOL_ST = { new: ['Nová', 'tag-gold'], invoiced: ['Fakturováno', ''], paid: ['Zaplaceno', 'tag-ok'], cancelled: ['Zrušeno', 'tag-hot'] };
+let schoolFilter = 'open';
+async function renderSchools(main) {
+  main.innerHTML = `
+    <section class="pane full-pane">
+      <header class="pane-head"><h1>Školní licence</h1>
+        <div class="row-gap"><a class="small" href="/pro-skoly/#licence" target="_blank" rel="noopener">Stránka pro školy ↗</a><button class="btn btn-ghost btn-sm" id="sch-refresh" title="Načíst znovu">↻</button></div></header>
+      <div class="wrap">
+        <div class="seg" id="sch-filter" style="margin-bottom:12px"><button data-f="open">Rozpracované</button><button data-f="paid">Zaplacené</button><button data-f="all">Vše</button></div>
+        <div id="sch-list"><div class="muted">Načítám…</div></div>
+      </div>
+    </section>`;
+  $('#sch-refresh').addEventListener('click', () => drawSchools());
+  const seg = $('#sch-filter');
+  const sync = () => seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.f === schoolFilter));
+  sync();
+  seg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; schoolFilter = b.dataset.f; sync(); drawSchools(); });
+  drawSchools();
+}
+let schoolData = null;
+async function drawSchools() {
+  const box = $('#sch-list');
+  if (!box) return;
+  try { schoolData = await api('/admin/schools'); } catch (e) { box.innerHTML = `<div class="muted">Nepodařilo se načíst (${esc(e.data?.detail || e.message)}).</div>`; return; }
+  const all = schoolData.orders;
+  const paidSum = all.filter((o) => o.status === 'paid').reduce((a, o) => a + (o.price || 0), 0);
+  const openSum = all.filter((o) => ['new', 'invoiced'].includes(o.status)).reduce((a, o) => a + (o.price || 0), 0);
+  const list = all.filter((o) => (schoolFilter === 'all' ? true : schoolFilter === 'paid' ? o.status === 'paid' : ['new', 'invoiced'].includes(o.status)));
+  const kc = (n) => Number(n || 0).toLocaleString('cs') + ' Kč';
+  const head = `<div class="kpis kpis-sm" style="margin-bottom:12px">
+      <div class="kpi"><div class="kpi-lbl">Objednávky</div><div class="kpi-val">${all.length}</div></div>
+      <div class="kpi"><div class="kpi-lbl">Čeká na platbu</div><div class="kpi-val">${kc(openSum)}</div></div>
+      <div class="kpi"><div class="kpi-lbl">Zaplaceno</div><div class="kpi-val">${kc(paidSum)}</div></div>
+      <div class="kpi"><div class="kpi-lbl">Žáků s licencí</div><div class="kpi-val">${all.reduce((a, o) => a + (o.usage?.used || 0), 0)}</div></div>
+    </div>`;
+  if (!list.length) {
+    box.innerHTML = head + `<article class="card"><p class="muted">${all.length ? 'V tomhle filtru nic není.' : 'Zatím žádná objednávka. Formulář je na <a href="/pro-skoly/#licence" target="_blank" rel="noopener">ucseslovesa.cz/pro-skoly/</a> — pošlete odkaz učitelům.'}</p></article>`;
+    return;
+  }
+  box.innerHTML = head + list.map((o) => {
+    const [stLbl, stCls] = SCHOOL_ST[o.status] || [o.status, ''];
+    const tier = o.tier === 'school' ? 'Celá škola' : `${o.classes} × třída`;
+    const inv = [o.school, o.address, o.ico ? 'IČO ' + o.ico : ''].filter(Boolean).join('\n');
+    const lic = o.licenseCode
+      ? `<div class="status-row" style="margin:8px 0 0"><span class="dot ${o.usage?.active === false ? 'dot-off' : 'dot-ok'}"></span><div>Kód <code class="copy">${esc(o.licenseCode)}</code> <button class="btn-link small" data-copy="${esc(o.licenseCode)}">kopírovat</button> · uplatnilo ${o.usage ? `${o.usage.used} / ${o.usage.max || '∞'}` : '?'} žáků · Premium do ${dateOnly(o.validUntil)}${o.codeSentAt ? ` · <span class="muted small">kód odeslán ${fmtTime(o.codeSentAt)}</span>` : ''}</div></div>`
+      : '';
+    const btn = (act, label, cls = 'btn-ghost') => `<button class="btn ${cls} btn-sm" data-act="${act}" data-id="${esc(o.id)}">${label}</button>`;
+    const acts = [];
+    if (o.status !== 'cancelled') {
+      if (!o.licenseCode) acts.push(btn('license', '🎟️ Vytvořit licenční kód', 'btn-primary'));
+      else acts.push(btn('send', o.codeSentAt ? '✉️ Poslat kód znovu' : '✉️ Poslat kód škole', o.codeSentAt ? 'btn-ghost' : 'btn-primary'));
+      if (o.status === 'new') acts.push(btn('invoiced', '🧾 Fakturováno'));
+      if (o.status !== 'paid') acts.push(btn('paid', '✓ Zaplaceno'));
+      acts.push(btn('cancelled', 'Zrušit'));
+    }
+    return `<article class="card sch-card">
+      <div class="card-head"><h2>${esc(o.school)} <span class="tag ${stCls}">${stLbl}</span></h2><div class="kpi-val" style="font-size:1.2rem">${kc(o.price)}</div></div>
+      <div class="small muted">${tier} · až ${Number(o.seats || 0).toLocaleString('cs')} žáků · objednáno ${fmtTime(o.createdAt)}${o.invoiceNo ? ` · faktura ${esc(o.invoiceNo)}` : ''}${o.dpa ? ' · <strong>chtějí DPA</strong>' : ''}</div>
+      <div class="sch-grid">
+        <div><div class="kpi-lbl">Kontakt</div>${esc(o.name)}<br><a href="mailto:${esc(o.email)}">${esc(o.email)}</a></div>
+        <div><div class="kpi-lbl">Fakturační údaje <button class="btn-link small" data-copy="${esc(inv)}">kopírovat</button></div><div style="white-space:pre-line">${esc(inv)}</div></div>
+      </div>
+      ${o.note ? `<p class="small" style="margin:8px 0 0"><span class="muted">Poznámka:</span> ${nl2br(o.note)}</p>` : ''}
+      ${lic}
+      ${acts.length ? `<div class="rep-actions" style="margin-top:12px">${acts.join('')}</div>` : ''}
+    </article>`;
+  }).join('');
+  box.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast('Zkopírováno', 'ok'); } catch {} }));
+  box.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => schoolAction(b.dataset.act, b.dataset.id, b)));
+}
+async function schoolAction(act, id, b) {
+  const o = schoolData?.orders.find((x) => x.id === id);
+  if (!o) return;
+  try {
+    if (act === 'license') {
+      if (!confirm(`Vytvořit licenční kód pro ${o.school}? (až ${o.seats} žáků, Premium do ${dateOnly(o.validUntil)})`)) return;
+      b.disabled = true;
+      const r = await api(`/admin/schools/${encodeURIComponent(id)}/license`, { method: 'POST' });
+      toast(`Kód ${r.code} vytvořen ✓`, 'ok');
+    } else if (act === 'send') {
+      if (!confirm(`Poslat licenční kód ${o.licenseCode} a návod pro žáky na ${o.email}?`)) return;
+      b.disabled = true;
+      await api(`/admin/schools/${encodeURIComponent(id)}/send`, { method: 'POST' });
+      toast('E-mail odeslán ✓', 'ok');
+    } else if (act === 'invoiced') {
+      const no = prompt('Číslo faktury (nepovinné):', o.invoiceNo || '');
+      if (no === null) return;
+      await api(`/admin/schools/${encodeURIComponent(id)}/status`, { method: 'POST', body: { status: 'invoiced', invoiceNo: no } });
+      toast('Označeno jako fakturováno', 'ok');
+    } else if (act === 'paid') {
+      if (!confirm(`Označit ${o.school} jako zaplaceno (${Number(o.price).toLocaleString('cs')} Kč)?`)) return;
+      await api(`/admin/schools/${encodeURIComponent(id)}/status`, { method: 'POST', body: { status: 'paid' } });
+      toast('Zaplaceno ✓', 'ok');
+    } else if (act === 'cancelled') {
+      if (!confirm(`Zrušit objednávku ${o.school}?${o.licenseCode ? ' Licenční kód se vypne (žáci, kteří ho už uplatnili, si Premium nechají).' : ''}`)) return;
+      await api(`/admin/schools/${encodeURIComponent(id)}/status`, { method: 'POST', body: { status: 'cancelled' } });
+      toast('Zrušeno', 'ok');
+    }
+  } catch (e) {
+    toast('Nepovedlo se: ' + (e.data?.detail || e.message), 'error');
+  }
+  drawSchools();
+}
+
 // ---------- 🎟️ Promo kódy ----------
-const PLAN_LABEL = { annual_teacher: 'Učitelský (roční)', promo: 'Promo', student: 'Studentský', lifetime: 'Navždy' };
+const PLAN_LABEL = { school: 'Školní licence', annual_teacher: 'Učitelský (roční)', promo: 'Promo', student: 'Studentský', lifetime: 'Navždy' };
 const unq = (v) => String(v ?? '').replace(/^["“„]+|["”“]+$/g, '');
 const planLbl = (p) => PLAN_LABEL[unq(p)] || unq(p);
 const dateOnly = (ts) => (ts ? new Date(ts).toLocaleDateString('cs', { day: 'numeric', month: 'numeric', year: 'numeric' }) : '');
@@ -945,7 +1051,7 @@ function promoState(c) {
   if (c.maxUses && c.usedCount >= c.maxUses) return { cls: 'tag', txt: 'vyčerpaný' };
   return { cls: 'tag tag-ok', txt: 'aktivní' };
 }
-const durTxt = (c) => (c.durationDays ? (c.durationDays === 365 ? '1 rok' : `${c.durationDays} dní`) : 'navždy');
+const durTxt = (c) => (c.premiumUntil ? `do ${dateOnly(c.premiumUntil)}` : c.durationDays ? (c.durationDays === 365 ? '1 rok' : `${c.durationDays} dní`) : 'navždy');
 
 async function renderPromo(main) {
   main.innerHTML = `

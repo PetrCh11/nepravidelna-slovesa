@@ -1229,6 +1229,7 @@ const TEXTS = {
     expired: 'Kód už vypršel.',
     exhausted: 'Kód byl vyčerpán — všechna místa obsazená.',
     already_redeemed: 'Tento kód už jsi jednou uplatnil(a).',
+    already_premium: 'Premium už máš zaplacené — kód nepotřebuješ. 🙂',
     invalid_code_format: 'Kód má špatný formát.',
     no_user: 'Nejdřív se prosím přihlas přes Google.',
     no_backend: 'Backend není dostupný. Zkus to později.',

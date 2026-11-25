@@ -237,6 +237,34 @@
       .ts-promo-code-row { padding: 6px 6px 6px 12px; flex-wrap: wrap; }
     }
 
+
+    /* Školní licence — objednávka */
+    .ts-lic { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .ts-price-hl { border: 2px solid #7c6ff5; }
+    .ts-lic-compare { color: #7c6ff5; font-weight: 600; margin-top: 4px; }
+    .ts-order { background: #fff; border: 1px solid #c9dcf2; border-radius: 12px; padding: 16px; margin-top: 14px; }
+    .ts-order-h { font-weight: 800; font-size: 1.05rem; color: #1d2329; margin: 0 0 10px !important; }
+    .ts-tier { display: flex; gap: 8px 18px; flex-wrap: wrap; margin-bottom: 10px; font-size: 0.95rem; color: #1d2329; }
+    .ts-tier label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .ts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 10px 0; }
+    .ts-f { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: #4a5562; font-weight: 600; }
+    .ts-f-classes { max-width: 160px; }
+    .ts-wide { grid-column: 1 / -1; }
+    .ts-f input, .ts-f select, .ts-f textarea { font: inherit; font-weight: 400; font-size: 0.95rem; padding: 9px 10px; border: 1px solid #cfd6df; border-radius: 8px; background: #fbfcfe; color: #1d2329; }
+    .ts-f input:focus, .ts-f select:focus, .ts-f textarea:focus { outline: 2px solid #7c6ff5; outline-offset: 0; border-color: transparent; }
+    .ts-check { display: flex; gap: 8px; align-items: center; font-size: 0.9rem; color: #4a5562; }
+    .ts-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .ts-order-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+    .ts-total { font-size: 1.05rem; color: #1d2329; }
+    .ts-total span { font-size: 0.8rem; color: #6c7783; margin-left: 4px; }
+    .ts-order button.seo-cta { border: 0; cursor: pointer; font: inherit; font-weight: 700; }
+    .ts-order button.seo-cta:disabled { opacity: .6; cursor: default; }
+    .ts-order-msg { margin: 10px 0 0 !important; font-weight: 600; }
+    .ts-order-msg.ok { color: #1a8a5a; } .ts-order-msg.err { color: #c43d4b; }
+    .ts-order-small { font-size: 0.82rem !important; color: #6c7783 !important; margin: 10px 0 0 !important; }
+    .ts-order.is-done .ts-grid, .ts-order.is-done .ts-tier, .ts-order.is-done .ts-f-classes, .ts-order.is-done .ts-check, .ts-order.is-done .ts-order-foot { display: none; }
+    @media (max-width: 540px) { .ts-grid { grid-template-columns: 1fr; } }
+
     /* Dark theme is irrelevant here — landing pages are light-only. */
   </style>
 </head>
@@ -417,8 +445,8 @@
           </div>
           <div class="ts-price">
             <div class="ts-price-label">Ročně</div>
-            <div class="ts-price-amount">299 Kč</div>
-            <div class="ts-price-note">7 dní zdarma · ~25 Kč/měs</div>
+            <div class="ts-price-amount">249 Kč</div>
+            <div class="ts-price-note">7 dní zdarma · ~21 Kč/měs</div>
           </div>
           <div class="ts-price">
             <div class="ts-price-label">Doživotně</div>
@@ -431,27 +459,53 @@
         </p>
       </section>
 
-      <div class="ts-bulk">
-        <p class="ts-bulk-h">Roční licence pro celou školu</p>
-        <p style="font-size:1.4rem;font-weight:800;color:#1d2329;margin:8px 0 4px;">2 490 Kč / rok / neomezený počet studentů</p>
-        <p style="margin-top:0;">
-          Jednorázový nákup s platností <strong>12 měsíců</strong>. <strong>Bez automatické obnovy</strong> — žádný závazek
-          do dalšího rozpočtového roku. Po roce vám pošleme email s nabídkou prodloužení a vystavíme novou fakturu, pokud budete chtít pokračovat.
-        </p>
-        <p style="margin-top:8px;">
-          Dostanete jeden školní promo kód, který rozdáte studentům — každý si jím odemkne plnou verzi
-          (všech 106 sloves, Car Mode, synchronizace) na celý školní rok. Faktura jako za běžný software
-          (§ 5172 — programové vybavení), splatnost 14 dní, neplátce DPH.
-        </p>
-        <p style="font-size:0.9rem;color:#475058;margin:8px 0 4px;">
-          <strong>GDPR & zpracovatelská smlouva (DPA):</strong> Na vyžádání zašleme školám standardní DPA k podpisu.
-          Aplikace zpracovává pouze email a jméno z Google přihlášení + pokrok ve cvičení.
-        </p>
-        <p style="font-size:0.9rem;color:#475058;margin:4px 0 12px;">
-          Pro <strong>menší školy do 30 studentů</strong> nebo neziskové projekty platí individuální dohoda —
-          často zdarma. Napište nám, domluvíme se.
-        </p>
-        <a class="seo-cta" href="mailto:hello@ucseslovesa.cz?subject=Roční%20školní%20licence%20—%20ucseslovesa.cz&amp;body=Dobrý%20den%2C%0A%0Ajsem%20učitel%20angličtiny%20na%20%5Bnázev%20školy%5D%20a%20mám%20zájem%20o%20roční%20školní%20licenci.%0A%0APočet%20studentů%3A%20%0AFakturační%20údaje%20školy%3A%20%0AZájem%20o%20DPA%20(ano%2Fne)%3A%20%0A%0ADěkuji%2C%0A%5Bjméno%5D" data-track="teacher_bulk_email">✉️ Objednat roční školní licenci</a>
+      <div class="ts-bulk" id="licence">
+        <p class="ts-bulk-h">Školní licence — Premium pro celou třídu</p>
+        <p>Žáci dostanou jeden kód a každý si jím odemkne plnou verzi (všech 106 sloves, Car Mode, synchronizace) až do <strong>konce školního roku (31. 8.)</strong>. Platí škola fakturou, <strong>bez automatického prodloužení</strong>.</p>
+        <div class="ts-pricing ts-lic">
+          <div class="ts-price">
+            <div class="ts-price-label">Třída</div>
+            <div class="ts-price-amount">490 Kč</div>
+            <div class="ts-price-note">do 30 žáků · na školní rok</div>
+            <div class="ts-price-note ts-lic-compare">jednotlivě by to bylo až 7 470 Kč</div>
+          </div>
+          <div class="ts-price ts-price-hl">
+            <div class="ts-price-label">Celá škola</div>
+            <div class="ts-price-amount">1 990 Kč</div>
+            <div class="ts-price-note">všechny třídy a učitelé · na školní rok</div>
+            <div class="ts-price-note ts-lic-compare">vyplatí se od 5 tříd</div>
+          </div>
+        </div>
+        <p style="font-size:0.9rem;color:#475058;">Faktura jako za běžný software (§ 5172 — programové vybavení), splatnost 14 dní, neplátce DPH. <strong>GDPR:</strong> na vyžádání pošleme zpracovatelskou smlouvu (DPA); aplikace zpracovává jen e-mail a jméno z Google přihlášení a pokrok ve cvičení.</p>
+
+        <form class="ts-order" id="ts-order" novalidate>
+          <p class="ts-order-h">Objednávka</p>
+          <div class="ts-tier" role="radiogroup" aria-label="Rozsah licence">
+            <label><input type="radio" name="tier" value="class" checked /> Třída (490 Kč za třídu)</label>
+            <label><input type="radio" name="tier" value="school" /> Celá škola (1 990 Kč)</label>
+          </div>
+          <label class="ts-f ts-f-classes">Počet tříd
+            <select name="classes">
+              <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option>
+            </select>
+          </label>
+          <div class="ts-grid">
+            <label class="ts-f">Název školy *<input name="school" required maxlength="200" autocomplete="organization" /></label>
+            <label class="ts-f">IČO<input name="ico" inputmode="numeric" maxlength="10" /></label>
+            <label class="ts-f ts-wide">Fakturační adresa<input name="address" maxlength="300" autocomplete="street-address" /></label>
+            <label class="ts-f">Vaše jméno *<input name="name" required maxlength="120" autocomplete="name" /></label>
+            <label class="ts-f">E-mail *<input name="email" type="email" required maxlength="200" autocomplete="email" /></label>
+            <label class="ts-f ts-wide">Poznámka<textarea name="note" rows="2" maxlength="1000" placeholder="např. číslo objednávky školy, jiný fakturační e-mail…"></textarea></label>
+          </div>
+          <label class="ts-check"><input type="checkbox" name="dpa" /> Chceme zaslat zpracovatelskou smlouvu (DPA)</label>
+          <input class="ts-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <div class="ts-order-foot">
+            <div class="ts-total">Celkem: <strong id="ts-total">490 Kč</strong> <span>neplátce DPH</span></div>
+            <button class="seo-cta" type="submit" id="ts-order-btn">Objednat licenci</button>
+          </div>
+          <p class="ts-order-msg" id="ts-order-msg" role="status"></p>
+          <p class="ts-order-small">Nic neplatíte hned — pošleme fakturu se splatností 14 dní a licenční kód s návodem pro žáky. Raději e-mailem? <a href="mailto:hello@ucseslovesa.cz?subject=Školní%20licence%20—%20ucseslovesa.cz">hello@ucseslovesa.cz</a></p>
+        </form>
       </div>
 
       <section>
@@ -499,14 +553,10 @@
           <details class="faq-item">
             <summary>Co když potřebuju kódy pro celou třídu, ne jen pro sebe?</summary>
             <p>
-              Existuje <strong>roční školní licence za 2 490 Kč</strong> — neomezený počet studentů v rámci jedné školy,
-              platnost 12 měsíců, <strong>bez automatické obnovy</strong>.
-              Dostanete jeden školní promo kód, který rozdáte studentům (na papírku, v Bakalářích, kdekoliv).
-              Faktura jako za software, splatnost 14 dní.
-            </p>
-            <p style="margin-top:6px;">
-              Pro <strong>menší školy do 30 studentů</strong>, státní školy v menších obcích a neziskové iniciativy se domluvíme
-              individuálně — často zdarma. Napište na <a href="mailto:hello@ucseslovesa.cz">hello@ucseslovesa.cz</a>.
+              Existuje <strong>školní licence</strong>: <strong>490 Kč za třídu</strong> (do 30 žáků) nebo <strong>1 990 Kč za celou školu</strong>,
+              vždy do konce školního roku (31. 8.), <strong>bez automatické obnovy</strong>.
+              Dostanete jeden kód, který rozdáte žákům (na papírku, v Bakalářích, kdekoliv). Faktura jako za software, splatnost 14 dní.
+              <a href="#licence">Objednat</a>.
             </p>
           </details>
           <details class="faq-item">
@@ -542,7 +592,7 @@
   <footer class="seo-footer">
     <div class="container">
       <p>© ucseslovesa.cz · <a href="/">Aplikace</a> · <a href="/seznam/">Seznam</a> · <a href="/pro-skoly/">Pro učitele</a> · <a href="mailto:hello@ucseslovesa.cz">✉️ hello@ucseslovesa.cz</a></p>
-      <p class="seo-foot-meta">Aktualizováno: 2026-05-27</p>
+      <p class="seo-foot-meta">Aktualizováno: 2026-11-25</p>
     </div>
   </footer>
 
@@ -583,6 +633,53 @@
         if (window.plausible && name) window.plausible(name);
       });
     });
+
+
+    // Objednávka školní licence → backend (Firestore schoolOrders + upozornění)
+    (function () {
+      const form = document.getElementById('ts-order');
+      if (!form) return;
+      const PRICE = { class: 490, school: 1990 };
+      const totalEl = document.getElementById('ts-total');
+      const msg = document.getElementById('ts-order-msg');
+      const btn = document.getElementById('ts-order-btn');
+      const classesBox = form.querySelector('.ts-f-classes');
+      const fmt = (n) => n.toLocaleString('cs-CZ') + ' Kč';
+      function sync() {
+        const tier = form.tier.value;
+        classesBox.style.display = tier === 'class' ? '' : 'none';
+        totalEl.textContent = fmt(tier === 'school' ? PRICE.school : PRICE.class * Number(form.classes.value));
+      }
+      form.addEventListener('change', sync);
+      sync();
+      let started = false;
+      form.addEventListener('focusin', () => { if (!started) { started = true; if (window.plausible) window.plausible('school_order_started'); } });
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msg.className = 'ts-order-msg'; msg.textContent = '';
+        const d = Object.fromEntries(new FormData(form).entries());
+        d.dpa = form.dpa.checked;
+        if (!d.school.trim() || !d.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())) {
+          msg.className = 'ts-order-msg err'; msg.textContent = 'Vyplňte prosím název školy, jméno a platný e-mail.'; return;
+        }
+        btn.disabled = true; btn.textContent = 'Odesílám…';
+        try {
+          const r = await fetch('https://nepravidelna-slovesa-production.up.railway.app/school/order', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d),
+          });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(j.error || 'http');
+          form.classList.add('is-done');
+          msg.className = 'ts-order-msg ok';
+          msg.textContent = '✓ Děkujeme! Objednávka dorazila. Potvrzení jsme poslali na ' + d.email.trim() + ', fakturu a licenční kód pošleme do 2 pracovních dnů.';
+          if (window.plausible) window.plausible('school_order_sent', { props: { tier: d.tier } });
+        } catch (err) {
+          msg.className = 'ts-order-msg err';
+          msg.textContent = err.message === 'bad_ico' ? 'IČO má mít 6–10 číslic.' : err.message === 'rate_limited' ? 'Příliš mnoho pokusů, zkuste to prosím za hodinu.' : 'Odeslání se nepovedlo. Zkuste to znovu, nebo napište na hello@ucseslovesa.cz.';
+          btn.disabled = false; btn.textContent = 'Objednat licenci';
+        }
+      });
+    })();
 
     // Fire page-view event
     if (window.plausible) window.plausible('teacher_lp_view');

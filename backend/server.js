@@ -17,6 +17,7 @@ import cors from 'cors';
 import { sendEmail, welcomeEmail, normalizeLang } from './email.js';
 import { registerSupportRoutes } from './support.js';
 import { registerStatsRoutes } from './admin-stats.js';
+import { registerSchoolRoutes } from './school.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -274,6 +275,11 @@ app.post('/redeem-code', async (req, res) => {
       if (data.expiresAt && Date.now() > Number(data.expiresAt)) throw new Error('expired');
       const used = Number(data.usedCount || 0);
       if (data.maxUses && used >= Number(data.maxUses)) throw new Error('exhausted');
+      // Kdo už má placené Premium (předplatné / navždy), tomu kód nic nepřidá —
+      // a časově omezený kód by mu naopak Premium po vypršení vypnul.
+      const userSnap = await tx.get(db.collection('users').doc(uid));
+      const u = userSnap.exists ? userSnap.data() : {};
+      if (u.premium === true && ['subscription', 'lifetime'].includes(u.premiumPlan) && !u.premiumExpiresAt) throw new Error('already_premium');
       // Prevent same uid redeeming twice
       const redeemers = Array.isArray(data.redeemers) ? data.redeemers : [];
       if (redeemers.includes(uid)) throw new Error('already_redeemed');
@@ -289,9 +295,12 @@ app.post('/redeem-code', async (req, res) => {
       // and is already enforced. Stripe-paid users have no durationDays
       // and thus no premiumExpiresAt → treated as lifetime by the client.
       const durationDays = Number(data.durationDays) || 0;
-      const premiumExpiresAt = durationDays > 0
-        ? Date.now() + durationDays * 86400000
-        : null;
+      // premiumUntil = pevné datum konce (školní licence → 31. 8.)
+      const premiumExpiresAt = Number(data.premiumUntil) > 0
+        ? Number(data.premiumUntil)
+        : durationDays > 0
+          ? Date.now() + durationDays * 86400000
+          : null;
       tx.set(db.collection('users').doc(uid), {
         premium: true,
         premiumPlan: data.plan || 'promo',
@@ -326,7 +335,7 @@ app.post('/redeem-code', async (req, res) => {
     res.json({ ok: true, ...result });
   } catch (e) {
     const msg = e?.message || 'error';
-    const codeStatus = ['not_found', 'inactive', 'expired', 'exhausted', 'already_redeemed'].includes(msg) ? 400 : 500;
+    const codeStatus = ['not_found', 'inactive', 'expired', 'exhausted', 'already_redeemed', 'already_premium'].includes(msg) ? 400 : 500;
     if (codeStatus === 500) console.error('Redeem error:', e);
     res.status(codeStatus).json({ error: msg });
   }
@@ -445,8 +454,9 @@ app.post('/report-error', async (req, res) => {
 });
 
 // Chat s podporou + admin API (backend/support.js)
-const { requireAdmin } = registerSupportRoutes(app, { db, admin, sendEmail });
+const { requireAdmin, pushAll } = registerSupportRoutes(app, { db, admin, sendEmail });
 registerStatsRoutes(app, { db, admin, stripe, requireAdmin, svcAcc, express_text: () => express.text({ type: '*/*', limit: '1kb' }) });
+registerSchoolRoutes(app, { db, requireAdmin, sendEmail, pushAll });
 
 app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now(), welcomeLangs: ['cs', 'pl'], errorReports: true, supportChat: true, dupGuard: true, xmasSale: { start: XMAS_SALE.start, end: XMAS_SALE.end, active: !!xmasCouponFor(Object.keys(XMAS_SALE.coupons)[0]) } }));
 
