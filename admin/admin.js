@@ -481,7 +481,9 @@ adminReg().catch(() => {});
 
 
 // ---------- 🎟️ Promo kódy ----------
-const PLAN_LABEL = { annual_teacher: 'Učitelský (roční)', promo: 'Promo', student: 'Studentský' };
+const PLAN_LABEL = { annual_teacher: 'Učitelský (roční)', promo: 'Promo', student: 'Studentský', lifetime: 'Navždy' };
+const unq = (v) => String(v ?? '').replace(/^["“„]+|["”“]+$/g, '');
+const planLbl = (p) => PLAN_LABEL[unq(p)] || unq(p);
 const dateOnly = (ts) => (ts ? new Date(ts).toLocaleDateString('cs', { day: 'numeric', month: 'numeric', year: 'numeric' }) : '');
 const toDateInput = (ts) => { if (!ts) return ''; const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const fromDateInput = (v) => (v ? new Date(v + 'T23:59:59').getTime() : null);
@@ -523,9 +525,9 @@ async function renderPromo(main) {
       return `
       <a class="card promo-card" href="#promo/${encodeURIComponent(c.code)}">
         <div class="promo-top"><span class="promo-code">${esc(c.code)}</span><span class="${st.cls}">${st.txt}</span></div>
-        <div class="small muted promo-note">${esc(c.note || PLAN_LABEL[c.plan] || c.plan)}</div>
+        <div class="small muted promo-note">${esc(unq(c.note) || planLbl(c.plan))}</div>
         <div class="promo-stats">
-          <div><b>${c.usedCount}</b>${c.maxUses ? ` / ${c.maxUses}` : ''}<span>použito</span></div>
+          <div><b>${c.usedCount}${c.maxUses ? ` / ${c.maxUses}` : ''}</b><span>použito</span></div>
           <div><b>${durTxt(c)}</b><span>Premium</span></div>
           <div><b>${c.expiresAt ? dateOnly(c.expiresAt) : '—'}</b><span>uplatnit do</span></div>
         </div>
@@ -619,10 +621,10 @@ async function renderPromoDetail(main, code) {
       <button class="btn btn-ghost btn-sm" id="promo-copy">Kopírovat kód</button>
     </div>
     <div class="promo-stats wide card">
-      <div><b>${c.usedCount}</b>${c.maxUses ? ` / ${c.maxUses}` : ''}<span>použito</span></div>
+      <div><b>${c.usedCount}${c.maxUses ? ` / ${c.maxUses}` : ''}</b><span>použito</span></div>
       <div><b>${durTxt(c)}</b><span>Premium od uplatnění</span></div>
       <div><b>${c.expiresAt ? dateOnly(c.expiresAt) : 'bez termínu'}</b><span>uplatnit do</span></div>
-      <div><b>${esc(PLAN_LABEL[c.plan] || c.plan)}</b><span>typ</span></div>
+      <div><b>${esc(planLbl(c.plan))}</b><span>typ</span></div>
     </div>
     <article class="card">
       <h2>Kdo kód uplatnil (${people.length})</h2>
