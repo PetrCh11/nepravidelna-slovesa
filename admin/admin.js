@@ -814,7 +814,8 @@ async function checkSync(L) {
   }
   return out;
 }
-const pct = (have, total) => (total ? Math.round((have / total) * 100) : 100);
+// 100 % jen když je hotovo úplně všechno (371/372 nesmí ukázat 100 %).
+const pct = (have, total) => (!total || have >= total ? 100 : Math.min(99, Math.floor((have / total) * 100)));
 function langListHtml(items, fmt, limit = 40) {
   if (!items.length) return '';
   const more = items.length > limit ? `<div class="muted small">… a dalších ${items.length - limit}</div>` : '';
