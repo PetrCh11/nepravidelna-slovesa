@@ -1343,8 +1343,25 @@ function czAdj(n, stem) {
   return stem + 'ých';
 }
 
+// Cesta zákazníka (admin → Přehled): každý krok se z jednoho zařízení nahlásí
+// jen jednou za život — backend si ukládá jen denní součty, žádné ID.
+const FUNNEL_EVENTS = { lesson_started: 'lesson', paywall_shown: 'paywall', checkout_started: 'checkout' };
+function funnelStep(step) {
+  try {
+    const k = 'fnl_' + step;
+    if (localStorage.getItem(k)) return;
+    localStorage.setItem(k, '1');
+    const body = JSON.stringify({ s: step, l: LANG === 'pl' ? 'pl' : 'cs' });
+    const url = BACKEND_URL + '/f';
+    if (!(navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' })))) {
+      fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'text/plain' }, keepalive: true }).catch(() => {});
+    }
+  } catch {}
+}
+
 // Plausible custom event helper — safe to call even if script blocked / not loaded
 function track(eventName, props) {
+  if (FUNNEL_EVENTS[eventName]) funnelStep(FUNNEL_EVENTS[eventName]);
   try {
     if (typeof window.plausible === 'function') {
       window.plausible(eventName, props ? { props } : undefined);
@@ -7532,6 +7549,7 @@ async function init() {
   $('#settings-btn')?.addEventListener('click', openSettingsModal);
   $('#progress-send-btn')?.addEventListener('click', openProgressSend);
   initSupportChat();
+  funnelStep('visit');
   initProgressLinkMaker();
   $('#settings-close')?.addEventListener('click', closeSettingsModal);
   $('#settings-modal')?.addEventListener('click', (e) => {

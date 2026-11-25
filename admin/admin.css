@@ -343,3 +343,20 @@ code { background: var(--panel2); padding: 1px 6px; border-radius: 6px; font-siz
 .tr-lang1 { grid-template-columns: 1fr; }
 #main h4 { margin: 16px 0 6px; font-size: 0.85rem; }
 .lang-sync code, #main .card p code { font-size: 0.8rem; }
+
+/* Cesta zákazníka */
+.fn { display: flex; flex-direction: column; gap: 8px; }
+.fn-row { display: grid; grid-template-columns: 200px 1fr 56px 120px; gap: 12px; align-items: center; }
+.fn-lbl { font-size: 0.9rem; font-weight: 600; }
+.fn-bar { position: relative; height: 28px; background: var(--panel2); border-radius: 8px; overflow: hidden; }
+.fn-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--violet)); border-radius: 8px; opacity: .85; }
+.fn-bar b { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.fn-rate { font-size: 0.85rem; font-weight: 700; color: var(--muted); text-align: right; }
+.fn-mid { color: var(--gold); }
+.fn-bad { color: var(--hot); }
+#funnel-card { margin: 12px 0; }
+@media (max-width: 720px) {
+  .fn-row { grid-template-columns: 1fr 52px; gap: 4px 10px; }
+  .fn-lbl { grid-column: 1 / -1; }
+  .fn-split { grid-column: 1 / -1; margin-top: -2px; }
+}

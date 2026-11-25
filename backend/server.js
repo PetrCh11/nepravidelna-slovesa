@@ -446,7 +446,7 @@ app.post('/report-error', async (req, res) => {
 
 // Chat s podporou + admin API (backend/support.js)
 const { requireAdmin } = registerSupportRoutes(app, { db, admin, sendEmail });
-registerStatsRoutes(app, { db, admin, stripe, requireAdmin, svcAcc });
+registerStatsRoutes(app, { db, admin, stripe, requireAdmin, svcAcc, express_text: () => express.text({ type: '*/*', limit: '1kb' }) });
 
 app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now(), welcomeLangs: ['cs', 'pl'], errorReports: true, supportChat: true, dupGuard: true, xmasSale: { start: XMAS_SALE.start, end: XMAS_SALE.end, active: !!xmasCouponFor(Object.keys(XMAS_SALE.coupons)[0]) } }));
 

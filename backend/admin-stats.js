@@ -5,6 +5,8 @@
 //                           ve Search Console přístup k webu; API „Google Search
 //                           Console API" musí být povolené v GCP projektu)
 //   GET/POST /admin/integrations — sdílený odkaz Plausible (embed) v adminConfig/integrations
+//   POST /f               — veřejné: appka hlásí první dosažení kroku cesty zákazníka (za zařízení)
+//   GET  /admin/funnel    — cesta zákazníka: návštěva → lekce → registrace → paywall → pokladna → trial → platba
 //
 // Do Stripe se jen čte. Data se krátce cachují v paměti.
 
@@ -23,7 +25,7 @@ function cached(ttlMs, fn) {
   };
 }
 
-export function registerStatsRoutes(app, { db, admin, stripe, requireAdmin, svcAcc }) {
+export function registerStatsRoutes(app, { db, admin, stripe, requireAdmin, svcAcc, express_text }) {
   const isApp = (meta) => (meta || {}).app === 'slovesa';
 
   // ---------- Stripe: načtení všeho potřebného (malý účet → stačí stránkovat) ----------
@@ -212,6 +214,85 @@ export function registerStatsRoutes(app, { db, admin, stripe, requireAdmin, svcA
       });
     } catch (e) {
       console.error('Admin overview failed:', e);
+      res.status(500).json({ error: 'failed', detail: e.message });
+    }
+  });
+
+
+  // ---------- 🧭 Cesta zákazníka ----------
+  // Appka pošle každý krok z jednoho zařízení jen jednou za život (hlídá si to
+  // v localStorage), takže součty = počet zařízení, která krok poprvé dosáhla.
+  // Ukládá se jen denní součet — žádná ID ani IP.
+  const FUNNEL_STEPS = new Set(['visit', 'lesson', 'paywall', 'checkout']);
+  const fHits = new Map(); // ip → [počet, začátek okna]
+  const pragueDay = (ts = Date.now()) => new Date(ts).toLocaleDateString('sv-SE', { timeZone: 'Europe/Prague' });
+  app.post('/f', express_text(), async (req, res) => {
+    res.status(204).end();
+    try {
+      const ip = String(req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+      const h = fHits.get(ip) || [0, Date.now()];
+      if (Date.now() - h[1] > 3600000) { h[0] = 0; h[1] = Date.now(); }
+      if (++h[0] > 20) return;
+      fHits.set(ip, h);
+      if (fHits.size > 5000) fHits.clear();
+      let b = req.body;
+      if (typeof b === 'string') { try { b = JSON.parse(b); } catch { return; } }
+      const step = String(b?.s || '');
+      const lang = b?.l === 'pl' ? 'pl' : 'cs';
+      if (!FUNNEL_STEPS.has(step)) return;
+      await db.collection('funnelDaily').doc(pragueDay()).set({
+        [`${step}_${lang}`]: admin.firestore.FieldValue.increment(1),
+      }, { merge: true });
+    } catch (e) { console.error('funnel ping failed:', e.message); }
+  });
+
+  app.get('/admin/funnel', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    try {
+      const days = Math.min(365, Math.max(1, Number(req.query.days) || 30));
+      const now = Date.now();
+      const from = now - days * DAY;
+      const fromDay = pragueDay(from);
+      const [{ subs, sessions, invoices }, users, snap, firstSnap] = await Promise.all([
+        loadStripe(req.query.fresh === '1'), loadUsers(),
+        db.collection('funnelDaily').where(admin.firestore.FieldPath.documentId(), '>=', fromDay).get(),
+        db.collection('funnelDaily').orderBy(admin.firestore.FieldPath.documentId()).limit(1).get(),
+      ]);
+      const dev = { cs: {}, pl: {} };
+      snap.docs.forEach((d) => Object.entries(d.data()).forEach(([k, v]) => {
+        const [step, lang] = k.split('_');
+        if (dev[lang]) dev[lang][step] = (dev[lang][step] || 0) + (Number(v) || 0);
+      }));
+      const both = (st) => (dev.cs[st] || 0) + (dev.pl[st] || 0);
+      const langOf = (m) => ((m || {}).lang === 'pl' ? 'pl' : 'cs');
+      const inWin = (sec) => sec && sec * 1000 >= from;
+      // Trial = předplatné, které v období začalo zkušebním obdobím.
+      const trials = subs.filter((s) => inWin(s.trial_start));
+      // Platba = první zaplacená faktura předplatného v období + doživotní nákupy v období.
+      const firstPaid = new Map();
+      invoices.forEach((inv) => {
+        const sid = inv.subscription || inv.parent?.subscription_details?.subscription;
+        if (!sid) return;
+        if (!firstPaid.has(sid) || firstPaid.get(sid).created > inv.created) firstPaid.set(sid, inv);
+      });
+      const paidSubs = [...firstPaid.values()].filter((inv) => inWin(inv.created));
+      const lifetime = sessions.filter((s) => s.mode === 'payment' && s.payment_status === 'paid' && s.amount_total > 0 && inWin(s.created));
+      const metaOfInv = (inv) => inv.subscription_details?.metadata || inv.parent?.subscription_details?.metadata || {};
+      const split = (list, metaFn) => ({ cs: list.filter((x) => langOf(metaFn(x)) === 'cs').length, pl: list.filter((x) => langOf(metaFn(x)) === 'pl').length });
+      const trialSplit = split(trials, (s) => s.metadata);
+      const paidSplit = split([...paidSubs, ...lifetime], (x) => (x.object === 'invoice' ? metaOfInv(x) : x.metadata));
+      const steps = [
+        { id: 'visit', label: 'Otevřeli appku', n: both('visit'), cs: dev.cs.visit || 0, pl: dev.pl.visit || 0, src: 'zařízení' },
+        { id: 'lesson', label: 'Začali lekci', n: both('lesson'), cs: dev.cs.lesson || 0, pl: dev.pl.lesson || 0, src: 'zařízení' },
+        { id: 'signup', label: 'Registrace (Google účet)', n: users.created.filter((t) => t >= from).length, src: 'účty' },
+        { id: 'paywall', label: 'Viděli nabídku Premium', n: both('paywall'), cs: dev.cs.paywall || 0, pl: dev.pl.paywall || 0, src: 'zařízení' },
+        { id: 'checkout', label: 'Otevřeli platbu', n: both('checkout'), cs: dev.cs.checkout || 0, pl: dev.pl.checkout || 0, src: 'zařízení' },
+        { id: 'trial', label: 'Začali zkušební období', n: trials.length, cs: trialSplit.cs, pl: trialSplit.pl, src: 'Stripe' },
+        { id: 'paid', label: 'Zaplatili', n: paidSubs.length + lifetime.length, cs: paidSplit.cs, pl: paidSplit.pl, src: 'Stripe', sub: `${paidSubs.length} předplatné · ${lifetime.length} navždy` },
+      ];
+      res.json({ days, from: fromDay, trackingSince: firstSnap.empty ? null : firstSnap.docs[0].id, steps });
+    } catch (e) {
+      console.error('Admin funnel failed:', e);
       res.status(500).json({ error: 'failed', detail: e.message });
     }
   });

@@ -611,15 +611,56 @@ async function renderOverview(main) {
         ${tile('Premium přes kód', o.premiumPromo, 'učitelské a studentské kódy')}
         ${tile('Uživatelé', o.users.total.toLocaleString('cs'), `+${o.users.new7} za 7 dní · +${o.users.new30} za 30 dní · 🇵🇱 ${o.users.pl}`)}
       </div>
+      <article class="card" id="funnel-card">
+        <div class="card-head"><h2>🧭 Cesta zákazníka</h2>
+          <div class="seg" id="fn-days"><button data-d="7">7 dní</button><button data-d="30">30 dní</button><button data-d="90">90 dní</button></div></div>
+        <div id="fn-body" class="muted">Načítám…</div>
+      </article>
       <div class="charts">
         <article class="card"><h2>Tržby CZK po měsících</h2>${barChart(o.months, 'CZK', (v) => Math.round(v).toLocaleString('cs') + ' Kč', 'b-teal')}</article>
         <article class="card"><h2>Tržby PLN po měsících</h2>${barChart(o.months, 'PLN', (v) => v.toLocaleString('pl', { maximumFractionDigits: 0 }) + ' zł', 'b-violet')}</article>
         <article class="card"><h2>Nové účty po měsících</h2>${barChart(o.months, 'signups', (v) => v.toLocaleString('cs'), 'b-orange')}</article>
       </div>
       <p class="small muted">Aktualizováno ${fmtTime(o.generatedAt)}. Účty = přihlášení přes Google (anonymní uživatelé bez přihlášení se nepočítají — ty ukazuje Plausible v sekci Web).</p>`;
+    const seg = $('#fn-days');
+    const sync = () => seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', Number(b.dataset.d) === funnelDays));
+    sync();
+    seg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; funnelDays = Number(b.dataset.d); sync(); drawFunnel(); });
+    drawFunnel();
   };
   $('#ov-refresh').addEventListener('click', () => { $('#ov').innerHTML = '<div class="muted pad">Počítám…</div>'; load(true); });
   load(false);
+}
+
+// 🧭 Cesta zákazníka — kroky z appky (za zařízení, poprvé) + registrace + Stripe.
+let funnelDays = 30;
+async function drawFunnel() {
+  const body = $('#fn-body');
+  if (!body) return;
+  body.innerHTML = '<div class="muted">Načítám…</div>';
+  let f;
+  try { f = await api('/admin/funnel?days=' + funnelDays); } catch (e) { body.innerHTML = `<div class="muted">Nepodařilo se načíst (${esc(e.data?.detail || e.message)}).</div>`; return; }
+  const top = Math.max(1, ...f.steps.map((s) => s.n));
+  const dayFmt = (d) => (d ? new Date(d + 'T12:00:00').toLocaleDateString('cs', { day: 'numeric', month: 'numeric', year: 'numeric' }) : '');
+  const partial = !f.trackingSince || f.trackingSince > f.from;
+  let prev = null;
+  const rows = f.steps.map((s) => {
+    const rate = prev && prev.n ? Math.round((s.n / prev.n) * 100) : null;
+    // Odpad mezi kroky: kde je pokles nejhorší, tam je co opravovat.
+    const drop = rate != null && rate < 100 ? `<span class="fn-rate ${rate < 20 ? 'fn-bad' : rate < 50 ? 'fn-mid' : ''}">${rate} %</span>` : rate != null ? '<span class="fn-rate">100 %</span>' : '<span class="fn-rate"></span>';
+    const split = s.cs != null ? `<span class="muted small">🇨🇿 ${s.cs} · 🇵🇱 ${s.pl}</span>` : `<span class="muted small">${esc(s.src)}</span>`;
+    prev = s;
+    return `<div class="fn-row">
+      <div class="fn-lbl">${esc(s.label)}${s.sub ? `<div class="muted small">${esc(s.sub)}</div>` : ''}</div>
+      <div class="fn-bar"><span style="width:${Math.max(1, (s.n / top) * 100)}%"></span><b>${s.n.toLocaleString('cs')}</b></div>
+      ${drop}
+      <div class="fn-split">${split}</div>
+    </div>`;
+  }).join('');
+  body.innerHTML = `
+    ${partial ? `<div class="status-row"><span class="dot dot-warn"></span><div class="small">${f.trackingSince ? `Kroky z appky měříme od <strong>${dayFmt(f.trackingSince)}</strong>` : 'Kroky z appky se začaly měřit teprve teď'} — první čtyři řádky jsou zatím neúplné, registrace a Stripe počítají celé období. Spolehlivé srovnání bude za pár týdnů.</div></div>` : ''}
+    <div class="fn">${rows}</div>
+    <p class="small muted" style="margin-top:10px">Procento = kolik lidí z předchozího kroku pokračovalo dál. Kroky z appky se počítají za zařízení, a to jen poprvé (kdo appku otevře 10×, je to 1). Registrace = nové Google účty, zkušební období a platby ze Stripe.</p>`;
 }
 
 // ---------- 📈 Web (Plausible + Search Console) ----------
