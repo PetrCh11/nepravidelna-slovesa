@@ -451,6 +451,127 @@ export function registerSupportRoutes(app, { db, admin, sendEmail }) {
     }
   });
 
+  // ---------- 🎟️ Promo kódy (kolekce promoCodes, uplatnění přes /redeem-code v server.js) ----------
+  const promo = db.collection('promoCodes');
+  const promoPublic = (id, d) => ({
+    code: id,
+    plan: d.plan || 'promo',
+    note: d.note || '',
+    active: d.active !== false,
+    usedCount: Number(d.usedCount || 0),
+    maxUses: Number(d.maxUses || 0) || null,
+    durationDays: Number(d.durationDays || 0) || null,
+    expiresAt: Number(d.expiresAt || 0) || null,
+    lastRedeemedAt: Number(d.lastRedeemedAt || 0) || null,
+    createdAt: Number(d.createdAt || 0) || null,
+  });
+  const numOrNull = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? Math.round(n) : null; };
+
+  app.get('/admin/promo', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    try {
+      const qs = await promo.get();
+      const codes = qs.docs.map((d) => promoPublic(d.id, d.data()))
+        .sort((a, b) => (b.lastRedeemedAt || b.createdAt || 0) - (a.lastRedeemedAt || a.createdAt || 0));
+      res.json({ codes });
+    } catch (e) {
+      console.error('Admin promo list failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  // Detail kódu včetně toho, kdo ho uplatnil (e-mail z Firebase Auth, platnost Premium z users/{uid})
+  app.get('/admin/promo/:code', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    try {
+      const snap = await promo.doc(req.params.code).get();
+      if (!snap.exists) return res.status(404).json({ error: 'not_found' });
+      const d = snap.data();
+      const uids = (Array.isArray(d.redeemers) ? d.redeemers : []).slice(-300);
+      const people = [];
+      for (let i = 0; i < uids.length; i += 100) {
+        const chunk = uids.slice(i, i + 100);
+        const [authRes, docs] = await Promise.all([
+          admin.auth().getUsers(chunk.map((uid) => ({ uid }))),
+          db.getAll(...chunk.map((uid) => db.collection('users').doc(uid))),
+        ]);
+        const byUid = new Map(authRes.users.map((u) => [u.uid, u]));
+        chunk.forEach((uid, j) => {
+          const u = byUid.get(uid);
+          const ud = docs[j]?.exists ? docs[j].data() : {};
+          people.push({
+            uid,
+            email: u?.email || null,
+            name: u?.displayName || null,
+            lang: ud.lang || null,
+            premium: !!ud.premium,
+            premiumCode: ud.premiumCode || null,
+            premiumExpiresAt: Number(ud.premiumExpiresAt || 0) || null,
+            redeemedAt: Number(ud.premiumUpdatedAt || 0) || null,
+          });
+        });
+      }
+      res.json({ code: promoPublic(snap.id, d), people: people.reverse() });
+    } catch (e) {
+      console.error('Admin promo detail failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  // Nový kód
+  app.post('/admin/promo', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    const b = req.body || {};
+    const code = String(b.code || '').trim().toUpperCase();
+    if (!/^[A-Z0-9_-]{3,40}$/.test(code)) return res.status(400).json({ error: 'bad_code' });
+    try {
+      const ref = promo.doc(code);
+      const doc = {
+        active: b.active !== false,
+        plan: clip(b.plan || 'promo', 40),
+        note: clip(b.note, 300),
+        durationDays: numOrNull(b.durationDays),
+        maxUses: numOrNull(b.maxUses),
+        expiresAt: numOrNull(b.expiresAt),
+        usedCount: 0,
+        redeemers: [],
+        createdAt: Date.now(),
+      };
+      await db.runTransaction(async (tx) => {
+        if ((await tx.get(ref)).exists) throw new Error('exists');
+        tx.set(ref, doc);
+      });
+      console.log('Promo code created →', code);
+      res.json({ ok: true, code: promoPublic(code, doc) });
+    } catch (e) {
+      if (e.message === 'exists') return res.status(409).json({ error: 'exists' });
+      console.error('Admin promo create failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
+  // Úprava kódu (nemaže se — vypíná se přes active:false, ať zůstane historie)
+  app.patch('/admin/promo/:code', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+    const b = req.body || {};
+    const patch = {};
+    if ('active' in b) patch.active = !!b.active;
+    if ('note' in b) patch.note = clip(b.note, 300);
+    if ('plan' in b) patch.plan = clip(b.plan || 'promo', 40);
+    for (const k of ['maxUses', 'durationDays', 'expiresAt']) if (k in b) patch[k] = numOrNull(b[k]);
+    if (!Object.keys(patch).length) return res.status(400).json({ error: 'empty' });
+    try {
+      const ref = promo.doc(req.params.code);
+      if (!(await ref.get()).exists) return res.status(404).json({ error: 'not_found' });
+      await ref.update(patch);
+      console.log('Promo code updated →', req.params.code, Object.keys(patch).join(','));
+      res.json({ ok: true, code: promoPublic(req.params.code, (await ref.get()).data()) });
+    } catch (e) {
+      console.error('Admin promo update failed:', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
   // Nahlášené chyby u sloves
   app.get('/admin/reports', async (req, res) => {
     if (!(await requireAdmin(req, res))) return;

@@ -168,6 +168,7 @@ function route() {
   const main = $('#main');
   if (mod === 'reports') return renderReports(main);
   if (mod === 'settings') return renderSettings(main);
+  if (mod === 'promo') return arg ? renderPromoDetail(main, decodeURIComponent(arg)) : renderPromo(main);
   return renderChat(main, arg ? decodeURIComponent(arg) : null);
 }
 
@@ -477,6 +478,168 @@ async function maybePushBanner() {
   el.classList.toggle('hidden', on);
 }
 adminReg().catch(() => {});
+
+
+// ---------- 🎟️ Promo kódy ----------
+const PLAN_LABEL = { annual_teacher: 'Učitelský (roční)', promo: 'Promo', student: 'Studentský' };
+const dateOnly = (ts) => (ts ? new Date(ts).toLocaleDateString('cs', { day: 'numeric', month: 'numeric', year: 'numeric' }) : '');
+const toDateInput = (ts) => { if (!ts) return ''; const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const fromDateInput = (v) => (v ? new Date(v + 'T23:59:59').getTime() : null);
+function promoState(c) {
+  if (!c.active) return { cls: 'tag', txt: 'vypnutý' };
+  if (c.expiresAt && c.expiresAt < Date.now()) return { cls: 'tag', txt: 'po termínu' };
+  if (c.maxUses && c.usedCount >= c.maxUses) return { cls: 'tag', txt: 'vyčerpaný' };
+  return { cls: 'tag tag-ok', txt: 'aktivní' };
+}
+const durTxt = (c) => (c.durationDays ? (c.durationDays === 365 ? '1 rok' : `${c.durationDays} dní`) : 'navždy');
+
+async function renderPromo(main) {
+  main.innerHTML = `
+    <section class="pane full-pane">
+      <header class="pane-head">
+        <h1>Promo kódy</h1>
+        <button class="btn btn-primary btn-sm" id="promo-new-btn">＋ Nový kód</button>
+      </header>
+      <div class="promo-wrap">
+        <article class="card hidden" id="promo-new"></article>
+        <div class="promo-grid" id="promo-grid"><div class="muted pad">Načítám…</div></div>
+      </div>
+    </section>`;
+  $('#promo-new-btn').addEventListener('click', () => {
+    const box = $('#promo-new');
+    if (!box.classList.contains('hidden')) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    box.innerHTML = promoForm(null);
+    wirePromoForm(box, null);
+    box.querySelector('[name=code]').focus();
+  });
+  try {
+    const { codes } = await api('/admin/promo');
+    const grid = $('#promo-grid');
+    if (!codes.length) { grid.innerHTML = '<div class="muted pad">Zatím žádné kódy.</div>'; return; }
+    grid.innerHTML = codes.map((c) => {
+      const st = promoState(c);
+      const pct = c.maxUses ? Math.min(100, Math.round((c.usedCount / c.maxUses) * 100)) : 0;
+      return `
+      <a class="card promo-card" href="#promo/${encodeURIComponent(c.code)}">
+        <div class="promo-top"><span class="promo-code">${esc(c.code)}</span><span class="${st.cls}">${st.txt}</span></div>
+        <div class="small muted promo-note">${esc(c.note || PLAN_LABEL[c.plan] || c.plan)}</div>
+        <div class="promo-stats">
+          <div><b>${c.usedCount}</b>${c.maxUses ? ` / ${c.maxUses}` : ''}<span>použito</span></div>
+          <div><b>${durTxt(c)}</b><span>Premium</span></div>
+          <div><b>${c.expiresAt ? dateOnly(c.expiresAt) : '—'}</b><span>uplatnit do</span></div>
+        </div>
+        ${c.maxUses ? `<div class="bar"><span style="width:${pct}%"></span></div>` : ''}
+        <div class="small muted">${c.lastRedeemedAt ? 'Naposledy použit ' + fmtTime(c.lastRedeemedAt) : 'Zatím nepoužit'}</div>
+      </a>`;
+    }).join('');
+  } catch (e) {
+    $('#promo-grid').innerHTML = `<div class="muted pad">Nepodařilo se načíst (${esc(e.message)}).</div>`;
+  }
+}
+
+function promoForm(c) {
+  const isNew = !c;
+  const v = c || { active: true, plan: 'annual_teacher', durationDays: 365, maxUses: 100, expiresAt: null, note: '' };
+  return `
+    <h2>${isNew ? 'Nový kód' : 'Nastavení kódu'}</h2>
+    <form class="form-grid" autocomplete="off">
+      ${isNew ? `
+      <label class="fld fld-wide"><span>Kód</span>
+        <div class="row"><input name="code" required maxlength="40" placeholder="např. SKOLA2027" style="text-transform:uppercase" /><button type="button" class="btn btn-ghost btn-sm" data-gen>Vygenerovat</button></div>
+        <small>Písmena, čísla, - a _. Uživatel ho zadává v appce v nabídce Premium → 🎟️ Mám slevový kód.</small>
+      </label>` : ''}
+      <label class="fld fld-wide"><span>Poznámka (k čemu kód je)</span><input name="note" maxlength="300" value="${esc(v.note || '')}" placeholder="např. ZŠ Brno – 8. A" /></label>
+      <label class="fld"><span>Typ</span>
+        <select name="plan">${Object.entries(PLAN_LABEL).map(([k, l]) => `<option value="${k}" ${v.plan === k ? 'selected' : ''}>${l}</option>`).join('')}${PLAN_LABEL[v.plan] ? '' : `<option value="${esc(v.plan)}" selected>${esc(v.plan)}</option>`}</select>
+      </label>
+      <label class="fld"><span>Délka Premium (dní)</span>
+        <input name="durationDays" type="number" min="1" value="${v.durationDays || ''}" placeholder="prázdné = navždy" />
+        <div class="chips"><button type="button" data-dur="30">30 dní</button><button type="button" data-dur="365">1 rok</button><button type="button" data-dur="">navždy</button></div>
+      </label>
+      <label class="fld"><span>Max. počet použití</span><input name="maxUses" type="number" min="1" value="${v.maxUses || ''}" placeholder="prázdné = bez limitu" /></label>
+      <label class="fld"><span>Uplatnit lze do</span><input name="expiresAt" type="date" value="${toDateInput(v.expiresAt)}" /><small>Prázdné = bez termínu. Kdo už kód uplatnil, má Premium dál.</small></label>
+      <label class="check fld-wide"><input type="checkbox" name="active" ${v.active ? 'checked' : ''} /><span>Kód je aktivní (lze ho uplatnit)</span></label>
+      <div class="fld-wide form-actions"><button class="btn btn-primary" type="submit">${isNew ? 'Vytvořit kód' : 'Uložit změny'}</button></div>
+    </form>`;
+}
+
+function wirePromoForm(box, c) {
+  const f = box.querySelector('form');
+  f.querySelector('[data-gen]')?.addEventListener('click', () => {
+    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const rnd = Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => abc[b % abc.length]).join('');
+    const pre = f.plan.value === 'student' ? 'STUDENT' : f.plan.value === 'annual_teacher' ? 'UCITEL' : 'PROMO';
+    f.code.value = pre + rnd;
+  });
+  f.querySelectorAll('[data-dur]').forEach((b) => b.addEventListener('click', () => { f.durationDays.value = b.dataset.dur; }));
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = {
+      note: f.note.value.trim(),
+      plan: f.plan.value,
+      durationDays: f.durationDays.value || null,
+      maxUses: f.maxUses.value || null,
+      expiresAt: fromDateInput(f.expiresAt.value),
+      active: f.active.checked,
+    };
+    const btn = f.querySelector('[type=submit]');
+    btn.disabled = true;
+    try {
+      if (!c) {
+        body.code = f.code.value.trim().toUpperCase();
+        await api('/admin/promo', { method: 'POST', body });
+        toast(`Kód ${body.code} vytvořen ✓`, 'ok');
+        location.hash = '#promo/' + encodeURIComponent(body.code);
+      } else {
+        await api('/admin/promo/' + encodeURIComponent(c.code), { method: 'PATCH', body });
+        toast('Uloženo ✓', 'ok');
+        renderPromoDetail($('#main'), c.code);
+      }
+    } catch (err) {
+      toast(err.message === 'exists' ? 'Takový kód už existuje.' : err.message === 'bad_code' ? 'Kód smí mít jen písmena, čísla, - a _ (3–40 znaků).' : 'Nepovedlo se: ' + err.message, 'error');
+      btn.disabled = false;
+    }
+  });
+}
+
+async function renderPromoDetail(main, code) {
+  main.innerHTML = `<section class="pane full-pane"><header class="pane-head"><h1><a class="back-inline" href="#promo">←</a> ${esc(code)}</h1></header><div class="promo-wrap"><div class="muted pad">Načítám…</div></div></section>`;
+  let r;
+  try { r = await api('/admin/promo/' + encodeURIComponent(code)); } catch (e) {
+    main.querySelector('.promo-wrap').innerHTML = `<div class="muted pad">${e.status === 404 ? 'Kód neexistuje.' : 'Nepodařilo se načíst.'}</div>`;
+    return;
+  }
+  const c = r.code;
+  const st = promoState(c);
+  const people = r.people || [];
+  main.querySelector('.promo-wrap').innerHTML = `
+    <div class="promo-head-row">
+      <span class="promo-code big">${esc(c.code)}</span><span class="${st.cls}">${st.txt}</span>
+      <button class="btn btn-ghost btn-sm" id="promo-copy">Kopírovat kód</button>
+    </div>
+    <div class="promo-stats wide card">
+      <div><b>${c.usedCount}</b>${c.maxUses ? ` / ${c.maxUses}` : ''}<span>použito</span></div>
+      <div><b>${durTxt(c)}</b><span>Premium od uplatnění</span></div>
+      <div><b>${c.expiresAt ? dateOnly(c.expiresAt) : 'bez termínu'}</b><span>uplatnit do</span></div>
+      <div><b>${esc(PLAN_LABEL[c.plan] || c.plan)}</b><span>typ</span></div>
+    </div>
+    <article class="card">
+      <h2>Kdo kód uplatnil (${people.length})</h2>
+      ${people.length ? `<div class="table"><div class="tr th"><span>Uživatel</span><span>Jazyk</span><span>Premium do</span></div>${people.map((p) => {
+        const exp = p.premiumExpiresAt;
+        const other = p.premiumCode && p.premiumCode !== c.code;
+        const state = !p.premium ? '<span class="muted">bez Premium</span>'
+          : exp ? (exp < Date.now() ? `<span class="muted">vypršelo ${dateOnly(exp)}</span>` : dateOnly(exp)) : 'navždy';
+        return `<div class="tr"><span>${p.email ? esc(p.email) : '<span class="muted">' + esc(p.uid.slice(0, 10)) + '…</span>'}${p.name ? `<br><span class="small muted">${esc(p.name)}</span>` : ''}</span><span>${p.lang === 'pl' ? '🇵🇱' : p.lang ? '🇨🇿' : '—'}</span><span>${state}${other ? `<br><span class="small muted">teď přes ${esc(p.premiumCode)}</span>` : ''}</span></div>`;
+      }).join('')}</div>` : '<p class="muted small">Zatím ho nikdo neuplatnil.</p>'}
+    </article>
+    <article class="card" id="promo-edit">${promoForm(c)}</article>`;
+  wirePromoForm($('#promo-edit'), c);
+  $('#promo-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(c.code); toast('Zkopírováno', 'ok'); } catch { toast(c.code); }
+  });
+}
 
 // ---------- ⚙️ Nastavení ----------
 async function renderSettings(main) {
