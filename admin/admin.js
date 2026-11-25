@@ -168,6 +168,9 @@ function route() {
   const main = $('#main');
   if (mod === 'reports') return renderReports(main);
   if (mod === 'settings') return renderSettings(main);
+  if (mod === 'customers') return renderCustomers(main);
+  if (mod === 'overview') return renderOverview(main);
+  if (mod === 'web') return renderWeb(main);
   if (mod === 'promo') return arg ? renderPromoDetail(main, decodeURIComponent(arg)) : renderPromo(main);
   return renderChat(main, arg ? decodeURIComponent(arg) : null);
 }
@@ -479,6 +482,237 @@ async function maybePushBanner() {
 }
 adminReg().catch(() => {});
 
+
+
+// ---------- společné ----------
+const money = (amount, cur) => {
+  if (amount == null) return '';
+  const v = amount / 100;
+  if (cur === 'PLN') return v.toLocaleString('pl', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 }) + ' zł';
+  if (cur === 'CZK') return v.toLocaleString('cs', { maximumFractionDigits: 2 }) + ' Kč';
+  return v.toLocaleString('cs') + ' ' + cur;
+};
+const sumMoney = (czk, pln) => [czk ? Math.round(czk).toLocaleString('cs') + ' Kč' : null, pln ? pln.toLocaleString('pl', { maximumFractionDigits: 2 }) + ' zł' : null].filter(Boolean).join(' + ') || '0 Kč';
+const daysLeft = (ts) => Math.ceil((ts - Date.now()) / 86400000);
+
+// ---------- 👥 Zákazníci ----------
+let custFilter = 'live';
+let custQuery = '';
+const CUST_TABS = [
+  ['live', 'Platící + zkušební'], ['trialing', 'Zkušební'], ['active', 'Aktivní'], ['past_due', 'Neprošlá platba'],
+  ['canceled', 'Zrušené'], ['lifetime', 'Navždy'], ['promo', 'Promo'], ['all', 'Vše'],
+];
+function custMatches(r, f) {
+  if (f === 'all') return true;
+  if (f === 'lifetime') return r.kind === 'lifetime';
+  if (f === 'promo') return r.kind === 'promo';
+  if (r.kind !== 'subscription') return false;
+  if (f === 'live') return ['trialing', 'active', 'past_due'].includes(r.status);
+  if (f === 'canceled') return ['canceled', 'unpaid', 'incomplete_expired'].includes(r.status);
+  return r.status === f;
+}
+function custRow(r) {
+  let plan = '', state = '', when = '';
+  if (r.kind === 'subscription') {
+    plan = `${r.interval === 'year' ? 'Roční' : 'Měsíční'} · ${money(r.amount, r.currency)}`;
+    const st = {
+      trialing: ['tag tag-gold', 'zkušební'], active: ['tag tag-ok', 'aktivní'], past_due: ['tag tag-hot', 'neprošla platba'],
+      canceled: ['tag', 'zrušeno'], unpaid: ['tag tag-hot', 'nezaplaceno'], incomplete: ['tag', 'nedokončeno'], incomplete_expired: ['tag', 'nedokončeno'],
+    }[r.status] || ['tag', r.status];
+    state = `<span class="${st[0]}">${st[1]}</span>${r.cancelAtPeriodEnd && r.status !== 'canceled' ? ' <span class="tag">ruší se</span>' : ''}`;
+    if (r.status === 'trialing' && r.trialEnd) {
+      const d = daysLeft(r.trialEnd);
+      when = r.cancelAtPeriodEnd ? `trial končí ${dateOnly(r.trialEnd)} (zrušeno)` : `první platba ${dateOnly(r.trialEnd)}${d >= 0 ? ` · za ${d} d` : ''}`;
+    } else if (r.status === 'active' && r.periodEnd) when = r.cancelAtPeriodEnd ? `končí ${dateOnly(r.periodEnd)}` : `obnovení ${dateOnly(r.periodEnd)}`;
+    else if (r.status === 'past_due') when = 'Stripe zkouší platbu znovu';
+    else if (r.canceledAt) when = `zrušeno ${dateOnly(r.canceledAt)}`;
+  } else if (r.kind === 'lifetime') {
+    plan = `Navždy · ${money(r.amount, r.currency)}`;
+    state = '<span class="tag tag-ok">zaplaceno</span>';
+    when = `koupeno ${dateOnly(r.created)}`;
+  } else {
+    plan = `Promo · ${esc(r.code || '?')}`;
+    state = r.status === 'expired' ? '<span class="tag">vypršelo</span>' : '<span class="tag tag-ok">aktivní</span>';
+    when = r.periodEnd ? `do ${dateOnly(r.periodEnd)}` : 'navždy';
+  }
+  return `
+    <div class="cust">
+      <div class="cust-who"><div class="cust-mail">${flag(r.lang)} ${esc(r.email || '—')}</div>${r.name ? `<div class="small muted">${esc(r.name)}</div>` : ''}</div>
+      <div class="cust-plan">${plan}</div>
+      <div class="cust-state">${state}</div>
+      <div class="cust-when small muted">${when}</div>
+      <div class="cust-link">${r.stripeUrl ? `<a href="${esc(r.stripeUrl)}" target="_blank" rel="noopener" title="Otevřít ve Stripe">Stripe ↗</a>` : ''}</div>
+    </div>`;
+}
+async function renderCustomers(main) {
+  main.innerHTML = `
+    <section class="pane full-pane">
+      <header class="pane-head">
+        <h1>Zákazníci</h1>
+        <div class="row-gap"><input class="search" id="cust-q" type="search" placeholder="Hledat e-mail…" value="${esc(custQuery)}" /><button class="btn btn-ghost btn-sm" id="cust-refresh" title="Načíst znovu ze Stripe">↻</button></div>
+      </header>
+      <div class="wrap">
+        <div class="seg seg-wrap" id="cust-tabs"></div>
+        <div id="cust-list" class="cust-list"><div class="muted pad">Načítám ze Stripe…</div></div>
+      </div>
+    </section>`;
+  let rows = [];
+  const draw = () => {
+    const counts = Object.fromEntries(CUST_TABS.map(([k]) => [k, rows.filter((r) => custMatches(r, k)).length]));
+    $('#cust-tabs').innerHTML = CUST_TABS.map(([k, l]) => `<button data-f="${k}" class="${k === custFilter ? 'is-on' : ''}">${l} <span class="cnt">${counts[k]}</span></button>`).join('');
+    const q = custQuery.toLowerCase();
+    const items = rows.filter((r) => custMatches(r, custFilter) && (!q || (r.email || '').toLowerCase().includes(q) || (r.name || '').toLowerCase().includes(q)));
+    $('#cust-list').innerHTML = items.length ? items.map(custRow).join('') : '<div class="muted pad">Nic tu není.</div>';
+  };
+  const load = async (fresh) => {
+    try {
+      rows = (await api('/admin/customers' + (fresh ? '?fresh=1' : ''))).rows || [];
+      draw();
+    } catch (e) { $('#cust-list').innerHTML = `<div class="muted pad">Nepodařilo se načíst (${esc(e.data?.detail || e.message)}).</div>`; }
+  };
+  $('#cust-tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; custFilter = b.dataset.f; draw(); });
+  $('#cust-q').addEventListener('input', (e) => { custQuery = e.target.value; draw(); });
+  $('#cust-refresh').addEventListener('click', () => { $('#cust-list').innerHTML = '<div class="muted pad">Načítám ze Stripe…</div>'; load(true); });
+  load(false);
+}
+
+// ---------- 📊 Přehled ----------
+function barChart(months, key, fmt, cls) {
+  const max = Math.max(1, ...months.map((m) => m[key]));
+  return `<div class="bars ${cls || ''}">${months.map((m) => {
+    const h = Math.round((m[key] / max) * 100);
+    const [y, mo] = m.key.split('-');
+    return `<div class="bar-col" title="${mo}/${y}: ${fmt(m[key])}"><div class="bar-val">${m[key] ? fmt(m[key]) : ''}</div><div class="bar-fill" style="height:${Math.max(h, m[key] ? 3 : 0)}%"></div><div class="bar-lbl">${Number(mo)}/${y.slice(2)}</div></div>`;
+  }).join('')}</div>`;
+}
+async function renderOverview(main) {
+  main.innerHTML = `
+    <section class="pane full-pane">
+      <header class="pane-head"><h1>Přehled</h1><button class="btn btn-ghost btn-sm" id="ov-refresh" title="Načíst znovu">↻</button></header>
+      <div class="wrap" id="ov"><div class="muted pad">Počítám…</div></div>
+    </section>`;
+  const load = async (fresh) => {
+    let o;
+    try { o = await api('/admin/overview' + (fresh ? '?fresh=1' : '')); } catch (e) {
+      $('#ov').innerHTML = `<div class="muted pad">Nepodařilo se načíst (${esc(e.data?.detail || e.message)}).</div>`; return;
+    }
+    const conv = o.conversion90.ended ? Math.round((o.conversion90.converted / o.conversion90.ended) * 100) : null;
+    const tile = (label, value, sub, cls = '') => `<div class="kpi ${cls}"><div class="kpi-lbl">${label}</div><div class="kpi-val">${value}</div>${sub ? `<div class="kpi-sub">${sub}</div>` : ''}</div>`;
+    $('#ov').innerHTML = `
+      <div class="kpis">
+        ${tile('Tržby 30 dní', sumMoney(o.revenue30.CZK, o.revenue30.PLN), `${o.revenue30.count} plateb`)}
+        ${tile('Tržby 12 měsíců', sumMoney(o.revenueTotal12.CZK, o.revenueTotal12.PLN), 'hrubé, bez refundací')}
+        ${tile('Aktivní předplatná', o.subs.active, o.subs.cancelAtPeriodEnd ? `${o.subs.cancelAtPeriodEnd} se ruší ke konci období` : 'platící')}
+        ${tile('Ve zkušebním období', o.subs.trialing, `${o.trials30} nových za 30 dní`)}
+        ${tile('Neprošlá platba', o.subs.past_due, 'Stripe zkouší znovu', o.subs.past_due ? 'kpi-hot' : '')}
+        ${tile('Konverze trialů', conv == null ? '—' : conv + ' %', `${o.conversion90.converted} z ${o.conversion90.ended} za 90 dní`)}
+        ${tile('Navždy', o.lifetime, 'jednorázové nákupy')}
+        ${tile('Premium přes kód', o.premiumPromo, 'učitelské a studentské kódy')}
+        ${tile('Uživatelé', o.users.total.toLocaleString('cs'), `+${o.users.new7} za 7 dní · +${o.users.new30} za 30 dní · 🇵🇱 ${o.users.pl}`)}
+      </div>
+      <div class="charts">
+        <article class="card"><h2>Tržby CZK po měsících</h2>${barChart(o.months, 'CZK', (v) => Math.round(v).toLocaleString('cs') + ' Kč', 'b-teal')}</article>
+        <article class="card"><h2>Tržby PLN po měsících</h2>${barChart(o.months, 'PLN', (v) => v.toLocaleString('pl', { maximumFractionDigits: 0 }) + ' zł', 'b-violet')}</article>
+        <article class="card"><h2>Nové účty po měsících</h2>${barChart(o.months, 'signups', (v) => v.toLocaleString('cs'), 'b-orange')}</article>
+      </div>
+      <p class="small muted">Aktualizováno ${fmtTime(o.generatedAt)}. Účty = přihlášení přes Google (anonymní uživatelé bez přihlášení se nepočítají — ty ukazuje Plausible v sekci Web).</p>`;
+  };
+  $('#ov-refresh').addEventListener('click', () => { $('#ov').innerHTML = '<div class="muted pad">Počítám…</div>'; load(true); });
+  load(false);
+}
+
+// ---------- 📈 Web (Plausible + Search Console) ----------
+let gscDays = 28;
+async function renderWeb(main) {
+  main.innerHTML = `
+    <section class="pane full-pane">
+      <header class="pane-head"><h1>Web</h1></header>
+      <div class="wrap">
+        <article class="card" id="plausible-card"><h2>📈 Návštěvnost (Plausible)</h2><div class="muted">Načítám…</div></article>
+        <article class="card" id="gsc-card">
+          <div class="card-head"><h2>🔎 Vyhledávání Google (Search Console)</h2>
+            <div class="seg" id="gsc-days"><button data-d="7">7 dní</button><button data-d="28">28 dní</button><button data-d="90">90 dní</button></div></div>
+          <div id="gsc-body" class="muted">Načítám…</div>
+        </article>
+      </div>
+    </section>`;
+  drawPlausible();
+  const seg = $('#gsc-days');
+  const sync = () => seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', Number(b.dataset.d) === gscDays));
+  sync();
+  seg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; gscDays = Number(b.dataset.d); sync(); drawGsc(); });
+  drawGsc();
+}
+async function drawPlausible() {
+  const card = $('#plausible-card');
+  let cfg = {};
+  try { cfg = await api('/admin/integrations'); } catch {}
+  const link = cfg.plausibleSharedLink;
+  if (link) {
+    const src = link + (link.includes('?') ? '&' : '?') + 'embed=true&theme=dark&background=%23191d27';
+    card.innerHTML = `<div class="card-head"><h2>📈 Návštěvnost (Plausible)</h2><div class="row-gap"><a class="small" href="https://plausible.io/ucseslovesa.cz" target="_blank" rel="noopener">Otevřít v Plausible ↗</a><button class="btn-link small" id="pl-edit">změnit odkaz</button></div></div>
+      <iframe class="plausible-frame" src="${esc(src)}" loading="lazy" title="Plausible"></iframe>`;
+    $('#pl-edit').addEventListener('click', () => drawPlausibleForm(card, link));
+  } else {
+    drawPlausibleForm(card, '');
+  }
+}
+function drawPlausibleForm(card, link) {
+  card.innerHTML = `<h2>📈 Návštěvnost (Plausible)</h2>
+    <ol class="steps">
+      <li>V Plausible otevřete <strong>ucseslovesa.cz → Settings → Visibility → Shared links → Add shared link</strong> (bez hesla).</li>
+      <li>Zkopírovaný odkaz (https://plausible.io/share/…) vložte sem:</li>
+    </ol>
+    <form class="row" id="pl-form"><input class="search grow" name="link" value="${esc(link)}" placeholder="https://plausible.io/share/ucseslovesa.cz?auth=…" /><button class="btn btn-primary btn-sm" type="submit">Uložit</button></form>
+    <p class="small muted">Odkaz se ukládá jen na server (adminConfig), do kódu webu se nedostane.</p>`;
+  $('#pl-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try { await api('/admin/integrations', { method: 'POST', body: { plausibleSharedLink: e.target.link.value.trim() } }); toast('Uloženo ✓', 'ok'); drawPlausible(); }
+    catch (err) { toast(err.message === 'bad_link' ? 'To nevypadá jako sdílený odkaz Plausible (https://plausible.io/share/…).' : 'Nepovedlo se: ' + err.message, 'error'); }
+  });
+}
+async function drawGsc() {
+  const body = $('#gsc-body');
+  if (!body) return;
+  body.innerHTML = '<div class="muted">Načítám…</div>';
+  let g;
+  try { g = await api('/admin/gsc?days=' + gscDays); } catch (e) { body.innerHTML = `<div class="muted">Nepodařilo se načíst (${esc(e.message)}).</div>`; return; }
+  if (!g.configured) {
+    const sa = esc(g.serviceAccount || '');
+    body.innerHTML = `
+      <div class="status-row"><span class="dot dot-warn"></span><div><strong>Zatím nepropojeno.</strong> ${g.reason === 'api_disabled' ? 'V Google Cloud projektu není povolené Search Console API.' : g.reason === 'no_sites' ? 'Servisní účet zatím nemá přístup k žádnému webu.' : esc(g.detail || '')}</div></div>
+      <ol class="steps">
+        ${g.reason === 'api_disabled' ? `<li>Povolte <strong>Google Search Console API</strong> v projektu <code>${esc(g.projectId || 'ucse-slovesa')}</code>: <a href="https://console.cloud.google.com/apis/library/searchconsole.googleapis.com?project=${esc(g.projectId || 'ucse-slovesa')}" target="_blank" rel="noopener">otevřít ↗</a> → Povolit.</li>` : ''}
+        <li>V <a href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console</a> (účtem, který weby spravuje) otevřete web → <strong>Nastavení → Uživatelé a oprávnění → Přidat uživatele</strong>.</li>
+        <li>E-mail: <code class="copy" id="sa-mail">${sa}</code> <button class="btn-link small" id="sa-copy">kopírovat</button>, oprávnění <strong>Omezené</strong> (stačí na čtení).</li>
+        <li>Totéž pro czasowniki.pl, pokud ho tam máte jako samostatnou službu.</li>
+      </ol>
+      <button class="btn btn-ghost btn-sm" id="gsc-retry">Zkusit znovu</button>`;
+    $('#sa-copy')?.addEventListener('click', async () => { try { await navigator.clipboard.writeText(g.serviceAccount); toast('Zkopírováno', 'ok'); } catch {} });
+    $('#gsc-retry').addEventListener('click', drawGsc);
+    return;
+  }
+  const n = (v) => Math.round(v).toLocaleString('cs');
+  body.innerHTML = `<div class="small muted" style="margin-bottom:10px">${g.range.start} – ${g.range.end} (Google má data se zpožděním ~2 dny)</div>` + g.sites.map((s) => {
+    const maxC = Math.max(1, ...s.daily.map((d) => d.clicks));
+    const name = s.siteUrl.replace(/^sc-domain:/, '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+    return `
+      <div class="gsc-site">
+        <h3>${esc(name)}</h3>
+        <div class="kpis kpis-sm">
+          <div class="kpi"><div class="kpi-lbl">Kliknutí</div><div class="kpi-val">${n(s.totals.clicks)}</div></div>
+          <div class="kpi"><div class="kpi-lbl">Zobrazení</div><div class="kpi-val">${n(s.totals.impressions)}</div></div>
+          <div class="kpi"><div class="kpi-lbl">CTR</div><div class="kpi-val">${(s.totals.ctr * 100).toFixed(1)} %</div></div>
+          <div class="kpi"><div class="kpi-lbl">Prům. pozice</div><div class="kpi-val">${s.totals.position ? s.totals.position.toFixed(1) : '—'}</div></div>
+        </div>
+        <div class="spark" title="Kliknutí po dnech">${s.daily.map((d) => `<span style="height:${Math.max(2, Math.round((d.clicks / maxC) * 100))}%" title="${d.date}: ${d.clicks} kliknutí, ${d.impressions} zobrazení"></span>`).join('')}</div>
+        <div class="gsc-cols">
+          <div><h4>Dotazy</h4><div class="table">${s.queries.map((q) => `<div class="tr tr3"><span>${esc(q.q)}</span><span>${n(q.clicks)}</span><span class="muted">${q.position.toFixed(1)}</span></div>`).join('') || '<p class="muted small">Zatím nic.</p>'}</div></div>
+          <div><h4>Stránky</h4><div class="table">${s.pages.map((p) => `<div class="tr tr3"><span>${esc(p.page.replace(/^https?:\/\/[^/]+/, '') || '/')}</span><span>${n(p.clicks)}</span><span class="muted">${n(p.impressions)}</span></div>`).join('') || '<p class="muted small">Zatím nic.</p>'}</div></div>
+        </div>
+      </div>`;
+  }).join('');
+}
 
 // ---------- 🎟️ Promo kódy ----------
 const PLAN_LABEL = { annual_teacher: 'Učitelský (roční)', promo: 'Promo', student: 'Studentský', lifetime: 'Navždy' };

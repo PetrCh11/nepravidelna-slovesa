@@ -678,4 +678,6 @@ export function registerSupportRoutes(app, { db, admin, sendEmail }) {
     const r = await telegram('sendMessage', { chat_id: id, text: '🔔 Testovací upozornění z adminu.' });
     res.json({ ok: !!r.ok, detail: r.description || null });
   });
+
+  return { requireAdmin };
 }

@@ -16,6 +16,7 @@ import admin from 'firebase-admin';
 import cors from 'cors';
 import { sendEmail, welcomeEmail, normalizeLang } from './email.js';
 import { registerSupportRoutes } from './support.js';
+import { registerStatsRoutes } from './admin-stats.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -444,7 +445,8 @@ app.post('/report-error', async (req, res) => {
 });
 
 // Chat s podporou + admin API (backend/support.js)
-registerSupportRoutes(app, { db, admin, sendEmail });
+const { requireAdmin } = registerSupportRoutes(app, { db, admin, sendEmail });
+registerStatsRoutes(app, { db, admin, stripe, requireAdmin, svcAcc });
 
 app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now(), welcomeLangs: ['cs', 'pl'], errorReports: true, supportChat: true, dupGuard: true, xmasSale: { start: XMAS_SALE.start, end: XMAS_SALE.end, active: !!xmasCouponFor(Object.keys(XMAS_SALE.coupons)[0]) } }));
 
